@@ -1,0 +1,50 @@
+19/06/2026
+---------------
+
+Création du projet VestEngine
+
+J'ai compilé GLFW avec CMake, puis j'ai inclus la lib et les includes fraichement générés dans mon projet C++ ( project properties > include folder / lib folder + linker additional library ). GLFW sert à créer la window.
+J'ai ensuite téléchargé GLAD pour OpenGL3.3. C'est un facilitateur de loading d'OpenGL puisque c'est très platform-specific. Pareil ajout au projet.
+Et ensuite j'ai créé le projet.
+
+Création de la fenêtre, pas grand chose à comprendre, c'est du gros par cœur. Les inputs passent par GLFW par contre ça c'est important. GLAD est aussi ajouté mais ça ne sert vraiment qu'à faire des bindings sur les fonctions OpenGL donc encore une fois, rien à comprendre.
+
+20/06/2026
+----------------
+
+Commencé à taper dans le dur. Introduction des buffers :
+- VBO Vertex Buffer Object qui contiennent les vertices
+- EBO Element Buffer Object qui contiennent les indices
+- VAO qui permet de retenir les buffers bindés + le paramétrage dans un seul buffer
+Un truc important c'était le VertexAttribPointer. Ca défini pour un #layout location dans un shader, comment aller chopper cette data dans le buffer. Donc en l'occurrence le premier qu'on réalise c'est comment chercher le vertex pour le vertex shader. Donc ca spécifie tu prends tel buffer, les vertex commencent à 0 dans le buffer ( offset ), ils font X taille ( 3*sizeof(float) ), et y'en a un tous les X ( stride ).
+
+Il faut aussi avoir un ShaderProgram. C'est la somme de multiples shaders qu'on utilise au moment du draw. Le shader c'est ce qui permet de passer d'informations de vertices/indices à des informations de pixel. Mandatory : vertex ( vertice ) et fragment ( pixel ) shader. En + on peut avoir des geometry shader par exemple.
+
+Donc en bindant un VAO + un ShaderProgram, on peut maintenant draw.
+
+Ensuite sur les Shaders, on a vu qu'on pouvait passer des valeurs aux shaders :
+- de shader en shader, avec un output name matching avec un input name dans deux shaders consécutifs
+- à tous les shaders, en utilisant un "uniform"
+
+Petit refacto pour mettre tout le comportement de ShaderProgram dans une classe Shader
+
+Maintenant les textures.
+Pour charger le fichier on utilise une librairie third_party avec juste un include, stb_image.
+Ensuite, on les utilise dans OpenGL avec un ID comme les buffers.
+Les mipmaps peuvent être générées dynamiquement.
+Un point d'attention particulier est placé sur la façon dont on source le texel à partir des texcoords utilisées dans le fragment shader. Si on utilise les format NEAREST ou LINEAR, qui vont respectivement prendre le pixel le plus proche ou faire un mix de tous les pixels proches.
+On doit aussi spécifier si on veut qu'elles se répètent, en S comme en T.
+Ensuite au sein du shader on les utilise via un sampler2D. Et on bind les textures à des index prédéfinis via glActiveTexture(GL_TEXTURE0) / glBindTexture(gl_tex_2D, data)
+
+21/06/2026
+----------------
+
+Aujourd'hui on commence par des maps. Révisions sur les vectors et les matrices.
+Les vectors c'est du classique, ceci dit dot product et cross product c'était très bien à revoir. Mnémotechnique, dot product c'est si tu regardes du dessus et tu traces un cercle, tu récupères l'angle. Cross product, c'est comme le righthanded/lefthanded coord system, tu choppes le 3ème axe à partir des deux premiers. Orthogonal.
+Les matrices c'était beaucoup moins acquis, non pas sans raison. J'ai pas besoin de les manipuler vraiment.
+Les multiplications de matrice se lisent de droite à gauche. Les multiplications de matrice c'est (rangée de la première matrice) * (colonne de la seconde).
+
+Avant d'être affiché, un object passe par toute une série de transformation. Local > World > Camera > Clip > ( magie du fragment shader ) > Screen. Donc pour avoir la matrice MVP de ton object, il faut que tu fasses projection * view * model. Model étant la matrice de transformation de ton object dans le monde, view la camera et projection le clip.
+
+
+
