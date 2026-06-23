@@ -32,7 +32,6 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
@@ -67,3 +66,9 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+##############
+
+x64/
+.vs/
+
