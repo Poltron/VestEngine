@@ -13,31 +13,52 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
+#include "Camera.h"
 #include "Shader.h"
 
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+Camera camera;
 
 float verticalAxis = 0.0f;
 float horizontalAxis = 0.0f;
 
-int lastXPos = -1.0f;
-int xPos = 0.0f;
-int lastYPos = -1.0f;
-int yPos = 0.0f;
+const float mouseSensitivity = 10.0f;
+float lastXPos = -1.0f;
+float xOffset = 0.0f;
+float lastYPos = -1.0f;
+float yOffset = 0.0f;
 
-float cameraTranslationSpeed = 25.0f;
-float cameraRotationSpeed = 25.0f;
-
-bool floatEquals(float a, float b)
-{
-	float r = a - b;
-	return std::fabs(r) < FLT_EPSILON;
-}
+const float scrollSensitivity = 100.0f;
+float scrollOffset = 0.0f;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xPos, double yPos)
+{
+	if (lastXPos == -1.0f && lastYPos == -1.0f)
+	{
+		lastXPos = (float)xPos;
+		lastYPos = (float)yPos;
+	}
+
+	xOffset = (float)xPos - lastXPos;
+	yOffset = lastYPos - (float)yPos;
+	lastXPos = (float)xPos;
+	lastYPos = (float)yPos;
+
+	xOffset *= mouseSensitivity;
+	yOffset *= mouseSensitivity;
+
+	// note : if not here, we skip a lot of inputs resulting in inconsistent movements
+	// todo : move after adding proper input system
+	camera.consumeMouseMovementInputs(xOffset, yOffset, 1.0 / 60.0);
+}
+
+void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
+{
+	scrollOffset = (float)yOffset * scrollSensitivity;
 }
 
 void processInput(GLFWwindow* window)
@@ -72,67 +93,19 @@ void processInput(GLFWwindow* window)
 	{
 		horizontalAxis = 0.0f;
 	}
-
-	double xPosD, yPosD;
-	glfwGetCursorPos(window, &xPosD, &yPosD);
-	xPos = xPosD;
-	yPos = yPosD;
-
-	if (lastYPos == -1)
-	{
-		lastYPos = yPos;
-	}
-	if (lastXPos == -1)
-	{
-		lastXPos = xPos;
-	}
-	std::cout << "Cursor: " << xPos << ":" << yPos << std::endl;
 }
 
-void computeCameraPosition(glm::vec3& cameraPosition, double deltaTime)
+void resetInputs()
 {
-	float speed = cameraTranslationSpeed * deltaTime;
+	xOffset = 0.0f;
+	yOffset = 0.0f;
+	scrollOffset = 0.0f;
 
-	if (!floatEquals(horizontalAxis, 0))
-	{
-		cameraPosition += glm::normalize(glm::cross(cameraFront, cameraUp)) * horizontalAxis * speed;
-	}
-	
-	if (!floatEquals(verticalAxis, 0))
-	{
-		cameraPosition += cameraFront * verticalAxis * speed;
-	}
+	horizontalAxis = 0.0f;
+	verticalAxis = 0.0f;
 }
 
-void computeCameraRotation(glm::mat4& model, double deltaTime)
-{
-	float speed = cameraRotationSpeed * deltaTime;
-
-	int deltaY = yPos - lastYPos;
-	int deltaX = xPos - lastXPos;
-
-	if (deltaX != 0)
-	{
-		const glm::vec4 upAxis = glm::vec4(0, deltaX, 0, 0);
-
-		glm::vec3 cameraUpAxis = upAxis;
-		model = glm::rotate(model, glm::radians(speed), cameraUpAxis);
-	}
-
-	if (deltaY != 0)
-	{
-		const glm::vec4 rightAxis = glm::vec4(deltaY, 0, 0, 0);
-
-		glm::vec3 cameraRightAxis = rightAxis;
-		model = glm::rotate(model, glm::radians(speed), cameraRightAxis);
-	}
-
-	lastYPos = yPos;
-	lastXPos = xPos;
-}
-
-
-GLFWwindow* CreateWindow(int width, int height)
+GLFWwindow* createWindow(int width, int height)
 {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -159,6 +132,17 @@ GLFWwindow* CreateWindow(int width, int height)
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	
 	return window;
+}
+
+void setupInput(GLFWwindow* window)
+{
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	lastXPos = 400;
+	lastYPos = 300;
+
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 }
 
 unsigned int loadTexture(const char* texturePath, GLenum textureFormat)
@@ -193,14 +177,18 @@ unsigned int loadTexture(const char* texturePath, GLenum textureFormat)
 
 int main()
 {
+	/////////// >>>>> WINDOW + INPUTS
 	int width = 800;
 	int height = 600;
-	GLFWwindow* window = CreateWindow(width, height);
+	GLFWwindow* window = createWindow(width, height);
 	if (!window)
 	{
 		return -1;
 	}
 
+	setupInput(window);
+
+	/////////// >>>>> CUBES
 	float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -290,20 +278,6 @@ int main()
 
 	Shader shader;
 	shader.load("vertex.glsl", "fragment.glsl");
-	
-	//////
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-
-	glm::mat4 view;
-	//////
-
-	const float fov = glm::radians(45.0f);
-	const float aspectRatio = (float)width / (float)height;
-	const float near = 0.1f;
-	const float far = 100.0f;
-
-	glm::mat4 projection = glm::mat4(1.0f);
-	projection = glm::perspective(fov, aspectRatio, near, far);
 
 	glm::vec3 cubePositions[] = {
 		glm::vec3(0.0f,  0.0f,  0.0f),
@@ -318,18 +292,21 @@ int main()
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	double Time = glfwGetTime();
+	double lastFrame = glfwGetTime();
 
 	while (!glfwWindowShouldClose(window))
 	{
-		double ActualTime = glfwGetTime();
-		double deltaTime = ActualTime - Time;
-		Time = ActualTime;
+		double currentFrame = glfwGetTime();
+		double deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 
 		// input
 		processInput(window);
-		computeCameraPosition(cameraPos, deltaTime);
-		//computeCameraRotation(view, deltaTime);
+
+		camera.consumeKeyboardInputs(horizontalAxis, verticalAxis, deltaTime);
+		camera.consumeMouseScrollInputs(scrollOffset, deltaTime);
+		
+		resetInputs();
 
 		// render
 		glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
@@ -337,15 +314,16 @@ int main()
 
 		shader.use();
 
-		float timeValue = glfwGetTime();
-		float alpha = (sin(timeValue) / 2.0f) + 0.5f;
+		float alpha = ((float)sin(currentFrame) / 2.0f) + 0.5f;
 		shader.setFloat("alpha", alpha);
 		shader.setInt("texture0", 0);
 		shader.setInt("texture1", 1);
-		
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		shader.setMat4("view", glm::value_ptr(view));
-		shader.setMat4("projection", glm::value_ptr(projection));
+
+		glm::mat4& viewMatrix = camera.getViewMatrix();
+		shader.setMat4("view", glm::value_ptr(viewMatrix));
+
+		glm::mat4& projectionMatrix = camera.getProjectionMatrix();
+		shader.setMat4("projection", glm::value_ptr(projectionMatrix));
 
 		glBindVertexArray(VAO);
 
