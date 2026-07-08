@@ -71,9 +71,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\VestEngine\VestEngine\ThirdParty\glm\includes;D:\VestEngine\VestEngine\ThirdParty\stb\include;D:\VestEngine\VestEngine\ThirdParty\glad\include;D:\VestEngine\VestEngine\ThirdParty\glfw-3.4\includes;$(IncludePath)</IncludePath>
+    <IncludePath>D:\VestEngine\VestEngine\VestEngine\Public;D:\VestEngine\VestEngine\ThirdParty\glm\includes;D:\VestEngine\VestEngine\ThirdParty\stb\include;D:\VestEngine\VestEngine\ThirdParty\glad\include;D:\VestEngine\VestEngine\ThirdParty\glfw-3.4\includes;$(IncludePath)</IncludePath>
     <LibraryPath>D:\VestEngine\VestEngine\ThirdParty\glfw-3.4\lib;$(LibraryPath)</LibraryPath>
-    <SourcePath>D:\VestEngine\VestEngine\ThirdParty\glad\src;$(SourcePath)</SourcePath>
+    <SourcePath>D:\VestEngine\VestEngine\VestEngine\Private;D:\VestEngine\VestEngine\ThirdParty\glad\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -130,17 +130,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\glad\src\glad.c" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Private\Managers\ComponentManager.cpp" />
+    <ClCompile Include="Private\Camera.cpp" />
+    <ClCompile Include="Private\main.cpp" />
+    <ClCompile Include="Private\Managers\EntityManager.cpp" />
+    <ClCompile Include="Private\Resources\Mesh.cpp" />
+    <ClCompile Include="Private\Resources\Shader.cpp" />
+    <ClCompile Include="Private\Resources\Texture.cpp" />
+    <ClCompile Include="Private\Systems\RendererSystem.cpp" />
+    <ClCompile Include="Private\Systems\TransformSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="fragment.glsl" />
-    <None Include="vertex.glsl" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Shader.h" />
+    <ClInclude Include="Public\Assets\Mesh.h" />
+    <ClInclude Include="Public\Assets\Texture.h" />
+    <ClInclude Include="Public\Managers\ComponentManager.h" />
+    <ClInclude Include="Public\Camera.h" />
+    <ClInclude Include="Public\Components\MeshRendererComponent.h" />
+    <ClInclude Include="Public\Components\TransformComponent.h" />
+    <ClInclude Include="Public\Managers\EntityManager.h" />
+    <ClInclude Include="Public\Resources\Mesh.h" />
+    <ClInclude Include="Public\Resources\Shader.h" />
+    <ClInclude Include="Public\Resources\Texture.h" />
+    <ClInclude Include="Public\Systems\RendererSystem.h" />
+    <ClInclude Include="Public\Systems\TransformSystem.h" />
+    <ClInclude Include="Public\Utils\DenseArray.h" />
+    <ClInclude Include="Public\Utils\PoolAllocator.h" />
+    <ClInclude Include="Public\Utils\StackAllocator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

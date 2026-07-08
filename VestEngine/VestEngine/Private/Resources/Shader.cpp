@@ -1,9 +1,19 @@
-#include "Shader.h"
+#include "Resources/Shader.h"
 
-std::string ReadFile(const char* InFileName)
+#include <fstream>
+#include <iostream>
+
+std::string ReadFile(const char* inFileName)
 {
 	std::string line, text;
-	std::ifstream in(InFileName);
+	
+	std::ifstream in(inFileName);
+	if (in.fail())
+	{
+		std::cout << "ERROR: Could not read file " << inFileName << std::endl;
+		return text;
+	}
+
 	while (std::getline(in, line))
 	{
 		text += line + "\n";
@@ -11,9 +21,9 @@ std::string ReadFile(const char* InFileName)
 	return text;
 }
 
-unsigned int CreateAndCompileShader(GLenum type, const char* shaderSource)
+GLuint CreateAndCompileShader(GLenum type, const char* shaderSource)
 {
-	unsigned int shaderID;
+	GLuint shaderID;
 	shaderID = glCreateShader(type);
 
 	glShaderSource(shaderID, 1, &shaderSource, NULL);
@@ -25,7 +35,7 @@ unsigned int CreateAndCompileShader(GLenum type, const char* shaderSource)
 	if (!success)
 	{
 		glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::" << type << "::COMPILATION_FAILED\n" << infoLog << std::endl;
+		std::cout << "ERROR: Shader " << type << " compilation failed\n" << infoLog << std::endl;
 	}
 	return shaderID;
 }
@@ -38,10 +48,20 @@ Shader::Shader()
 void Shader::load(const char* vertexPath, const char* fragmentPath)
 {
 	std::string vertexShaderContent = ReadFile(vertexPath);
-	unsigned int vertexShader = CreateAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
+	if (vertexShaderContent.size() == 0)
+	{
+		std::cout << "ERROR: VertexShader " << vertexPath << " is empty." << std::endl;
+		return;
+	}
+	GLuint vertexShader = CreateAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
 
 	std::string fragmentShaderContent = ReadFile(fragmentPath);
-	unsigned int fragmentShader = CreateAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
+	if (fragmentShaderContent.size() == 0)
+	{
+		std::cout << "ERROR: VertexShader " << fragmentPath << " is empty." << std::endl;
+		return;
+	}
+	GLuint fragmentShader = CreateAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
 
 	ID = glCreateProgram();
 	glAttachShader(ID, vertexShader);

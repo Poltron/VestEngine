@@ -12,24 +12,28 @@ public:
 		Slot* nextSlot;
 	};
 
-	PoolAllocator(size_t inMaxElementNumber)
-		: maxElementNumber(inMaxElementNumber)
-	{
-		buffer = (Slot*)malloc(inMaxElementNumber * sizeof(T));
-
-		for (size_t i = 0; i < inMaxElementNumber - 1; ++i)
-		{
-			buffer[i].nextSlot = &buffer[i + 1];
-		}
-
-		buffer[inMaxElementNumber - 1].nextSlot = nullptr;
-
-		head = &buffer[0];
-	}
-
 	~PoolAllocator()
 	{
 		free(buffer);
+	}
+
+	void Initialize(size_t inCapacity)
+	{
+		if (inCapacity > 0)
+		{
+			capacity = inCapacity;
+
+			buffer = (Slot*)malloc(inCapacity * sizeof(T));
+
+			for (size_t i = 0; i < inCapacity - 1; ++i)
+			{
+				buffer[i].nextSlot = &buffer[i + 1];
+			}
+
+			buffer[inCapacity - 1].nextSlot = nullptr;
+
+			head = &buffer[0];
+		}
 	}
 
 	T* Allocate()
@@ -47,8 +51,8 @@ public:
 	}
 
 private:
-	Slot* buffer;
-	Slot* head;
+	Slot* buffer = nullptr;
+	Slot* head = nullptr;
 
-	size_t maxElementNumber;
+	size_t capacity = 0;
 };

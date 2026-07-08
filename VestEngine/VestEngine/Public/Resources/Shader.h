@@ -3,16 +3,13 @@
 #include <glad/glad.h>
 
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
 
 #include "glm/fwd.hpp"
 
 class Shader
 {
 public:
-	unsigned int ID;
+	GLuint ID;
 
 	Shader();
 
