@@ -191,13 +191,15 @@ int main()
 	GLuint litShaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/lit_fragment.glsl");
 	GLuint unlitShaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/unlit_fragment.glsl");
 	
-	Mesh mesh;
-	Mesh::createNormalCube(mesh);
+	Mesh cubeMesh;
+	Mesh::createNormalTextureCube(cubeMesh);
 
 	//Texture containerTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container.jpg", GL_RGB);
+	Texture container2Texture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container2.png ", GL_RGBA);
+	Texture container2SpecularTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container2_specular.png ", GL_RGBA);
 	//Texture faceTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/awesomeface.png", GL_RGBA);
 
-	GLuint CubeVAOID = renderer.createCubeVAO(mesh);
+	GLuint CubeVAOID = renderer.createVAO(cubeMesh);
 
 	EntityManager entityManager;
 	ComponentManager<TransformComponent> transformComponents;
@@ -269,16 +271,15 @@ int main()
 
 		MeshRendererComponent* meshRenderer = meshRendererComponents.get(ID);
 		meshRenderer->shaderID = litShaderID;
-		meshRenderer->texture0ID = 0; //containerTexture.GetTextureID();
-		meshRenderer->texture1ID = 0; //faceTexture.GetTextureID();
-		meshRenderer->objectColor = cubeColors[i];
+		meshRenderer->texture0ID = container2Texture.GetTextureID();
+		meshRenderer->texture1ID = container2SpecularTexture.GetTextureID();
+		meshRenderer->objectColor = glm::vec3(1.0, 1.0, 1.0);;// cubeColors[i];
 		meshRenderer->lightColor = glm::vec3(1.0, 1.0, 1.0);
 		meshRenderer->VAOID = CubeVAOID;
 		
 		cubes[i] = ID;
 	}
 
-	GLuint lightVAOID = renderer.createLightVAO(mesh);
 	Entity lightID = createRenderedEntity(entityManager, transformComponents, meshRendererComponents);
 	TransformComponent* lightTransform = transformComponents.get(lightID);
 	lightTransform->scale = glm::vec3(0.2f);
@@ -288,7 +289,7 @@ int main()
 	lightMeshRenderer->texture0ID = 0;
 	lightMeshRenderer->texture1ID = 0;
 	lightMeshRenderer->objectColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	lightMeshRenderer->VAOID = lightVAOID;
+	lightMeshRenderer->VAOID = CubeVAOID;
 
 	TransformSystem transformSystem;
 

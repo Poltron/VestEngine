@@ -29,13 +29,17 @@ void Renderer::render(ComponentManager<TransformComponent>& inTransforms, Compon
 
 		shader->use();
 
-
 		if (meshRenderer->texture0ID != 0)
 		{
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, meshRenderer->texture0ID);
 
-			shader->setInt("texture0", 0);
+			shader->setInt("material.diffuse", 0);
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
 		if (meshRenderer->texture1ID != 0)
@@ -43,11 +47,14 @@ void Renderer::render(ComponentManager<TransformComponent>& inTransforms, Compon
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, meshRenderer->texture1ID);
 
-			shader->setInt("texture1", 1);
+			shader->setInt("material.specular", 1);
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
-		shader->setVec3("material.ambient", meshRenderer->objectColor);
-		shader->setVec3("material.diffuse", meshRenderer->objectColor);
 		shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		shader->setFloat("material.shininess", 32.0f);
 
@@ -88,7 +95,7 @@ GLuint Renderer::addShader(const char* inVertexPath, const char* inFragmentPath)
 	return shader.ID;
 }
 
-GLuint Renderer::createCubeVAO(const Mesh& inMesh)
+GLuint Renderer::createVAO(const Mesh& inMesh)
 {
 	GLuint VAO;
 	glGenVertexArrays(1, &VAO);
@@ -101,7 +108,7 @@ GLuint Renderer::createCubeVAO(const Mesh& inMesh)
 
 	// info : vertex = x y z u v
 	GLuint vertexAttribPointer = 0; // vertex layout location in vertex shader
-	GLsizei stride = 6 * sizeof(float);
+	GLsizei stride = 8 * sizeof(float);
 	glVertexAttribPointer(vertexAttribPointer, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
 	glEnableVertexAttribArray(vertexAttribPointer);
 
@@ -109,39 +116,9 @@ GLuint Renderer::createCubeVAO(const Mesh& inMesh)
 	glVertexAttribPointer(vertexAttribPointer, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(vertexAttribPointer);
 
-	//vertexAttribPointer = 1; // texcoord layout location in vertex shader
-	//glVertexAttribPointer(vertexAttribPointer, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	//glEnableVertexAttribArray(vertexAttribPointer);
-
-	glBindVertexArray(0);
-
-	return VAO;
-}
-
-GLuint Renderer::createLightVAO(const Mesh& inMesh)
-{
-	GLuint VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	GLuint VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * inMesh.vertices.size(), inMesh.vertices.data(), GL_STATIC_DRAW);
-
-	// info : vertex = x y z u v
-	GLuint vertexAttribPointer = 0; // vertex layout location in vertex shader
-	GLsizei stride = 6 * sizeof(float);
-	glVertexAttribPointer(vertexAttribPointer, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+	vertexAttribPointer = 2; // texcoord layout location in vertex shader
+	glVertexAttribPointer(vertexAttribPointer, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(vertexAttribPointer);
-
-	vertexAttribPointer = 1; // normal layout location in vertex shader
-	glVertexAttribPointer(vertexAttribPointer, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(vertexAttribPointer);
-
-	//vertexAttribPointer = 1; // vertex layout location in vertex shader
-	//glVertexAttribPointer(vertexAttribPointer, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	//glEnableVertexAttribArray(vertexAttribPointer);
 
 	glBindVertexArray(0);
 
