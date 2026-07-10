@@ -21,8 +21,7 @@ public:
 	void swap(GLFWwindow* inWindow);
 
 	GLuint addShader(const char* inVertexPath, const char* inFragmentPath);
-	GLuint createCubeVAO(const Mesh& inMesh);
-	GLuint createLightVAO(const Mesh& inMesh);
+	GLuint createVAO(const Mesh& inMesh);
 
 private:
 	Shader* getShader(GLuint inShaderID)
