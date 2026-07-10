@@ -304,7 +304,7 @@ int main()
 
 		camera.consumeKeyboardInputs(horizontalAxis, verticalAxis, deltaTime);
 		camera.consumeMouseScrollInputs(scrollOffset, deltaTime);
-		
+
 		resetInputs();
 
 		transformSystem.update(transformComponents);
