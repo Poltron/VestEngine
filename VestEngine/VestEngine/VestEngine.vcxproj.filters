@@ -27,9 +27,6 @@
     <ClCompile Include="Private\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Systems\RendererSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Private\Systems\TransformSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,15 +45,15 @@
     <ClCompile Include="Private\Resources\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Systems\Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\TransformComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Public\Systems\RendererSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Public\Systems\TransformSystem.h">
@@ -93,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Systems\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
