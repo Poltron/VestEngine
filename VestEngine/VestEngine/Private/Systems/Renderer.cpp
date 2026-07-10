@@ -29,7 +29,6 @@ void Renderer::render(ComponentManager<TransformComponent>& inTransforms, Compon
 
 		shader->use();
 
-		shader->setVec3("lightPosition", inLightPosition);
 
 		if (meshRenderer->texture0ID != 0)
 		{
@@ -46,6 +45,16 @@ void Renderer::render(ComponentManager<TransformComponent>& inTransforms, Compon
 
 			shader->setInt("texture1", 1);
 		}
+
+		shader->setVec3("material.ambient", meshRenderer->objectColor);
+		shader->setVec3("material.diffuse", meshRenderer->objectColor);
+		shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		shader->setFloat("material.shininess", 32.0f);
+
+		shader->setVec3("light.position", inLightPosition);
+		shader->setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+		shader->setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+		shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
 		shader->setVec3("objectColor", meshRenderer->objectColor);
 		shader->setVec3("lightColor", meshRenderer->lightColor);

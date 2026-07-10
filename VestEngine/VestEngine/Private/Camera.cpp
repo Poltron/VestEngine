@@ -15,6 +15,8 @@ Camera::Camera()
 {
 	aspectRatio = (float)width / (float)height;
 
+	position = glm::vec3(0, 0, 10);
+
 	updateProjectionMatrix();
 	updateViewMatrix();
 }
