@@ -137,7 +137,7 @@
     <ClCompile Include="Private\Resources\Mesh.cpp" />
     <ClCompile Include="Private\Resources\Shader.cpp" />
     <ClCompile Include="Private\Resources\Texture.cpp" />
-    <ClCompile Include="Private\Systems\RendererSystem.cpp" />
+    <ClCompile Include="Private\Systems\Renderer.cpp" />
     <ClCompile Include="Private\Systems\TransformSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -151,7 +151,7 @@
     <ClInclude Include="Public\Resources\Mesh.h" />
     <ClInclude Include="Public\Resources\Shader.h" />
     <ClInclude Include="Public\Resources\Texture.h" />
-    <ClInclude Include="Public\Systems\RendererSystem.h" />
+    <ClInclude Include="Public\Systems\Renderer.h" />
     <ClInclude Include="Public\Systems\TransformSystem.h" />
     <ClInclude Include="Public\Utils\DenseArray.h" />
     <ClInclude Include="Public\Utils\PoolAllocator.h" />

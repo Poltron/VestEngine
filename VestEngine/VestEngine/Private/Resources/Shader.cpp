@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "glm/detail/type_vec3.hpp"
+
 std::string ReadFile(const char* inFileName)
 {
 	std::string line, text;
@@ -93,6 +95,18 @@ void Shader::setFloat(const std::string& name, float value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
 	glUniform1f(location, value);
+}
+
+void Shader::setVec3(const std::string& name, float x, float y, float z) const
+{
+	int location = glGetUniformLocation(ID, name.c_str());
+	glUniform3f(location, x, y, z);
+}
+
+void Shader::setVec3(const std::string& name, const glm::vec3& inValue) const
+{
+	int location = glGetUniformLocation(ID, name.c_str());
+	glUniform3f(location, inValue.x, inValue.y, inValue.z);
 }
 
 void Shader::setVec4(const std::string& name, float x, float y, float z, float w) const

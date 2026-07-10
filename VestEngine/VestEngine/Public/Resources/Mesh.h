@@ -8,7 +8,8 @@
 class Mesh
 {
 public:
-	static void createCube(Mesh& outMesh);
+	static void createTextureCube(Mesh& outMesh);
+	static void createNormalCube(Mesh& outMesh);
 
 	std::vector<float> vertices;
 };

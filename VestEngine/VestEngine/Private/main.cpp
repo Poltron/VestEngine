@@ -11,7 +11,6 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
 
 //
 #include "Camera.h"
@@ -21,7 +20,7 @@
 #include "Managers/EntityManager.h"
 #include "Resources/Mesh.h"
 #include "Resources/Texture.h"
-#include "Systems/RendererSystem.h"
+#include "Systems/Renderer.h"
 #include "Systems/TransformSystem.h"
 
 Camera camera;
@@ -162,7 +161,7 @@ void setupInput(GLFWwindow* window)
 	glfwSetScrollCallback(window, scroll_callback);
 }
 
-Entity createCubeEntity(EntityManager& inEntityManager
+Entity createRenderedEntity(EntityManager& inEntityManager
 	, ComponentManager<TransformComponent>& inTransforms
 	, ComponentManager<MeshRendererComponent>& inMeshRenderers)
 {
@@ -189,22 +188,25 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	Renderer renderer;
-	GLuint shaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/fragment.glsl");
+	GLuint litShaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/lit_fragment.glsl");
+	GLuint unlitShaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/unlit_fragment.glsl");
 	
 	Mesh mesh;
-	Mesh::createCube(mesh);
+	Mesh::createNormalCube(mesh);
 
-	Texture containerTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container.jpg", GL_RGB);
-	Texture faceTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/awesomeface.png", GL_RGBA);
+	//Texture containerTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container.jpg", GL_RGB);
+	//Texture faceTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/awesomeface.png", GL_RGBA);
 
-	GLuint VAOID = renderer.createVAO(mesh);
+	GLuint CubeVAOID = renderer.createCubeVAO(mesh);
 
 	EntityManager entityManager;
 	ComponentManager<TransformComponent> transformComponents;
 	ComponentManager<MeshRendererComponent> meshRendererComponents;
 
+	glm::vec3 lightColor = glm::vec3(1.0f,1.0f,1.0f);
+
 	glm::vec3 cubePositions[] = {
-		glm::vec3(0.1f,  0.2f,  0.3f),
+		glm::vec3(1.5f,  -3.2f,  0.3f),
 		glm::vec3(2.0f,  5.0f, -15.0f),
 		glm::vec3(-1.5f, -2.2f, -2.5f),
 		glm::vec3(-3.8f, -2.0f, -12.3f),
@@ -242,10 +244,23 @@ int main()
 		glm::vec3(1.0f,  1.0f, 0.3f)
 	};
 
+	glm::vec3 cubeColors[] = {
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f)
+	};
+
 	Entity cubes[10];
 	for (size_t i = 0; i < 10; ++i)
 	{
-		Entity ID = createCubeEntity(entityManager, transformComponents, meshRendererComponents);
+		Entity ID = createRenderedEntity(entityManager, transformComponents, meshRendererComponents);
 		
 		TransformComponent* transform = transformComponents.get(ID);
 		transform->position = cubePositions[i];
@@ -253,13 +268,27 @@ int main()
 		transform->scale = cubeScales[i];
 
 		MeshRendererComponent* meshRenderer = meshRendererComponents.get(ID);
-		meshRenderer->shaderID = shaderID;
-		meshRenderer->texture0ID = containerTexture.GetTextureID();
-		meshRenderer->texture1ID = faceTexture.GetTextureID();
-		meshRenderer->VAOID = VAOID;
+		meshRenderer->shaderID = litShaderID;
+		meshRenderer->texture0ID = 0; //containerTexture.GetTextureID();
+		meshRenderer->texture1ID = 0; //faceTexture.GetTextureID();
+		meshRenderer->objectColor = cubeColors[i];
+		meshRenderer->lightColor = glm::vec3(1.0, 1.0, 1.0);
+		meshRenderer->VAOID = CubeVAOID;
 		
 		cubes[i] = ID;
 	}
+
+	GLuint lightVAOID = renderer.createLightVAO(mesh);
+	Entity lightID = createRenderedEntity(entityManager, transformComponents, meshRendererComponents);
+	TransformComponent* lightTransform = transformComponents.get(lightID);
+	lightTransform->scale = glm::vec3(0.2f);
+
+	MeshRendererComponent* lightMeshRenderer = meshRendererComponents.get(lightID);
+	lightMeshRenderer->shaderID = unlitShaderID;
+	lightMeshRenderer->texture0ID = 0;
+	lightMeshRenderer->texture1ID = 0;
+	lightMeshRenderer->objectColor = glm::vec3(1.0f, 1.0f, 1.0f);
+	lightMeshRenderer->VAOID = lightVAOID;
 
 	TransformSystem transformSystem;
 
@@ -281,7 +310,7 @@ int main()
 		transformSystem.update(transformComponents);
 
 		renderer.clear();
-		renderer.render(transformComponents, meshRendererComponents, camera, currentFrame);
+		renderer.render(transformComponents, meshRendererComponents, camera, lightTransform->position, currentFrame);
 		renderer.swap(window);
 
 		glfwPollEvents();
