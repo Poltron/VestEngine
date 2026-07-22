@@ -14,8 +14,10 @@
 
 //
 #include "Camera.h"
-#include "Components/TransformComponent.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/MeshRendererComponent.h"
+#include "Components/TransformComponent.h"
 #include "Managers/ComponentManager.h"
 #include "Managers/EntityManager.h"
 #include "Resources/Mesh.h"
@@ -36,6 +38,8 @@ float yOffset = 0.0f;
 
 const float scrollSensitivity = 100.0f;
 float scrollOffset = 0.0f;
+
+#define NB_POINT_LIGHTS 3
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -173,6 +177,34 @@ Entity createRenderedEntity(EntityManager& inEntityManager
 	return entityID;
 }
 
+Entity createDirectionalLight(EntityManager& inEntityManager
+	, ComponentManager<TransformComponent>& inTransforms
+	, ComponentManager<MeshRendererComponent>& inMeshRenderers
+	, ComponentManager<DirectionalLightComponent>& inDirectionalLights)
+{
+	Entity entityID = inEntityManager.createEntity();
+
+	inTransforms.create(entityID);
+	inMeshRenderers.create(entityID);
+	inDirectionalLights.create(entityID);
+
+	return entityID;
+}
+
+Entity createPointLight(EntityManager& inEntityManager
+	, ComponentManager<TransformComponent>& inTransforms
+	, ComponentManager<MeshRendererComponent>& inMeshRenderers
+	, ComponentManager<PointLightComponent>& inPointLights)
+{
+	Entity entityID = inEntityManager.createEntity();
+
+	inTransforms.create(entityID);
+	inMeshRenderers.create(entityID);
+	inPointLights.create(entityID);
+
+	return entityID;
+}
+
 int main()
 {
 	int width = 800;
@@ -188,24 +220,24 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	Renderer renderer;
+	renderer.setActiveCamera(&camera);
+
 	GLuint litShaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/lit_fragment.glsl");
 	GLuint unlitShaderID = renderer.addShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/unlit_fragment.glsl");
 	
 	Mesh cubeMesh;
 	Mesh::createNormalTextureCube(cubeMesh);
 
-	//Texture containerTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container.jpg", GL_RGB);
 	Texture container2Texture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container2.png ", GL_RGBA);
 	Texture container2SpecularTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/container2_specular.png ", GL_RGBA);
-	//Texture faceTexture = Texture("D:/VestEngine/VestEngine/Resources/Textures/awesomeface.png", GL_RGBA);
 
-	GLuint CubeVAOID = renderer.createVAO(cubeMesh);
+	GLuint cubeVAOID = renderer.createVAO(cubeMesh);
 
 	EntityManager entityManager;
 	ComponentManager<TransformComponent> transformComponents;
 	ComponentManager<MeshRendererComponent> meshRendererComponents;
-
-	glm::vec3 lightColor = glm::vec3(1.0f,1.0f,1.0f);
+	ComponentManager<DirectionalLightComponent> directionalLightComponents;
+	ComponentManager<PointLightComponent> pointLightComponents;
 
 	glm::vec3 cubePositions[] = {
 		glm::vec3(1.5f,  -3.2f,  0.3f),
@@ -270,26 +302,69 @@ int main()
 		transform->scale = cubeScales[i];
 
 		MeshRendererComponent* meshRenderer = meshRendererComponents.get(ID);
+		meshRenderer->VAOID = cubeVAOID;
 		meshRenderer->shaderID = litShaderID;
 		meshRenderer->texture0ID = container2Texture.GetTextureID();
 		meshRenderer->texture1ID = container2SpecularTexture.GetTextureID();
-		meshRenderer->objectColor = glm::vec3(1.0, 1.0, 1.0);;// cubeColors[i];
-		meshRenderer->lightColor = glm::vec3(1.0, 1.0, 1.0);
-		meshRenderer->VAOID = CubeVAOID;
+		meshRenderer->objectColor = cubeColors[i];
 		
 		cubes[i] = ID;
 	}
 
-	Entity lightID = createRenderedEntity(entityManager, transformComponents, meshRendererComponents);
-	TransformComponent* lightTransform = transformComponents.get(lightID);
-	lightTransform->scale = glm::vec3(0.2f);
+	glm::vec3 lightScale(0.2f);
 
-	MeshRendererComponent* lightMeshRenderer = meshRendererComponents.get(lightID);
-	lightMeshRenderer->shaderID = unlitShaderID;
-	lightMeshRenderer->texture0ID = 0;
-	lightMeshRenderer->texture1ID = 0;
-	lightMeshRenderer->objectColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	lightMeshRenderer->VAOID = CubeVAOID;
+	Entity directionalLightID = createDirectionalLight(entityManager, transformComponents, meshRendererComponents, directionalLightComponents);
+	TransformComponent* directionalLightTransform = transformComponents.get(directionalLightID);
+	directionalLightTransform->scale = lightScale;
+	directionalLightTransform->rotation = glm::vec3(180,0,0);
+
+	MeshRendererComponent* directionalLightMeshRenderer = meshRendererComponents.get(directionalLightID);
+	directionalLightMeshRenderer->VAOID = cubeVAOID;
+	directionalLightMeshRenderer->shaderID = unlitShaderID;
+	directionalLightMeshRenderer->texture0ID = 0;
+	directionalLightMeshRenderer->texture1ID = 0;
+	directionalLightMeshRenderer->objectColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	DirectionalLightComponent* directionalLightComponent = directionalLightComponents.get(directionalLightID);
+	directionalLightComponent->color = glm::vec3(1.0f, 1.0f, 1.0f);
+	directionalLightComponent->intensity = 0.5f;
+
+	Entity pointLights[NB_POINT_LIGHTS];
+
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  -1.0f,  0.0f),
+		glm::vec3(0.0f,  1.0f,  0.0f),
+		glm::vec3(-2.0f,  3.0f, -5.0f)
+	};
+
+	glm::vec3 pointLightColors[] = {
+		glm::vec3(1.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f)
+	};
+
+	for (int i = 0; i < NB_POINT_LIGHTS; ++i)
+	{
+		Entity ID = createPointLight(entityManager, transformComponents, meshRendererComponents, pointLightComponents);
+
+		TransformComponent* pointLightTransform = transformComponents.get(ID);
+		pointLightTransform->position = pointLightPositions[i];
+		pointLightTransform->scale = lightScale;
+
+		MeshRendererComponent* pointLightMeshRenderer = meshRendererComponents.get(ID);
+		pointLightMeshRenderer->VAOID = cubeVAOID;
+		pointLightMeshRenderer->shaderID = unlitShaderID;
+		pointLightMeshRenderer->objectColor = pointLightColors[i];
+
+		PointLightComponent* pointLight = pointLightComponents.get(ID);
+		pointLight->color = pointLightColors[i];
+		pointLight->intensity = 3.0f;
+		pointLight->constant = 1.0f;
+		pointLight->linear = 0.5f;
+		pointLight->quadratic = 0.2f;
+
+		pointLights[i] = ID;
+	}
 
 	TransformSystem transformSystem;
 
@@ -311,7 +386,7 @@ int main()
 		transformSystem.update(transformComponents);
 
 		renderer.clear();
-		renderer.render(transformComponents, meshRendererComponents, camera, lightTransform->position, currentFrame);
+		renderer.render(transformComponents, meshRendererComponents, pointLightComponents, directionalLightComponents, currentFrame);
 		renderer.swap(window);
 
 		glfwPollEvents();

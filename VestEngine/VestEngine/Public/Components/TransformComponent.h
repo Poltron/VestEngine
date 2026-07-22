@@ -1,6 +1,7 @@
 #pragma once
 
-#include "glm/glm.hpp"
+#include "glm/vec3.hpp"
+#include "glm/mat4x4.hpp"
 
 // note : how should we manage model matrix ? 
 // - should it update every time a transformation is applied ( so we don't need the individual pos/rot/sca ? )
@@ -11,11 +12,27 @@
 
 struct TransformComponent
 {
-	unsigned int entityID;
+	unsigned int entityID = 0;
 
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::vec3 scale;
 
 	glm::mat4 model;
+
+	TransformComponent()
+	{
+		entityID = 0;
+
+		position = glm::vec3();
+		rotation = glm::vec3();
+		scale = glm::vec3(1, 1, 1);
+
+		model = glm::identity<glm::mat4>();
+	}
+
+	glm::vec3 getModelForward()
+	{
+		return glm::normalize(glm::vec3(model[2].x, model[2].y, model[2].z));
+	}
 };

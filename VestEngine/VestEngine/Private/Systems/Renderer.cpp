@@ -5,11 +5,20 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "Camera.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/MeshRendererComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/TransformComponent.h"
 #include "Managers/ComponentManager.h"
 #include "Resources/Mesh.h"
 #include "Resources/Shader.h"
+
+#include <iostream>
+
+void Renderer::setActiveCamera(Camera* inCamera)
+{
+	activeCamera = inCamera;
+}
 
 void Renderer::clear()
 {
@@ -17,12 +26,30 @@ void Renderer::clear()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::render(ComponentManager<TransformComponent>& inTransforms, ComponentManager<MeshRendererComponent>& inMeshRenderers, Camera inCamera, const glm::vec3& inLightPosition, double inCurrentFrame)
+void Renderer::render(ComponentManager<TransformComponent>& inTransforms
+	, ComponentManager<MeshRendererComponent>& inMeshRenderers
+	, ComponentManager<PointLightComponent>& inPointLights
+	, ComponentManager<DirectionalLightComponent>& inDirectionalLights
+	, double inCurrentFrame)
 {
+	if (!activeCamera)
+	{
+		std::cout << "ERROR: no active camera" << std::endl;
+		return;
+	}
+
+	DirectionalLightComponent* directionalLightComp = inDirectionalLights.at(0);
+	TransformComponent* directionalLightTransform = inTransforms.get(directionalLightComp->entityID);
+
 	for (size_t i = 0; i < inMeshRenderers.size(); ++i)
 	{
 		MeshRendererComponent* meshRenderer = inMeshRenderers.at(i);
 		assert(meshRenderer != nullptr);
+		if (meshRenderer->shaderID == 0)
+		{
+			std::cout << "WARNING: " << meshRenderer->entityID << " has no shader" << std::endl;
+			continue;
+		}
 
 		Shader* shader = getShader(meshRenderer->shaderID);
 		assert(shader != nullptr);
@@ -58,22 +85,48 @@ void Renderer::render(ComponentManager<TransformComponent>& inTransforms, Compon
 		shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		shader->setFloat("material.shininess", 32.0f);
 
-		shader->setVec3("light.position", inLightPosition);
-		shader->setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-		shader->setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
-		shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-
 		shader->setVec3("objectColor", meshRenderer->objectColor);
-		shader->setVec3("lightColor", meshRenderer->lightColor);
 
-		glm::mat4& viewMatrix = inCamera.getViewMatrix();
+		glm::mat4& viewMatrix = activeCamera->getViewMatrix();
 		shader->setMat4("view", glm::value_ptr(viewMatrix));
-		shader->setVec3("viewPosition", inCamera.getPosition());
-		glm::mat4& projectionMatrix = inCamera.getProjectionMatrix();
+		shader->setVec3("viewPosition", activeCamera->getPosition());
+		glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
 		shader->setMat4("projection", glm::value_ptr(projectionMatrix));
 
-		TransformComponent* TransformComponent = inTransforms.get(meshRenderer->entityID);
-		shader->setMat4("model", glm::value_ptr(TransformComponent->model));
+		TransformComponent* transform = inTransforms.get(meshRenderer->entityID);
+		assert(transform != nullptr);
+
+		shader->setMat4("model", glm::value_ptr(transform->model));
+
+		//
+		shader->setVec3("ambientLight.color", 0.1f, 0.1f, 0.2f);
+		shader->setFloat("ambientLight.intensity", 1.0f);
+
+		//
+		shader->setVec3("directionalLight.color", directionalLightComp->color);
+		shader->setFloat("directionalLight.intensity", directionalLightComp->intensity);
+		shader->setVec3("directionalLight.direction", directionalLightTransform->getModelForward());
+		
+		//
+		for (int i = 0; i < inPointLights.size(); ++i)
+		{
+			PointLightComponent* pointLight = inPointLights.getData() + i;
+			assert(pointLight != nullptr);
+			std::string pointLightName = "pointLights[";
+			pointLightName.append(std::to_string(i));
+			pointLightName.append("]");
+
+			shader->setVec3(pointLightName + ".color", pointLight->color);
+			shader->setFloat(pointLightName + ".intensity", pointLight->intensity);
+			shader->setFloat(pointLightName + "constant", pointLight->constant);
+			shader->setFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
+			shader->setFloat(pointLightName + ".quadratic", pointLight->quadratic);
+
+			TransformComponent* pointLightTransform = inTransforms.get(pointLight->entityID);
+			assert(pointLightTransform != nullptr);
+
+			shader->setVec3(pointLightName + ".position", pointLightTransform->position);
+		}
 
 		glBindVertexArray(meshRenderer->VAOID);
 		glDrawArrays(GL_TRIANGLES, 0, 36);

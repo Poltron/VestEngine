@@ -143,6 +143,8 @@
   <ItemGroup>
     <ClInclude Include="Public\Assets\Mesh.h" />
     <ClInclude Include="Public\Assets\Texture.h" />
+    <ClInclude Include="Public\Components\DirectionalLightComponent.h" />
+    <ClInclude Include="Public\Components\PointLightComponent.h" />
     <ClInclude Include="Public\Managers\ComponentManager.h" />
     <ClInclude Include="Public\Camera.h" />
     <ClInclude Include="Public\Components\MeshRendererComponent.h" />
