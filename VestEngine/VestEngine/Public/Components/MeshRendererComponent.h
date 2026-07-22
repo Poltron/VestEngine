@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glm/vec3.hpp"
+
 struct MeshRendererComponent
 {
 	unsigned int entityID;
@@ -9,7 +11,6 @@ struct MeshRendererComponent
 	GLuint texture0ID;
 	GLuint texture1ID;
 
-	glm::vec3 lightColor;
 	glm::vec3 objectColor;
 
 	GLuint VAOID;
