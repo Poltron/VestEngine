@@ -1,0 +1,10 @@
+^D:\VESTENGINE\ASSIMP-6.0.5\CODE\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/VestEngine/assimp-6.0.5 -BD:/VestEngine/assimp-6.0.5 --check-stamp-file D:/VestEngine/assimp-6.0.5/code/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

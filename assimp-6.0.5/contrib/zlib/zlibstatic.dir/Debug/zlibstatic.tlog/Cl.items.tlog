@@ -1,0 +1,15 @@
+D:\VestEngine\assimp-6.0.5\contrib\zlib\adler32.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\adler32.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\compress.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\compress.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\crc32.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\crc32.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\deflate.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\deflate.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\gzclose.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\gzclose.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\gzlib.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\gzlib.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\gzread.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\gzread.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\gzwrite.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\gzwrite.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\inflate.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\inflate.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\infback.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\infback.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\inftrees.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\inftrees.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\inffast.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\inffast.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\trees.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\trees.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\uncompr.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\uncompr.obj
+D:\VestEngine\assimp-6.0.5\contrib\zlib\zutil.c;D:\VestEngine\assimp-6.0.5\contrib\zlib\zlibstatic.dir\Debug\zutil.obj
