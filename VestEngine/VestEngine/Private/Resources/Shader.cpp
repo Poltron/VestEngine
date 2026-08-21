@@ -5,6 +5,8 @@
 
 #include "glm/detail/type_vec3.hpp"
 
+#include "Systems/ShaderParameterCollection.h"
+
 std::string ReadFile(const char* inFileName)
 {
 	std::string line, text;
@@ -119,4 +121,14 @@ void Shader::setMat4(const std::string& name, glm::f32* value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
 	glUniformMatrix4fv(location, 1, GL_FALSE, value);
+}
+
+void Shader::setTexture(const std::string& name, GLuint value) const
+{
+	int location = glGetUniformLocation(ID, name.c_str());
+	glUniform1i(location, value);
+}
+
+void Shader::applyShaderParameterCollection(const ShaderParameterCollection& inParameters) const
+{
 }

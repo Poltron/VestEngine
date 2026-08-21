@@ -5,7 +5,7 @@
 class TransformSystem
 {
 public:
-	void update(ComponentManager<TransformComponent>& inTransforms)
+	void update(ComponentManager<TransformComponent>& inTransforms, double inDeltaTime)
 	{
 		for (size_t i = 0; i < inTransforms.size(); ++i)
 		{
@@ -16,8 +16,8 @@ public:
 			transform->model = glm::rotate(transform->model, transform->rotation.x, glm::vec3(1, 0, 0));
 			transform->model = glm::rotate(transform->model, transform->rotation.y, glm::vec3(0, 1, 0));
 			transform->model = glm::rotate(transform->model, transform->rotation.z, glm::vec3(0, 0, 1));
+
 			transform->model = glm::scale(transform->model, transform->scale);
 		}
 	}
 };
-

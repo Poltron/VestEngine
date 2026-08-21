@@ -131,6 +131,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\glad\src\glad.c" />
+    <ClCompile Include="Private\Utils\EntityFactory.cpp" />
+    <ClCompile Include="Private\Managers\InputManager.cpp" />
+    <ClCompile Include="Private\Engine.cpp" />
     <ClCompile Include="Private\Managers\ComponentManager.cpp" />
     <ClCompile Include="Private\Camera.cpp" />
     <ClCompile Include="Private\main.cpp" />
@@ -140,8 +143,14 @@
     <ClCompile Include="Private\Resources\Texture.cpp" />
     <ClCompile Include="Private\Systems\Renderer.cpp" />
     <ClCompile Include="Private\Systems\TransformSystem.cpp" />
+    <ClCompile Include="Private\Systems\ShaderParameterCollection.cpp" />
+    <ClCompile Include="Private\Managers\ResourcesManager.cpp" />
+    <ClCompile Include="Private\Managers\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Public\Utils\EntityFactory.h" />
+    <ClInclude Include="Public\Managers\InputManager.h" />
+    <ClInclude Include="Public\Engine.h" />
     <ClInclude Include="Public\Assets\Mesh.h" />
     <ClInclude Include="Public\Assets\Texture.h" />
     <ClInclude Include="Public\Components\DirectionalLightComponent.h" />
@@ -159,6 +168,9 @@
     <ClInclude Include="Public\Utils\DenseArray.h" />
     <ClInclude Include="Public\Utils\PoolAllocator.h" />
     <ClInclude Include="Public\Utils\StackAllocator.h" />
+    <ClInclude Include="Public\Systems\ShaderParameterCollection.h" />
+    <ClInclude Include="Public\Managers\ResourcesManager.h" />
+    <ClInclude Include="Public\Managers\WindowManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

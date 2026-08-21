@@ -2,8 +2,13 @@
 #include <vector>
 #include "Resources/Shader.h"
 
+#include "Systems/ShaderParameterCollection.h"
+
+#define MAX_POINT_LIGHTS 3
+
 template<typename T>
 class ComponentManager;
+class ResourcesManager;
 
 class Camera;
 class Mesh;
@@ -19,35 +24,28 @@ struct TransformComponent;
 class Renderer
 {
 public:
+	void initialize();
+
 	void clear();
-	void render(ComponentManager<TransformComponent>& inTransforms
+	void render(ResourcesManager& inResourcesManager
+		, ComponentManager<TransformComponent>& inTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, ComponentManager<PointLightComponent>& inPointLights
-		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
 		, double inCurrentFrame);
 	void swap(GLFWwindow* inWindow);
 
+	//
+	void fillLightParameters(const ComponentManager<TransformComponent>& inTransforms
+		, const ComponentManager<PointLightComponent>& inPointLights
+		, const ComponentManager<DirectionalLightComponent>& inDirectionalLights);
 	void setActiveCamera(Camera* inCamera);
 
-	GLuint addShader(const char* inVertexPath, const char* inFragmentPath);
-	GLuint createVAO(const Mesh& inMesh);
+	// note @ech: currently unused since setupMesh does this inside mesh, should be used again though, renderer should handle OpenGL specifics
+	//GLuint createVAO(const Mesh& inMesh);
+
+public:
+	ShaderParameterCollection globalShaderParameters;
 
 private:
-	Shader* getShader(GLuint inShaderID)
-	{
-		for (auto& shader : shaders)
-		{
-			if (shader.ID == inShaderID)
-			{
-				return &shader;
-			}
-		}
-
-		return nullptr;
-	}
-
-private:
-	std::vector<Shader> shaders;
 	Camera* activeCamera;
 };
 
