@@ -19,7 +19,7 @@ public:
 		buffer = (T*)malloc(capacity * sizeof(T));
 	}
 
-	size_t size()
+	size_t size() const
 	{
 		return maxIndex;
 	}

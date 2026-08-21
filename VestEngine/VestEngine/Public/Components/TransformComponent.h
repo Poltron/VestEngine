@@ -2,6 +2,7 @@
 
 #include "glm/vec3.hpp"
 #include "glm/mat4x4.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 // note : how should we manage model matrix ? 
 // - should it update every time a transformation is applied ( so we don't need the individual pos/rot/sca ? )
@@ -31,7 +32,7 @@ struct TransformComponent
 		model = glm::identity<glm::mat4>();
 	}
 
-	glm::vec3 getModelForward()
+	glm::vec3 getModelForward() const
 	{
 		return glm::normalize(glm::vec3(model[2].x, model[2].y, model[2].z));
 	}

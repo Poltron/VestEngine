@@ -30,7 +30,17 @@ public:
 		return &components.at(inIndex);
 	}
 
+	const T* at(size_t inIndex) const
+	{
+		return &components.at(inIndex);
+	}
+
 	T* get(Entity inID)
+	{
+		return lookupTable.at(inID);
+	}
+
+	const T* get(Entity inID) const
 	{
 		return lookupTable.at(inID);
 	}
@@ -41,7 +51,7 @@ public:
 		return &components.at(0);
 	}
 
-	size_t size()
+	size_t size() const
 	{
 		return components.size();
 	}

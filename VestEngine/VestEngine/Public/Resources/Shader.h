@@ -1,10 +1,11 @@
 #pragma once
 
-#include <glad/glad.h>
-
 #include <string>
 
+#include "glad/glad.h"
 #include "glm/fwd.hpp"
+
+struct ShaderParameterCollection;
 
 class Shader
 {
@@ -22,5 +23,8 @@ public:
 	void setVec3(const std::string& name, const glm::vec3& inValue) const;
 	void setVec4(const std::string& name, float x, float y, float z, float w) const;
 	void setMat4(const std::string& name, glm::f32* value) const;
+	void setTexture(const std::string& name, GLuint value) const;
+
+	void applyShaderParameterCollection(const ShaderParameterCollection& inParameters) const;
 };
 

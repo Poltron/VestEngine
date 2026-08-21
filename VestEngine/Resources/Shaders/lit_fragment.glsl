@@ -41,12 +41,13 @@ struct PointLight
 
 uniform Material material;
 
-#define NB_POINT_LIGHTS 3
+#define MAX_POINT_LIGHTS 3
 uniform AmbientLight ambientLight;
 uniform DirectionalLight directionalLight;
-uniform PointLight pointLights[NB_POINT_LIGHTS];
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
 
 uniform vec3 viewPosition;
+uniform int pointLightAmount;
 
 vec3 computeDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDirection)
 {
@@ -88,7 +89,7 @@ void main()
 
 	result += computeDirectionalLight(directionalLight, normal, viewDirection);
 
-	for (int i = 0; i < NB_POINT_LIGHTS; i++)
+	for (int i = 0; i < pointLightAmount; i++)
 	{
 		result += computePointLight(pointLights[i], normal, viewDirection, FragPos);
 	}

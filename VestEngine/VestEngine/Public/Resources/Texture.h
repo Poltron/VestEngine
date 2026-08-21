@@ -7,23 +7,19 @@
 class Texture
 {
 public:
-	Texture(const char* texturePath, GLenum textureFormat)
-	{
-		textureID = loadTexture(texturePath, textureFormat);
-	}
+	Texture() 
+	{ }
 
 	~Texture()
 	{
-		//glDeleteTextures(1, textureID);
+		glDeleteTextures(1, &textureID);
 	}
 
-	GLuint GetTextureID() const
-	{
-		return textureID;
-	}
+	void loadTexture(const char* inTexturePath, GLenum inTextureFormat, const std::string& inType);
+
+	GLuint GetTextureID() const { return textureID; }
 
 private:
 	GLuint textureID;
-
-	static GLuint loadTexture(const char* texturePath, GLenum textureFormat);
+	std::string type;
 };
