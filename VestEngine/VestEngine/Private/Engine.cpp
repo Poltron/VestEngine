@@ -18,6 +18,9 @@ bool Engine::initialize()
 	}
 
 	inputManager.initialize(window);
+	inputHandler.initialize(&inputManager, &windowManager);
+
+	camera.initialize(&inputManager);
 
 	renderer.initialize();
 	renderer.setActiveCamera(&camera);
@@ -45,8 +48,6 @@ bool Engine::initialize()
 
 int Engine::launch()
 {
-	TransformSystem transformSystem;
-
 	double lastFrame = glfwGetTime();
 
 	while (!isShutdownRequested())
@@ -55,20 +56,15 @@ int Engine::launch()
 		double deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		inputManager.processInput(windowManager.getWindow());
+		inputManager.processInput(windowManager.getWindow(), deltaTime);
 
-		camera.consumeKeyboardInputs(inputManager.horizontalAxis, inputManager.verticalAxis, deltaTime);
-		camera.consumeMouseScrollInputs(inputManager.scrollOffset, deltaTime);
-
-		inputManager.resetInputs();
+		camera.update(deltaTime);
 
 		transformSystem.update(transformComponents, deltaTime);
 
 		renderer.clear();
 		renderer.render(resourcesManager, transformComponents, meshRendererComponents, currentFrame);
 		renderer.swap(windowManager.getWindow());
-
-		windowManager.pollEvents();
 	}
 	
 	shutdown();

@@ -66,6 +66,9 @@
     <ClCompile Include="Private\Utils\EntityFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Managers\InputHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\Camera.h">
@@ -135,6 +138,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\EntityFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Managers\InputHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

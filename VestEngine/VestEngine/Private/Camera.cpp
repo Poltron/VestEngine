@@ -1,6 +1,11 @@
 #include "Camera.h"
 
+#include <functional>
+
+#include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
+
+#include "Managers/InputManager.h"
 
 namespace camera_private
 {
@@ -19,6 +24,57 @@ Camera::Camera()
 
 	updateProjectionMatrix();
 	updateViewMatrix();
+}
+
+void Camera::initialize(InputManager* inInputManager)
+{
+	if (!inInputManager)
+		return;
+
+	inInputManager->registerCursorPosCallback(
+		[this](double xPos, double yPos, double deltaTime)
+		{
+			onMouseMoved(xPos, yPos, deltaTime);
+		});
+
+	inInputManager->registerScrollCallback(
+		[this](double xPos, double yPos, double deltaTime)
+		{
+			onMouseScrolled(xPos, yPos, deltaTime);
+		});
+
+	inInputManager->registerKeyCallback(GLFW_KEY_UP
+		, [this](int inState, int inMods, double inDeltaTime)
+		{
+			onKeyUpPressed(inState, inMods);
+		});
+
+	inInputManager->registerKeyCallback(GLFW_KEY_DOWN
+		, [this](int inState, int inMods, double inDeltaTime)
+		{
+			onKeyDownPressed(inState, inMods);
+		});
+
+	inInputManager->registerKeyCallback(GLFW_KEY_LEFT
+		, [this](int inState, int inMods, double inDeltaTime)
+		{
+			onKeyLeftPressed(inState, inMods);
+		});
+
+	inInputManager->registerKeyCallback(GLFW_KEY_RIGHT
+		, [this](int inState, int inMods, double inDeltaTime)
+		{
+			onKeyRightPressed(inState, inMods);
+		});
+}
+
+void Camera::update(double inDeltaTime)
+{
+	consumeKeyboardInputs(horizontalAxis, verticalAxis, inDeltaTime);
+
+	// note : should not be necessary but weird inputs ??
+	consumeMouseScrollInputs(0, scrollOffset, inDeltaTime);
+	scrollOffset = 0;
 }
 
 const glm::vec3& Camera::getRotation() const
@@ -78,14 +134,14 @@ void Camera::consumeMouseMovementInputs(float inXOffset, float inYOffset, double
 	updateViewMatrix();
 }
 
-void Camera::consumeMouseScrollInputs(float inScrollOffset, double inDeltaTime)
+void Camera::consumeMouseScrollInputs(float inXOffset, float inYOffset, double inDeltaTime)
 {
-	if (inScrollOffset == 0.0f)
+	if (inYOffset == 0.0f)
 	{
 		return;
 	}
 
-	fov -= inScrollOffset * (float)inDeltaTime;
+	fov -= inYOffset * (float)inDeltaTime;
 	fov = glm::clamp(fov, minFov, maxFov);
 
 	updateProjectionMatrix();
@@ -111,6 +167,79 @@ void Camera::consumeKeyboardInputs(float inHorizontalAxis, float inVerticalAxis,
 	if (bDirty)
 	{
 		updateViewMatrix();
+	}
+}
+
+void Camera::onMouseMoved(double inX, double inY, double inDeltaTime)
+{
+	if (lastXPos == -1.0f && lastYPos == -1.0f)
+	{
+		lastXPos = (float)inX;
+		lastYPos = (float)inY;
+	}
+
+	xOffset = (float)inX - lastXPos;
+	yOffset = lastYPos - (float)inY;
+	lastXPos = (float)inX;
+	lastYPos = (float)inY;
+
+	xOffset *= mouseSensitivity;
+	yOffset *= mouseSensitivity;
+
+	consumeMouseMovementInputs(xOffset, yOffset, inDeltaTime);
+}
+
+void Camera::onMouseScrolled(double inX, double inY, double inDeltaTime)
+{
+	const float adjustedY = (float)inY* scrollSensitivity;
+	consumeMouseScrollInputs(0, adjustedY, inDeltaTime);
+}
+
+void Camera::onKeyUpPressed(int inState, int inMods)
+{
+	if (inState == GLFW_PRESS)
+	{
+		verticalAxis = 1.0f;
+	}
+	else if (inState == GLFW_RELEASE)
+	{
+		verticalAxis = 0;
+	}
+}
+
+void Camera::onKeyDownPressed(int inState, int inMods)
+{
+	if (inState == GLFW_PRESS)
+	{
+		verticalAxis = -1.0f;
+	}
+	else if (inState == GLFW_RELEASE)
+	{
+		verticalAxis = 0;
+	}
+}
+
+void Camera::onKeyLeftPressed(int inState, int inMods)
+{
+	if (inState == GLFW_PRESS)
+	{
+		horizontalAxis = -1.0f;
+	}
+	else if (inState == GLFW_RELEASE)
+	{
+		horizontalAxis = 0;
+	}
+}
+
+void Camera::onKeyRightPressed(int inState, int inMods)
+{
+	if (inState == GLFW_PRESS)
+	{
+		horizontalAxis = 1.0f;
+	}
+	else if (inState == GLFW_RELEASE)
+	{
+		horizontalAxis = 0;
 	}
 }
 
