@@ -131,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\glad\src\glad.c" />
+    <ClCompile Include="Private\Managers\InputHandler.cpp" />
     <ClCompile Include="Private\Utils\EntityFactory.cpp" />
     <ClCompile Include="Private\Managers\InputManager.cpp" />
     <ClCompile Include="Private\Engine.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="Private\Managers\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Public\Managers\InputHandler.h" />
     <ClInclude Include="Public\Utils\EntityFactory.h" />
     <ClInclude Include="Public\Managers\InputManager.h" />
     <ClInclude Include="Public\Engine.h" />

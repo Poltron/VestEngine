@@ -13,7 +13,8 @@ public:
 
 	bool shouldCloseWindow() const;
 
-	void pollEvents() {}
 private:
 	GLFWwindow* window;
+
+	friend struct InputHandler;
 };

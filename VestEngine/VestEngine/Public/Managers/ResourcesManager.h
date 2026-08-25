@@ -62,7 +62,7 @@ public:
 	const Shader* getShader(ResourceHandle handle) const;
 
 private:
-	// note @ech : vector is temporary, currently unsafe if vector is reallocated
+	// note : vector is temporary, currently unsafe if vector is reallocated
 
 	uint32_t textureHandleCounter = 1;
 	std::unordered_map<ResourceHandle, Texture*> texturesLookup;
