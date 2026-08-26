@@ -79,8 +79,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, ResourcesManager& in
 
 		if (aiVector3D* texCoords = mesh->mTextureCoords[0])
 		{
-			vertex.texCoords.x = texCoords->x;
-			vertex.texCoords.y = texCoords->y;
+			vertex.texCoords.x = texCoords[i].x;
+			vertex.texCoords.y = texCoords[i].y;
 		}
 		
 		vertices.push_back(vertex);
