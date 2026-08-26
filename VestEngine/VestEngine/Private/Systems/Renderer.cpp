@@ -115,14 +115,16 @@ void Renderer::render(ResourcesManager& inResourcesManager
 		shader->setMat4("model", glm::value_ptr(transform->model));
 
 		// 
+		Model* model = inResourcesManager.getModel(meshRenderer->model);
+		assert(model != nullptr);
+
+		model->bindTextures(inResourcesManager, *shader);
+
 		meshRenderer->shaderParameters.applyToShader(*shader, inResourcesManager);
 
 		shader->setFloat("material.shininess", 32.0f);
 		
-		Mesh* mesh = inResourcesManager.getMesh(meshRenderer->mesh);
-		glBindVertexArray(mesh->getVAO());
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
+		model->draw();
 	}
 }
 

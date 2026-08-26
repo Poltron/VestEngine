@@ -65,18 +65,15 @@ public:
 	void registerScrollCallback(ScrollCallback inScrollback);
 
 private:
-	// todo : 
-	// - add register / unregister methods
 	std::unordered_map<int, std::vector<KeyCallback>> keyCallbacks;
-	std::vector<KeyInput> keyInputs;
-
 	std::unordered_map<int, std::vector<MouseCallback>> mouseCallbacks;
-	std::vector<MouseInput> mouseInputs;
-
 	std::vector<CursorPosCallback> cursorPosCallbacks;
-	std::vector<CursorPosInput> cursorPosInputs;
-
 	std::vector<ScrollCallback> scrollCallbacks;
+
+	// todo : use StackAllocators
+	std::vector<KeyInput> keyInputs;
+	std::vector<MouseInput> mouseInputs;
+	std::vector<CursorPosInput> cursorPosInputs;
 	std::vector<ScrollInput> scrollInputs;
 
 private:

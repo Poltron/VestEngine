@@ -24,11 +24,21 @@ void ShaderParameterCollection::applyToShader(const Shader& inShader, const Reso
 	{
 		const auto& textureParameter = textureParameters[i];
 
-		const Texture* texture = inResources.getTexture(ResourceHandle(textureParameter.second));
-		assert(texture != nullptr);
+		glActiveTexture(GL_TEXTURE0 + (GLenum)i);
 
-		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, texture->GetTextureID());
+		// note: kind of a hack, passing resourcehandle internal value in textureparameter.second
+		ResourceHandle resourceHandle(textureParameter.second);
+		if (resourceHandle.IsValid())
+		{
+			const Texture* texture = inResources.getTexture(ResourceHandle(textureParameter.second));
+			assert(texture != nullptr);
+
+			glBindTexture(GL_TEXTURE_2D, texture->getTextureID());
+		}
+		else
+		{
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 
 		inShader.setInt(textureParameter.first, (int)i);
 	}

@@ -14,26 +14,25 @@ class ComponentManager;
 
 namespace EntityFactory
 {
-	Entity createRenderedEntity(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
-		, ComponentManager<MeshRendererComponent>& inMeshRenderers);
-
-	Entity createDirectionalLight(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
-		, ComponentManager<MeshRendererComponent>& inMeshRenderers
+	DirectionalLightComponent* addDirectionalLightTo(Entity inID
 		, ComponentManager<DirectionalLightComponent>& inDirectionalLights);
 
-	Entity createPointLight(EntityManager& inEntityManager
+	PointLightComponent* addPointLightTo(Entity inID
+		, ComponentManager<PointLightComponent>& inPointLights);
+
+	Entity createRenderedModel(EntityManager& inEntityManager
 		, ComponentManager<TransformComponent>& inTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, ComponentManager<PointLightComponent>& inPointLights);
+		, ResourceHandle inModel
+		, ResourceHandle inShader
+		, const glm::vec3& inPosition
+		, const glm::vec3& inRotation
+		, const glm::vec3& inScale);
 
 	void createPlaceholderCubes(EntityManager& inEntityManager
 		, ComponentManager<TransformComponent>& inTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, ResourceHandle inMesh
-		, ResourceHandle inDiffuseTexture
-		, ResourceHandle inSpecularTexture
+		, ResourceHandle inModel
 		, ResourceHandle inShader);
 
 	void createPlaceholderLights(EntityManager& inEntityManager
@@ -41,6 +40,6 @@ namespace EntityFactory
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
 		, ComponentManager<PointLightComponent>& inPointLights
-		, ResourceHandle inMesh
+		, ResourceHandle inModel
 		, ResourceHandle inShader);
 };

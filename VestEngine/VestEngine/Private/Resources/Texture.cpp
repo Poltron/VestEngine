@@ -3,9 +3,15 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-void Texture::loadTexture(const char* inTexturePath, GLenum inTextureFormat, const std::string& inType)
+Texture::~Texture()
+{
+	glDeleteTextures(1, &textureID);
+}
+
+void Texture::loadTexture(const char* inTexturePath, const std::string& inType)
 {
 	type = inType;
+	path = inTexturePath;
 
 	stbi_set_flip_vertically_on_load(true);
 
@@ -15,10 +21,16 @@ void Texture::loadTexture(const char* inTexturePath, GLenum inTextureFormat, con
 	{
 		std::cout << "Failed to load texture: " << inTexturePath << std::endl;
 	}
+	
+	GLenum internalFormat = GL_RGBA;
+	if (nrChannels == 3)
+	{
+		internalFormat = GL_RGB;
+	}
 
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, inTextureFormat, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, internalFormat, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);

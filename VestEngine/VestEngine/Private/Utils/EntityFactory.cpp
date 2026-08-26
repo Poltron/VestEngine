@@ -11,42 +11,38 @@
 
 namespace EntityFactory
 {
-	Entity createRenderedEntity(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
-		, ComponentManager<MeshRendererComponent>& inMeshRenderers)
+	DirectionalLightComponent* addDirectionalLightTo(Entity inID, ComponentManager<DirectionalLightComponent>& inDirectionalLights)
 	{
-		Entity entityID = inEntityManager.createEntity();
-
-		inTransforms.create(entityID);
-		inMeshRenderers.create(entityID);
-
-		return entityID;
+		return inDirectionalLights.create(inID);
 	}
 
-	Entity createDirectionalLight(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
-		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, ComponentManager<DirectionalLightComponent>& inDirectionalLights)
+	PointLightComponent* addPointLightTo(Entity inID, ComponentManager<PointLightComponent>& inPointLights)
 	{
-		Entity entityID = inEntityManager.createEntity();
-
-		inTransforms.create(entityID);
-		inMeshRenderers.create(entityID);
-		inDirectionalLights.create(entityID);
-
-		return entityID;
+		return inPointLights.create(inID);
 	}
 
-	Entity createPointLight(EntityManager& inEntityManager
+	Entity createRenderedModel(EntityManager& inEntityManager
 		, ComponentManager<TransformComponent>& inTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, ComponentManager<PointLightComponent>& inPointLights)
+		, ResourceHandle inModel
+		, ResourceHandle inShader
+		, const glm::vec3& inPosition
+		, const glm::vec3& inRotation
+		, const glm::vec3& inScale)
 	{
 		Entity entityID = inEntityManager.createEntity();
 
 		inTransforms.create(entityID);
 		inMeshRenderers.create(entityID);
-		inPointLights.create(entityID);
+
+		MeshRendererComponent* meshRenderer = inMeshRenderers.get(entityID);
+		meshRenderer->model = inModel;
+		meshRenderer->shader = inShader;
+
+		TransformComponent* transformComponent = inTransforms.get(entityID);
+		transformComponent->position = inPosition;
+		transformComponent->rotation = inRotation;
+		transformComponent->scale = inScale;
 
 		return entityID;
 	}
@@ -54,9 +50,7 @@ namespace EntityFactory
 	void createPlaceholderCubes(EntityManager& inEntityManager
 		, ComponentManager<TransformComponent>& inTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, ResourceHandle inMesh
-		, ResourceHandle inDiffuseTexture
-		, ResourceHandle inSpecularTexture
+		, ResourceHandle inModel
 		, ResourceHandle inShader)
 	{
 		glm::vec3 cubePositions[] = {
@@ -114,18 +108,16 @@ namespace EntityFactory
 		Entity cubes[10];
 		for (size_t i = 0; i < 10; ++i)
 		{
-			Entity ID = EntityFactory::createRenderedEntity(inEntityManager, inTransforms, inMeshRenderers);
-
-			TransformComponent* transform = inTransforms.get(ID);
-			transform->position = cubePositions[i];
-			transform->rotation = cubeRotations[i];
-			transform->scale = cubeScales[i];
+			Entity ID = EntityFactory::createRenderedModel(inEntityManager
+				, inTransforms
+				, inMeshRenderers
+				, inModel
+				, inShader
+				, cubePositions[i]
+				, cubeRotations[i]
+				, cubeScales[i]);
 
 			MeshRendererComponent* meshRenderer = inMeshRenderers.get(ID);
-			meshRenderer->mesh = inMesh;
-			meshRenderer->shader = inShader;
-			meshRenderer->shaderParameters.addTexture("material.diffuse", inDiffuseTexture.handle);
-			meshRenderer->shaderParameters.addTexture("material.specular", inSpecularTexture.handle);
 			meshRenderer->shaderParameters.addVec3("objectColor", cubeColors[i]);
 
 			cubes[i] = ID;
@@ -137,26 +129,30 @@ namespace EntityFactory
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
 		, ComponentManager<PointLightComponent>& inPointLights
-		, ResourceHandle inMesh
+		, ResourceHandle inModel
 		, ResourceHandle inShader)
 	{
 		glm::vec3 lightScale(0.2f);
 
-		Entity directionalLightID = EntityFactory::createDirectionalLight(inEntityManager, inTransforms, inMeshRenderers, inDirectionalLights);
-		TransformComponent* directionalLightTransform = inTransforms.get(directionalLightID);
-		directionalLightTransform->scale = lightScale;
-		directionalLightTransform->rotation = glm::vec3(180, 0, 0);
+		Entity directionalLightID = EntityFactory::createRenderedModel(inEntityManager
+			, inTransforms
+			, inMeshRenderers
+			, inModel
+			, inShader
+			, glm::vec3(0,0,0)
+			, glm::vec3(180, 0, 0)
+			, lightScale);
 
-		DirectionalLightComponent* directionalLightComponent = inDirectionalLights.get(directionalLightID);
-		directionalLightComponent->color = glm::vec3(1.0f, 1.0f, 1.0f);
-		directionalLightComponent->intensity = 0.5f;
+		glm::vec3 directionalLightColor(glm::vec3(1, 1, 1));
 
 		MeshRendererComponent* directionalLightMeshRenderer = inMeshRenderers.get(directionalLightID);
-		directionalLightMeshRenderer->mesh = inMesh;
-		directionalLightMeshRenderer->shader = inShader;
-		//directionalLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
-		//directionalLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
-		directionalLightMeshRenderer->shaderParameters.addVec3("objectColor", directionalLightComponent->color);
+		directionalLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
+		directionalLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
+		directionalLightMeshRenderer->shaderParameters.addVec3("objectColor", directionalLightColor);
+
+		DirectionalLightComponent* directionalLightComponent = EntityFactory::addDirectionalLightTo(directionalLightID, inDirectionalLights);
+		directionalLightComponent->color = directionalLightColor;
+		directionalLightComponent->intensity = 0.5f;
 
 		Entity pointLights[MAX_POINT_LIGHTS];
 
@@ -174,27 +170,28 @@ namespace EntityFactory
 
 		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
 		{
-			Entity ID = EntityFactory::createPointLight(inEntityManager, inTransforms, inMeshRenderers, inPointLights);
+			Entity pointLightID = EntityFactory::createRenderedModel(inEntityManager
+				, inTransforms
+				, inMeshRenderers
+				, inModel
+				, inShader
+				, pointLightPositions[i]
+				, glm::vec3(0, 0, 0)
+				, lightScale);
 
-			TransformComponent* pointLightTransform = inTransforms.get(ID);
-			pointLightTransform->position = pointLightPositions[i];
-			pointLightTransform->scale = lightScale;
-
-			MeshRendererComponent* pointLightMeshRenderer = inMeshRenderers.get(ID);
-			pointLightMeshRenderer->mesh = inMesh;
-			pointLightMeshRenderer->shader = inShader;
-			//pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
-			//pointLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
+			MeshRendererComponent* pointLightMeshRenderer = inMeshRenderers.get(pointLightID);
+			pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
+			pointLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
 			pointLightMeshRenderer->shaderParameters.addVec3("objectColor", pointLightColors[i]);
 
-			PointLightComponent* pointLight = inPointLights.get(ID);
+			PointLightComponent* pointLight = EntityFactory::addPointLightTo(pointLightID, inPointLights);
 			pointLight->color = pointLightColors[i];
 			pointLight->intensity = 3.0f;
 			pointLight->constant = 1.0f;
 			pointLight->linear = 0.5f;
 			pointLight->quadratic = 0.2f;
 
-			pointLights[i] = ID;
+			pointLights[i] = pointLightID;
 		}
 	}
 }
