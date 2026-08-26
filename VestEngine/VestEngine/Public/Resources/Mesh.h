@@ -7,7 +7,10 @@
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
+#include "Resources/ResourceHandle.h"
 #include "Resources/Texture.h"
+
+class ResourcesManager;
 
 struct Vertex
 {
@@ -16,6 +19,7 @@ struct Vertex
 	glm::vec2 texCoords;
 
 	Vertex()
+		: position(), normal(), texCoords()
 	{}
 
 	Vertex(float inPositionX, float inPositionY, float inPositionZ, float inNormalX, float inNormalY, float inNormalZ, float inTexCoordsU, float inTexCoordsV)
@@ -30,19 +34,15 @@ class Shader;
 
 class Mesh
 {
-	// ---
 public:
-	//static void createTextureCube(Mesh& outMesh);
-	//static void createNormalCube(Mesh& outMesh);
 	static std::vector<Vertex> getNormalTextureCubeVertices();
-	// ---
 
 public:
-	Mesh();
+	Mesh(std::vector<Vertex>& inVertices, std::vector<unsigned int>& inIndices, std::vector<ResourceHandle>& inTextures);
 	~Mesh();
 
-	void loadMesh(const char* inMesh);
-	void loadMesh(const std::vector<Vertex>& inVertices, const std::vector<unsigned int>& inIndices, const std::vector<Texture>& inTextures);
+	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
+	void draw() const;
 
 	GLuint getVAO() const { return VAO; }
 	GLuint getVBO() const { return VBO; }
@@ -51,7 +51,7 @@ public:
 private:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<Texture> textures;
+	std::vector<ResourceHandle> textures;
 
 	GLuint VAO;
 	GLuint VBO;

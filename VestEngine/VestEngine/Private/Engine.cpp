@@ -20,26 +20,30 @@ bool Engine::initialize()
 	inputManager.initialize(window);
 	inputHandler.initialize(&inputManager, &windowManager);
 
-	camera.initialize(&inputManager);
-
 	renderer.initialize();
+
+	camera.initialize(&inputManager);
 	renderer.setActiveCamera(&camera);
 
 	// resources
 	ResourceHandle litShader = resourcesManager.loadShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/lit_fragment.glsl");
 	ResourceHandle unlitShader = resourcesManager.loadShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/unlit_fragment.glsl");
 
+	ResourceHandle containerTexture = resourcesManager.loadTexture("D:/VestEngine/VestEngine/Resources/Textures/container2.png", "diffuse");
+	ResourceHandle containerSpecularTexture = resourcesManager.loadTexture("D:/VestEngine/VestEngine/Resources/Textures/container2_specular.png", "specular");
+
 	std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
 	std::vector<unsigned int> indices;
-	std::vector<Texture> textures;
-	ResourceHandle cubeMesh = resourcesManager.loadMesh(vertices, indices, textures);
+	std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
+	std::vector<Mesh> meshes = { Mesh(vertices, indices, textures) };
+	ResourceHandle cubeModel = resourcesManager.createModel(meshes, "cube");
 
-	ResourceHandle containerTexture = resourcesManager.loadTexture("D:/VestEngine/VestEngine/Resources/Textures/container2.png", GL_RGBA, "diffuse");
-	ResourceHandle containerSpecularTexture = resourcesManager.loadTexture("D:/VestEngine/VestEngine/Resources/Textures/container2_specular.png", GL_RGBA, "specular");
+	ResourceHandle bagModel = resourcesManager.loadModel("D:/VestEngine/VestEngine/Resources/Models/backpack/backpack.obj");
 
 	// placeholder scene
-	EntityFactory::createPlaceholderCubes(entityManager, transformComponents, meshRendererComponents, cubeMesh, containerTexture, containerSpecularTexture, litShader);
-	EntityFactory::createPlaceholderLights(entityManager, transformComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeMesh, unlitShader);
+	EntityFactory::createRenderedModel(entityManager, transformComponents, meshRendererComponents, bagModel, litShader, glm::vec3(0,0,-1), glm::vec3(0, 0, 0), glm::vec3(0.4f, 0.4f, 0.4f));
+	EntityFactory::createPlaceholderCubes(entityManager, transformComponents, meshRendererComponents, cubeModel, litShader);
+	EntityFactory::createPlaceholderLights(entityManager, transformComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
 
 	renderer.fillLightParameters(transformComponents, pointLightComponents, directionalLightComponents);
 

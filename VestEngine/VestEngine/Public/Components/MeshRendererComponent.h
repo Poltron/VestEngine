@@ -18,9 +18,8 @@ struct MeshRendererComponent
 {
 	unsigned int entityID;
 	
-	ResourceHandle mesh;
+	ResourceHandle model;
 	ResourceHandle shader;
-	std::vector<ResourceHandle> textures;
 
 	ShaderParameterCollection shaderParameters;
 };
