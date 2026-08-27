@@ -7,65 +7,97 @@
 
 #include "Systems/ShaderParameterCollection.h"
 
-std::string ReadFile(const char* inFileName)
+namespace ShaderPrivate
 {
-	std::string line, text;
-	
-	std::ifstream in(inFileName);
-	if (in.fail())
+	std::string readFile(const char* inFileName)
 	{
-		std::cout << "ERROR: Could not read file " << inFileName << std::endl;
+		std::string line, text;
+
+		std::ifstream in(inFileName);
+		if (in.fail())
+		{
+			std::cout << "ERROR: Could not read file " << inFileName << std::endl;
+			return text;
+		}
+
+		while (std::getline(in, line))
+		{
+			text += line + "\n";
+		}
 		return text;
 	}
 
-	while (std::getline(in, line))
+	GLuint createAndCompileShader(GLenum type, const char* shaderSource)
 	{
-		text += line + "\n";
+		GLuint shaderID;
+		shaderID = glCreateShader(type);
+
+		glShaderSource(shaderID, 1, &shaderSource, NULL);
+		glCompileShader(shaderID);
+
+		int success;
+		char infoLog[512];
+		glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
+			std::cout << "ERROR: Shader " << type << " compilation failed\n" << infoLog << std::endl;
+		}
+		return shaderID;
 	}
-	return text;
 }
 
-GLuint CreateAndCompileShader(GLenum type, const char* shaderSource)
+Shader::Shader(const char* inVertexPath, const char* inFragmentPath)
+	: ID(0), vertexPath(inVertexPath), fragmentPath(inFragmentPath)
 {
-	GLuint shaderID;
-	shaderID = glCreateShader(type);
+	load();
+}
 
-	glShaderSource(shaderID, 1, &shaderSource, NULL);
-	glCompileShader(shaderID);
+Shader::~Shader()
+{
+	glDeleteProgram(ID);
+}
 
-	int success;
-	char infoLog[512];
-	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
-	if (!success)
+Shader::Shader(Shader&& inOther) noexcept
+	: ID(inOther.ID), vertexPath(inOther.vertexPath), fragmentPath(inOther.fragmentPath)
+{ 
+	inOther.ID = 0;
+	inOther.vertexPath.clear();
+	inOther.fragmentPath.clear();
+}
+
+Shader& Shader::operator=(Shader&& inOther) noexcept
+{
+	if (this == &inOther)
 	{
-		glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
-		std::cout << "ERROR: Shader " << type << " compilation failed\n" << infoLog << std::endl;
+		ID = inOther.ID;
+		vertexPath = inOther.vertexPath;
+		fragmentPath = inOther.fragmentPath;
+
+		inOther.ID = 0;
+		inOther.vertexPath.clear();
+		inOther.fragmentPath.clear();
 	}
-	return shaderID;
+	return *this;
 }
 
-Shader::Shader()
-	: ID(0)
+void Shader::load()
 {
-}
-
-void Shader::load(const char* vertexPath, const char* fragmentPath)
-{
-	std::string vertexShaderContent = ReadFile(vertexPath);
+	std::string vertexShaderContent = ShaderPrivate::readFile(vertexPath.c_str());
 	if (vertexShaderContent.size() == 0)
 	{
 		std::cout << "ERROR: VertexShader " << vertexPath << " is empty." << std::endl;
 		return;
 	}
-	GLuint vertexShader = CreateAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
+	GLuint vertexShader = ShaderPrivate::createAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
 
-	std::string fragmentShaderContent = ReadFile(fragmentPath);
+	std::string fragmentShaderContent = ShaderPrivate::readFile(fragmentPath.c_str());
 	if (fragmentShaderContent.size() == 0)
 	{
 		std::cout << "ERROR: VertexShader " << fragmentPath << " is empty." << std::endl;
 		return;
 	}
-	GLuint fragmentShader = CreateAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
+	GLuint fragmentShader = ShaderPrivate::createAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
 
 	ID = glCreateProgram();
 	glAttachShader(ID, vertexShader);

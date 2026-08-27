@@ -152,6 +152,7 @@
   <ItemGroup>
     <ClInclude Include="Public\Resources\Model.h" />
     <ClInclude Include="Public\Managers\InputHandler.h" />
+    <ClInclude Include="Public\Utils\Assert.h" />
     <ClInclude Include="Public\Utils\EntityFactory.h" />
     <ClInclude Include="Public\Managers\InputManager.h" />
     <ClInclude Include="Public\Engine.h" />

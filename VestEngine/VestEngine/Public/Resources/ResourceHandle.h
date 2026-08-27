@@ -2,6 +2,7 @@
 
 #include <functional>
 
+// todo : introduce ref counting ?
 struct ResourceHandle
 {
 	uint32_t handle;

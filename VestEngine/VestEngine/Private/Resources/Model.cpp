@@ -8,6 +8,42 @@
 #include "Managers/ResourcesManager.h"
 #include "Resources/Mesh.h"
 
+
+Model::Model(const char* inPath, ResourcesManager& inResourcesManager)
+{
+	load(inPath, inResourcesManager);
+}
+
+Model::Model(std::vector<Mesh>&& inMeshes, const char* inName)
+{
+	meshes = std::move(inMeshes);
+	path = inName;
+	directory = "";
+}
+
+Model::Model(Model&& inOther) noexcept
+	: meshes(std::move(inOther.meshes)), directory(inOther.directory), path(inOther.path)
+{
+	inOther.meshes.clear();
+	inOther.directory.clear();
+	inOther.path.clear();
+}
+
+Model& Model::operator=(Model&& inOther) noexcept
+{
+	if (this == &inOther)
+	{
+		meshes = std::move(inOther.meshes);
+		directory = inOther.directory;
+		path = inOther.path;
+
+		inOther.meshes.clear();
+		inOther.directory.clear();
+		inOther.path.clear();
+	}
+	return *this;
+}
+
 // note : how should I access the resources manager ? what should i have access to globally ?
 void Model::load(const std::string& inPath, ResourcesManager& inResourcesManager)
 {
@@ -22,12 +58,6 @@ void Model::load(const std::string& inPath, ResourcesManager& inResourcesManager
 	path = inPath;
 	directory = inPath.substr(0, inPath.find_last_of('/'));
 	processNode(scene->mRootNode, scene, inResourcesManager);
-}
-
-void Model::fill(std::vector<Mesh>& inMesh, const std::string& inDirectory)
-{
-	meshes = std::move(inMesh);
-	directory = inDirectory;
 }
 
 void Model::bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const
@@ -52,7 +82,7 @@ void Model::processNode(aiNode* node, const aiScene* scene, ResourcesManager& in
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		Mesh meshResource = processMesh(mesh, scene, inResourcesManager);
-		meshes.push_back(meshResource);
+		meshes.push_back(std::move(meshResource));
 	}
 
 	for (unsigned int i = 0; i < node->mNumChildren; ++i)
@@ -102,21 +132,21 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, ResourcesManager& in
 		loadMaterialTextures(material, aiTextureType_SPECULAR, "specular", inResourcesManager, textures);
 	}
 
-	return Mesh(vertices, indices, textures);
+	return Mesh(std::move(vertices), std::move(indices), std::move(textures));
 }
 
-void Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, const std::string& typeName, ResourcesManager& inResourcesManager, std::vector<ResourceHandle>& outTextures)
+void Model::loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, ResourcesManager& inResourcesManager, std::vector<ResourceHandle>& outTextures)
 {
-	for (unsigned int i = 0; i < mat->GetTextureCount(type); ++i)
+	for (unsigned int i = 0; i < inMat->GetTextureCount(inType); ++i)
 	{
 		aiString relativePath;
-		mat->GetTexture(type, i, &relativePath);
+		inMat->GetTexture(inType, i, &relativePath);
 
 		// note: what would be the best way to merge two strings ?
 		std::string absolutePath = directory.c_str();
 		absolutePath.append("/");
 		absolutePath.append(relativePath.C_Str());
-		ResourceHandle textureHandle = inResourcesManager.loadTexture(absolutePath.c_str(), typeName);
+		ResourceHandle textureHandle = inResourcesManager.loadTexture(absolutePath.c_str(), inTypeName);
 		outTextures.push_back(textureHandle);
 	}
 }

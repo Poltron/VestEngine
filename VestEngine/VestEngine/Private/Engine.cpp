@@ -35,8 +35,12 @@ bool Engine::initialize()
 	std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
 	std::vector<unsigned int> indices;
 	std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
-	std::vector<Mesh> meshes = { Mesh(vertices, indices, textures) };
-	ResourceHandle cubeModel = resourcesManager.createModel(meshes, "cube");
+	Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
+
+	std::vector<Mesh> meshes;
+	meshes.push_back(std::move(mesh));
+
+	ResourceHandle cubeModel = resourcesManager.createModel(std::move(meshes), "cube");
 
 	ResourceHandle bagModel = resourcesManager.loadModel("D:/VestEngine/VestEngine/Resources/Models/backpack/backpack.obj");
 

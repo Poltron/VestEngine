@@ -38,8 +38,15 @@ public:
 	static std::vector<Vertex> getNormalTextureCubeVertices();
 
 public:
-	Mesh(std::vector<Vertex>& inVertices, std::vector<unsigned int>& inIndices, std::vector<ResourceHandle>& inTextures);
+	Mesh() = delete;
+	Mesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures);
 	~Mesh();
+	
+	Mesh(const Mesh& inOther) = delete;
+	Mesh& operator=(const Mesh& inOther) = delete;
+
+	Mesh(Mesh&& inOther) noexcept;
+	Mesh& operator=(Mesh&& inOther) noexcept;
 
 	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
 	void draw() const;

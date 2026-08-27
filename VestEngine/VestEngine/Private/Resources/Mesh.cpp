@@ -53,26 +53,48 @@ std::vector<Vertex> Mesh::getNormalTextureCubeVertices()
 	};
 }
 
-Mesh::Mesh(std::vector<Vertex>& inVertices, std::vector<unsigned int>& inIndices, std::vector<ResourceHandle>& inTextures)
+Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
+	: vertices(inVertices), indices(inIndices), textures(inTextures)
 {
-	vertices = std::move(inVertices);
-	indices = std::move(inIndices);
-	textures = std::move(inTextures);
-
-	VBO = 0;
-	VAO = 0;
-	EBO = 0;
-
 	setupMesh();
 }
 
 Mesh::~Mesh()
 {
-	// todo: buffers were destroyed when adding meshes to vector by copy
-	
-	//glDeleteVertexArrays(1, &VAO);
-	//glDeleteBuffers(1, &VBO);
-	//glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+}
+
+Mesh::Mesh(Mesh&& inOther) noexcept
+	: vertices(inOther.vertices), indices(inOther.indices), textures(inOther.textures), VAO(inOther.VAO), VBO(inOther.VBO), EBO(inOther.EBO)
+{
+	inOther.VAO = 0;
+	inOther.VBO = 0;
+	inOther.EBO = 0;
+}
+
+Mesh& Mesh::operator=(Mesh&& inOther) noexcept
+{
+	if (this != &inOther)
+	{
+		vertices.clear();
+		indices.clear();
+		textures.clear();
+
+		vertices = inOther.vertices;
+		indices = inOther.indices;
+		textures = inOther.textures;
+		VAO = inOther.VAO;
+		VBO = inOther.VBO;
+		EBO = inOther.EBO;
+
+		inOther.VAO = 0;
+		inOther.VBO = 0;
+		inOther.EBO = 0;
+
+	}
+	return *this;
 }
 
 void Mesh::setupMesh()
