@@ -1,11 +1,8 @@
 #include "Engine.h"
 
-#include "GLFW/glfw3.h"
+#include "GLFW/glfw3.h" // for time
 
 #include "Utils/EntityFactory.h"
-#include "Systems/TransformSystem.h"
-
-#define NB_POINT_LIGHTS 3
 
 bool Engine::initialize()
 {
