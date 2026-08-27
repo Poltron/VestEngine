@@ -14,8 +14,16 @@ class Shader;
 class Model
 {
 public:
-	void load(const std::string& inPath, ResourcesManager& inResourcesManager);
-	void fill(std::vector<Mesh>& inMesh, const std::string& inName);
+	Model() = delete;
+	Model(const char* inPath, ResourcesManager& inResourcesManager);
+	Model(std::vector<Mesh>&& inMeshes, const char* inName);
+	~Model() = default;
+
+	Model(const Model& inOther) = delete;
+	Model& operator=(const Model& inOther) = delete;
+
+	Model(Model&& inOther) noexcept;
+	Model& operator=(Model&& inOther) noexcept;
 
 	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
 	void draw() const;
@@ -27,8 +35,10 @@ private:
 	std::string directory;
 	std::string path;
 
+	void load(const std::string& inPath, ResourcesManager& inResourcesManager);
+
 	void processNode(aiNode* inNode, const aiScene* inScene, ResourcesManager& inResourcesManager);
 	Mesh processMesh(aiMesh* inMesh, const aiScene* inScene, ResourcesManager& inResourcesManager);
-	void loadMaterialTextures(aiMaterial* mat, aiTextureType type, const std::string& typeName, ResourcesManager& inResourcesManager, std::vector<ResourceHandle>& outTextures);
+	void loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, ResourcesManager& inResourcesManager, std::vector<ResourceHandle>& outTextures);
 };
 

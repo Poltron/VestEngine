@@ -3,29 +3,69 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "Utils/Assert.h"
+
+Texture::Texture(const char* inPath, const char* inType)
+	: path(inPath), type(inType)
+{
+	path = inPath;
+	type = inType;
+
+	loadTexture();
+}
+
 Texture::~Texture()
 {
 	glDeleteTextures(1, &textureID);
 }
 
-void Texture::loadTexture(const char* inTexturePath, const std::string& inType)
+Texture::Texture(Texture&& inOther) noexcept
+	: textureID(inOther.textureID), type(inOther.type), path(inOther.path)
 {
-	type = inType;
-	path = inTexturePath;
+	inOther.textureID = 0;
+	inOther.type.clear();
+	inOther.path.clear();
+}
 
+Texture& Texture::operator=(Texture&& inOther) noexcept
+{
+	if (this != &inOther)
+	{
+		textureID = inOther.textureID;
+		type = inOther.type;
+		path = inOther.path;
+
+		inOther.textureID = 0;
+		inOther.type.clear();
+		inOther.path.clear();
+	}
+	return *this;
+}
+
+void Texture::loadTexture()
+{
 	stbi_set_flip_vertically_on_load(true);
 
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load(inTexturePath, &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 	if (!data)
 	{
-		std::cout << "Failed to load texture: " << inTexturePath << std::endl;
+		std::cout << "Failed to load texture: " << path << std::endl;
 	}
-	
-	GLenum internalFormat = GL_RGBA;
-	if (nrChannels == 3)
+
+	GLenum internalFormat = GL_NONE;
+	switch (nrChannels)
 	{
-		internalFormat = GL_RGB;
+		case 3:
+			internalFormat = GL_RGB;
+			break;
+		case 4:
+			internalFormat = GL_RGBA;
+			break;
+		default:
+			SOFT_ASSERT(false, "Texture format not handled");
+			break;
+
 	}
 
 	glGenTextures(1, &textureID);

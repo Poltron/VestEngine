@@ -10,11 +10,16 @@ struct ShaderParameterCollection;
 class Shader
 {
 public:
-	GLuint ID;
+	Shader() = delete;
+	Shader(const char* vertexPath, const char* fragmentPath);
+	~Shader();
 
-	Shader();
+	Shader(const Shader& inOther) = delete;
+	Shader& operator=(const Shader& inOther) = delete;
 
-	void load(const char* vertexPath, const char* fragmentPath);
+	Shader(Shader&& inOther) noexcept;
+	Shader& operator=(Shader&& inOther) noexcept;
+
 	void use();
 	void setBool(const std::string& name, bool value) const;
 	void setInt(const std::string& name, int value) const;
@@ -26,5 +31,12 @@ public:
 	void setTexture(const std::string& name, GLuint value) const;
 
 	void applyShaderParameterCollection(const ShaderParameterCollection& inParameters) const;
+
+private:
+	void load();
+
+	GLuint ID;
+	std::string vertexPath;
+	std::string fragmentPath;
 };
 
