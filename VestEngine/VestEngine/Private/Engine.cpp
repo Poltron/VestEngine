@@ -42,11 +42,13 @@ bool Engine::initialize()
 	ResourceHandle bagModel = resourcesManager.loadModel("D:/VestEngine/VestEngine/Resources/Models/backpack/backpack.obj");
 
 	// placeholder scene
-	EntityFactory::createRenderedModel(entityManager, transformComponents, meshRendererComponents, bagModel, litShader, glm::vec3(0,0,-1), glm::vec3(0, 0, 0), glm::vec3(0.4f, 0.4f, 0.4f));
-	EntityFactory::createPlaceholderCubes(entityManager, transformComponents, meshRendererComponents, cubeModel, litShader);
-	EntityFactory::createPlaceholderLights(entityManager, transformComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
+	{
+		Entity bagEntity = EntityFactory::createSceneBag(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, bagModel, litShader);
+		EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, bagEntity);
+		EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
+	}
 
-	renderer.fillLightParameters(transformComponents, pointLightComponents, directionalLightComponents);
+	renderer.fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
 
 	return true;
 }
@@ -65,10 +67,11 @@ int Engine::launch()
 
 		camera.update(deltaTime);
 
-		transformSystem.update(transformComponents, deltaTime);
+		physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
+		transformSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, deltaTime);
 
 		renderer.clear();
-		renderer.render(resourcesManager, transformComponents, meshRendererComponents, currentFrame);
+		renderer.render(resourcesManager, worldTransformComponents, meshRendererComponents, currentFrame);
 		renderer.swap(windowManager.getWindow());
 	}
 	
