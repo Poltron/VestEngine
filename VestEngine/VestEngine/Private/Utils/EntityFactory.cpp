@@ -1,8 +1,10 @@
 #include "Utils/EntityFactory.h"
 
 #include "Components/DirectionalLightComponent.h"
-#include "Components/PointLightComponent.h"
+#include "Components/HierarchyComponent.h"
 #include "Components/MeshRendererComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/RigidbodyComponent.h"
 #include "Components/TransformComponent.h"
 #include "Managers/ComponentManager.h"
 #include "Managers/EntityManager.h"
@@ -11,18 +13,86 @@
 
 namespace EntityFactory
 {
-	DirectionalLightComponent* addDirectionalLightTo(Entity inID, ComponentManager<DirectionalLightComponent>& inDirectionalLights)
+	LocalTransformComponent* addTransformTo(Entity inEntity
+		, ComponentManager<LocalTransformComponent>& inLocalTransforms
+		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, const glm::vec3& inPosition
+		, const glm::vec3& inRotation
+		, const glm::vec3& inScale)
 	{
-		return inDirectionalLights.create(inID);
+		LocalTransformComponent* localTransformComponent = inLocalTransforms.create(inEntity);
+		localTransformComponent->position = inPosition;
+		localTransformComponent->rotation = inRotation;
+		localTransformComponent->scale = inScale;
+
+		WorldTransformComponent* worldTransformComponent = inWorldTransforms.create(inEntity);
+		worldTransformComponent->model = localTransformComponent->getLocalModelMatrix();
+
+		return localTransformComponent;
 	}
 
-	PointLightComponent* addPointLightTo(Entity inID, ComponentManager<PointLightComponent>& inPointLights)
+	MeshRendererComponent* addMeshRendererTo(Entity inEntity
+		, ComponentManager<MeshRendererComponent>& inMeshRenderers
+		, ResourceHandle inModel
+		, ResourceHandle inShader)
 	{
-		return inPointLights.create(inID);
+		MeshRendererComponent* meshRendererComponent = inMeshRenderers.create(inEntity);
+		meshRendererComponent->model = inModel;
+		meshRendererComponent->shader = inShader;
+		return meshRendererComponent;
+	}
+
+	DirectionalLightComponent* addDirectionalLightTo(Entity inEntity
+		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
+		, const glm::vec3& inColor
+		, float inIntensity)
+	{
+		DirectionalLightComponent* directionalLightComponent =  inDirectionalLights.create(inEntity);
+		directionalLightComponent->color = inColor;
+		directionalLightComponent->intensity = inIntensity;
+		return directionalLightComponent;
+	}
+
+	PointLightComponent* addPointLightTo(Entity inEntity
+		, ComponentManager<PointLightComponent>& inPointLights
+		, const glm::vec3& inColor
+		, float inIntensity
+		, float inConstant
+		, float inLinear
+		, float inQuadratic)
+	{
+		PointLightComponent* pointLightComponent = inPointLights.create(inEntity);
+		pointLightComponent->color = inColor;
+		pointLightComponent->intensity = inIntensity;
+		pointLightComponent->constant = inConstant;
+		pointLightComponent->linear = inLinear;
+		pointLightComponent->quadratic = inQuadratic;
+
+		return pointLightComponent;
+		
+	}
+
+	RigidbodyComponent* addRigidbodyTo(Entity inEntity
+		, ComponentManager<RigidbodyComponent>& inRigidBodies
+		, const glm::vec3& inLinearVelocity
+		, const glm::vec3& inAngularVelocity)
+	{
+		RigidbodyComponent* rigidbodyComponent = inRigidBodies.create(inEntity);
+		rigidbodyComponent->linearVelocity = inLinearVelocity;
+		rigidbodyComponent->angularVelocity = inAngularVelocity;
+		return rigidbodyComponent;
+	}
+
+	HierarchyComponent* addHierarchyTo(Entity inEntity
+		, ComponentManager<HierarchyComponent>& inHierarchies)
+	{
+		HierarchyComponent* hierarchyComponent = inHierarchies.create(inEntity);
+		return hierarchyComponent;
 	}
 
 	Entity createRenderedModel(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
+		, ComponentManager<LocalTransformComponent>& inLocalTransforms
+		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ResourceHandle inModel
 		, ResourceHandle inShader
@@ -30,28 +100,50 @@ namespace EntityFactory
 		, const glm::vec3& inRotation
 		, const glm::vec3& inScale)
 	{
-		Entity entityID = inEntityManager.createEntity();
+		Entity entity = inEntityManager.createEntity();
+		addTransformTo(entity, inLocalTransforms, inWorldTransforms, inPosition, inRotation, inScale);
+		addMeshRendererTo(entity, inMeshRenderers, inModel, inShader);
 
-		inTransforms.create(entityID);
-		inMeshRenderers.create(entityID);
-
-		MeshRendererComponent* meshRenderer = inMeshRenderers.get(entityID);
-		meshRenderer->model = inModel;
-		meshRenderer->shader = inShader;
-
-		TransformComponent* transformComponent = inTransforms.get(entityID);
-		transformComponent->position = inPosition;
-		transformComponent->rotation = inRotation;
-		transformComponent->scale = inScale;
-
-		return entityID;
+		return entity;
 	}
 
-	void createPlaceholderCubes(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
+
+	Entity createSceneBag(EntityManager& inEntityManager
+		, ComponentManager<LocalTransformComponent>& inLocalTransforms
+		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
+		, ComponentManager<RigidbodyComponent>& inRigidbodies
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ResourceHandle inModel
 		, ResourceHandle inShader)
+	{
+		Entity entity = EntityFactory::createRenderedModel(inEntityManager
+			, inLocalTransforms
+			, inWorldTransforms
+			, inMeshRenderers
+			, inModel
+			, inShader
+			, glm::vec3(0.0f, 0.0f, -1.0f)
+			, glm::vec3(0.0f, 0.0f, 0.0f)
+			, glm::vec3(0.4f, 0.4f, 0.4f));
+
+		addHierarchyTo(entity, inHierarchies);
+		addRigidbodyTo(entity
+			, inRigidbodies
+			, glm::vec3(0.0f, 0.0f, 0.0f)
+			, glm::vec3(0.0f, 2.0f, 0.0f));
+
+		return entity;
+	}
+
+	void createSceneCubes(EntityManager& inEntityManager
+		, ComponentManager<LocalTransformComponent>& inLocalTransforms
+		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
+		, ComponentManager<MeshRendererComponent>& inMeshRenderers
+		, ResourceHandle inModel
+		, ResourceHandle inShader
+		, Entity inParentEntity)
 	{
 		glm::vec3 cubePositions[] = {
 			glm::vec3(1.5f,  -3.2f,  0.3f),
@@ -104,12 +196,16 @@ namespace EntityFactory
 			glm::vec3(1.0f, 0.5f, 0.31f),
 			glm::vec3(1.0f, 0.5f, 0.31f)
 		};
+		
+		HierarchyComponent* parentHierarchy = inHierarchies.get(inParentEntity);
+		assert(parentHierarchy);
 
 		Entity cubes[10];
 		for (size_t i = 0; i < 10; ++i)
 		{
-			Entity ID = EntityFactory::createRenderedModel(inEntityManager
-				, inTransforms
+			Entity cube = EntityFactory::createRenderedModel(inEntityManager
+				, inLocalTransforms
+				, inWorldTransforms
 				, inMeshRenderers
 				, inModel
 				, inShader
@@ -117,15 +213,19 @@ namespace EntityFactory
 				, cubeRotations[i]
 				, cubeScales[i]);
 
-			MeshRendererComponent* meshRenderer = inMeshRenderers.get(ID);
+			HierarchyComponent* cubeHierarchy = addHierarchyTo(cube, inHierarchies);
+			cubeHierarchy ->attachTo(parentHierarchy);
+
+			MeshRendererComponent* meshRenderer = inMeshRenderers.get(cube);
 			meshRenderer->shaderParameters.addVec3("objectColor", cubeColors[i]);
 
-			cubes[i] = ID;
+			cubes[i] = cube;
 		}
 	}
 
-	void createPlaceholderLights(EntityManager& inEntityManager
-		, ComponentManager<TransformComponent>& inTransforms
+	void createSceneLights(EntityManager& inEntityManager
+		, ComponentManager<LocalTransformComponent>& inLocalTransforms
+		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
 		, ComponentManager<PointLightComponent>& inPointLights
@@ -135,7 +235,8 @@ namespace EntityFactory
 		glm::vec3 lightScale(0.2f);
 
 		Entity directionalLightID = EntityFactory::createRenderedModel(inEntityManager
-			, inTransforms
+			, inLocalTransforms
+			, inWorldTransforms
 			, inMeshRenderers
 			, inModel
 			, inShader
@@ -150,9 +251,10 @@ namespace EntityFactory
 		directionalLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
 		directionalLightMeshRenderer->shaderParameters.addVec3("objectColor", directionalLightColor);
 
-		DirectionalLightComponent* directionalLightComponent = EntityFactory::addDirectionalLightTo(directionalLightID, inDirectionalLights);
-		directionalLightComponent->color = directionalLightColor;
-		directionalLightComponent->intensity = 0.5f;
+		DirectionalLightComponent* directionalLightComponent = EntityFactory::addDirectionalLightTo(directionalLightID
+			, inDirectionalLights
+			, directionalLightColor
+			, 0.5f);
 
 		Entity pointLights[MAX_POINT_LIGHTS];
 
@@ -171,7 +273,8 @@ namespace EntityFactory
 		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
 		{
 			Entity pointLightID = EntityFactory::createRenderedModel(inEntityManager
-				, inTransforms
+				, inLocalTransforms
+				, inWorldTransforms
 				, inMeshRenderers
 				, inModel
 				, inShader
@@ -184,12 +287,13 @@ namespace EntityFactory
 			pointLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
 			pointLightMeshRenderer->shaderParameters.addVec3("objectColor", pointLightColors[i]);
 
-			PointLightComponent* pointLight = EntityFactory::addPointLightTo(pointLightID, inPointLights);
-			pointLight->color = pointLightColors[i];
-			pointLight->intensity = 3.0f;
-			pointLight->constant = 1.0f;
-			pointLight->linear = 0.5f;
-			pointLight->quadratic = 0.2f;
+			PointLightComponent* pointLight = EntityFactory::addPointLightTo(pointLightID
+				, inPointLights
+				, pointLightColors[i]
+				, 3.0f /* intensity */
+				, 1.0f /* constant */
+				, 0.5f /* linear */
+				, 0.2f /* quadratic */);
 
 			pointLights[i] = pointLightID;
 		}

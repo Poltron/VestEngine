@@ -26,15 +26,15 @@ void Renderer::setActiveCamera(Camera* inCamera)
 	activeCamera = inCamera;
 }
 
-void Renderer::fillLightParameters(const ComponentManager<TransformComponent>& inTransforms
+void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponent>& inWorldTransforms
 	, const ComponentManager<PointLightComponent>& inPointLights
 	, const ComponentManager<DirectionalLightComponent>& inDirectionalLights)
 {
-	globalShaderParameters.addVec3("ambientLight.color", 0.1f, 0.1f, 0.2f);
+	globalShaderParameters.addVec3("ambientLight.color", { 0.1f, 0.1f, 0.2f });
 	globalShaderParameters.addFloat("ambientLight.intensity", 1.0f);
 
 	const DirectionalLightComponent* directionalLightComp = inDirectionalLights.at(0);
-	const TransformComponent* directionalLightTransform = inTransforms.get(directionalLightComp->entityID);
+	const WorldTransformComponent* directionalLightTransform = inWorldTransforms.get(directionalLightComp->entity);
 
 	//
 	globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
@@ -60,10 +60,10 @@ void Renderer::fillLightParameters(const ComponentManager<TransformComponent>& i
 		globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
 		globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
 
-		const TransformComponent* pointLightTransform = inTransforms.get(pointLight->entityID);
+		const WorldTransformComponent* pointLightTransform = inWorldTransforms.get(pointLight->entity);
 		assert(pointLightTransform != nullptr);
 
-		globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->position);
+		globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());
 	}
 }
 
@@ -74,7 +74,7 @@ void Renderer::clear()
 }
 
 void Renderer::render(ResourcesManager& inResourcesManager
-	, ComponentManager<TransformComponent>& inTransforms
+	, ComponentManager<WorldTransformComponent>& inWorldTransforms
 	, ComponentManager<MeshRendererComponent>& inMeshRenderers
 	, double inCurrentFrame)
 {
@@ -90,7 +90,7 @@ void Renderer::render(ResourcesManager& inResourcesManager
 		assert(meshRenderer != nullptr);
 		if (!meshRenderer->shader.IsValid())
 		{
-			std::cout << "WARNING: " << meshRenderer->entityID << " has no shader" << std::endl;
+			std::cout << "WARNING: " << meshRenderer->entity << " has no shader" << std::endl;
 			continue;
 		}
 
@@ -109,10 +109,10 @@ void Renderer::render(ResourcesManager& inResourcesManager
 		glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
 		shader->setMat4("projection", glm::value_ptr(projectionMatrix));
 
-		TransformComponent* transform = inTransforms.get(meshRenderer->entityID);
-		assert(transform != nullptr);
+		WorldTransformComponent* worldTransform = inWorldTransforms.get(meshRenderer->entity);
+		assert(worldTransform != nullptr);
 
-		shader->setMat4("model", glm::value_ptr(transform->model));
+		shader->setMat4("model", glm::value_ptr(worldTransform->model));
 
 		// 
 		Model* model = inResourcesManager.getModel(meshRenderer->model);

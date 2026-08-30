@@ -3,9 +3,9 @@
 #include <iostream>
 
 EntityManager::EntityManager()
-	: entityCount(0), entities()
+	: entities()
 {
-	for (Entity id = 0; id < MAX_ENTITIES; ++id)
+	for (Entity id = 1; id < MAX_ENTITIES; ++id)
 	{
 		availableIds.push(id);
 	}
@@ -15,7 +15,6 @@ Entity EntityManager::createEntity()
 {
 	Entity entity = availableIds.front();
 	availableIds.pop();
-	++entityCount;
 
 	std::cout << "New entity " << entity << std::endl;
 
@@ -25,7 +24,6 @@ Entity EntityManager::createEntity()
 void EntityManager::destroyEntity(Entity inEntity)
 {
 	availableIds.push(inEntity);
-	--entityCount;
 
 	std::cout << "Release entity " << inEntity << std::endl;
 }
