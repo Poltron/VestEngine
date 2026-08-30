@@ -144,14 +144,17 @@
     <ClCompile Include="Private\Resources\Shader.cpp" />
     <ClCompile Include="Private\Resources\Texture.cpp" />
     <ClCompile Include="Private\Systems\Renderer.cpp" />
-    <ClCompile Include="Private\Systems\TransformSystem.cpp" />
     <ClCompile Include="Private\Systems\ShaderParameterCollection.cpp" />
     <ClCompile Include="Private\Managers\ResourcesManager.cpp" />
     <ClCompile Include="Private\Managers\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Public\Components\HierarchyComponent.h" />
+    <ClInclude Include="Public\Components\Entity.h" />
+    <ClInclude Include="Public\Components\RigidbodyComponent.h" />
     <ClInclude Include="Public\Resources\Model.h" />
     <ClInclude Include="Public\Managers\InputHandler.h" />
+    <ClInclude Include="Public\Systems\PhysicsSystem.h" />
     <ClInclude Include="Public\Utils\Assert.h" />
     <ClInclude Include="Public\Utils\EntityFactory.h" />
     <ClInclude Include="Public\Managers\InputManager.h" />

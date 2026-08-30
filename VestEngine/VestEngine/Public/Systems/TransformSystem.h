@@ -1,24 +1,48 @@
 #pragma once
 
+#include "Components/HierarchyComponent.h"
 #include "Components/TransformComponent.h"
 
 class TransformSystem
 {
 public:
-	void update(ComponentManager<TransformComponent>& inTransforms, double inDeltaTime)
+	void update(ComponentManager<LocalTransformComponent>& inLocalTransforms, ComponentManager<WorldTransformComponent>& inWorldTransforms, ComponentManager<HierarchyComponent>& inHierarchies, double inDeltaTime)
 	{
-		for (size_t i = 0; i < inTransforms.size(); ++i)
+		// note: works currently because of components were created in a hierarchical depth order ( parent first ( bag ), then children ( cubes ) )
+		// need to add sorting of hierarchies / localtransforms / worldtransforms so we can just do it in a single pass and every parent is already computed
+
+		for (size_t i = 0; i < inLocalTransforms.size(); ++i)
 		{
-			TransformComponent* transform = inTransforms.at(i);
-			assert(transform != nullptr);
+			LocalTransformComponent* localTransform = inLocalTransforms.at(i);
+			assert(localTransform);
 
-			transform->model = glm::translate(glm::mat4(1.0), transform->position);
+			if (!localTransform->bDirty)
+			{
+				continue;
+			}
 
-			transform->model = glm::rotate(transform->model, transform->rotation.x, glm::vec3(1, 0, 0));
-			transform->model = glm::rotate(transform->model, transform->rotation.y, glm::vec3(0, 1, 0));
-			transform->model = glm::rotate(transform->model, transform->rotation.z, glm::vec3(0, 0, 1));
+			WorldTransformComponent* worldTransform = inWorldTransforms.get(localTransform->entity);
+			assert(worldTransform);
 
-			transform->model = glm::scale(transform->model, transform->scale);
+			if (!inHierarchies.contains(localTransform->entity))
+			{
+				worldTransform->model = localTransform->getLocalModelMatrix();
+				localTransform->bDirty = false;
+				continue;
+			}
+
+			HierarchyComponent* hierarchy = inHierarchies.get(localTransform->entity);
+			glm::mat4 parentWorldModel = glm::mat4(1.0f);
+			if (hierarchy->parent > 0)
+			{
+				WorldTransformComponent* parentWorldTransform = inWorldTransforms.get(hierarchy->parent);
+				assert(parentWorldTransform);
+
+				parentWorldModel = parentWorldTransform->model;
+			}
+
+			worldTransform->model = parentWorldModel * localTransform->getLocalModelMatrix();
+			localTransform->bDirty = false;
 		}
 	}
 };

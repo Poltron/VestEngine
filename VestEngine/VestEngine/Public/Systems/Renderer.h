@@ -19,7 +19,8 @@ struct GLFWwindow;
 struct DirectionalLightComponent;
 struct MeshRendererComponent;
 struct PointLightComponent;
-struct TransformComponent;
+struct LocalTransformComponent;
+struct WorldTransformComponent;
 
 class Renderer
 {
@@ -28,13 +29,13 @@ public:
 
 	void clear();
 	void render(ResourcesManager& inResourcesManager
-		, ComponentManager<TransformComponent>& inTransforms
+		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, double inCurrentFrame);
 	void swap(GLFWwindow* inWindow);
 
 	//
-	void fillLightParameters(const ComponentManager<TransformComponent>& inTransforms
+	void fillLightParameters(const ComponentManager<WorldTransformComponent>& inTransforms
 		, const ComponentManager<PointLightComponent>& inPointLights
 		, const ComponentManager<DirectionalLightComponent>& inDirectionalLights);
 	void setActiveCamera(Camera* inCamera);

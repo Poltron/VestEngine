@@ -1,22 +1,13 @@
 #pragma once
 
-#include <vector>
-#include <string>
-
-#include "glm/vec3.hpp"
-
-#include "Managers/ResourcesManager.h"
-#include "Resources/Mesh.h"
+#include "Resources/ResourceHandle.h"
 #include "Systems/ShaderParameterCollection.h"
 
-struct ShaderParameter
-{
-	std::string name;
-};
+#include "Components/Entity.h"
 
-struct MeshRendererComponent
+struct MeshRendererComponent 
 {
-	unsigned int entityID;
+	Entity entity = 0;
 	
 	ResourceHandle model;
 	ResourceHandle shader;

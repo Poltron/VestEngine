@@ -4,7 +4,6 @@
 
 #include "Managers/EntityManager.h"
 #include "Utils/DenseArray.h"
-#include "Utils/PoolAllocator.h"
 
 #define COMPONENT_MAX 100
 
@@ -20,7 +19,7 @@ public:
 	T* create(Entity inID)
 	{
 		T* element = components.add();
-		element->entityID = inID;
+		element->entity = inID;
 		lookupTable.emplace(inID, element);
 		return element;
 	}
@@ -33,6 +32,12 @@ public:
 	const T* at(size_t inIndex) const
 	{
 		return &components.at(inIndex);
+	}
+
+	bool contains(Entity inID) const
+	{
+		auto pair = lookupTable.find(inID);
+		return pair != lookupTable.end();
 	}
 
 	T* get(Entity inID)

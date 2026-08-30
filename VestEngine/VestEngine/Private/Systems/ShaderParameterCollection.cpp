@@ -59,11 +59,6 @@ void ShaderParameterCollection::addFloat(const std::string& inName, float inValu
 	floatParameters.push_back({ inName, inValue });
 }
 
-void ShaderParameterCollection::addVec3(const std::string& inName, float inX, float inY, float inZ)
-{
-	addVec3(inName, glm::vec3(inX, inY, inZ));
-}
-
 void ShaderParameterCollection::addVec3(const std::string& inName, const glm::vec3& inValue)
 {
 	vec3Parameters.push_back({ inName, inValue });

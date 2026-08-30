@@ -16,7 +16,6 @@ struct ShaderParameterCollection
 	void addTexture(const std::string& inName, GLuint inValue);
 	void addInt(const std::string& inName, int inValue);
 	void addFloat(const std::string& inName, float inValue);
-	void addVec3(const std::string& inName, float inX, float inY, float inZ);
 	void addVec3(const std::string& inName, const glm::vec3& inValue);
 
 private:
