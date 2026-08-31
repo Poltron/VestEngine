@@ -21,10 +21,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{6da3ac89-8633-48c3-9185-58cd5a8035c9}</ProjectGuid>
-    <RootNamespace>VestEngine</RootNamespace>
+    <ProjectGuid>{2f9a00f1-6549-40ca-976e-b8631a774025}</ProjectGuid>
+    <RootNamespace>Editor</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>Engine</ProjectName>
+    <ProjectName>Editor</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,7 +41,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -72,9 +72,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>lolmdr\;Public\;..\ThirdParty\glm\includes;..\ThirdParty\stb\include;..\ThirdParty\glad\include;..\ThirdParty\glfw-3.4\includes;..\ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>..\ThirdParty\glfw-3.4\lib;..\ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
-    <SourcePath>..\VestEngine\Private;..\ThirdParty\glad\src;$(SourcePath)</SourcePath>
+    <IncludePath>$(ProjectDir)Public\;$(SolutionDir)VestEngine\Public;$(SolutionDir)ThirdParty\glm\includes;$(SolutionDir)ThirdParty\stb\include;$(SolutionDir)ThirdParty\glad\include;$(SolutionDir)ThirdParty\glfw-3.4\includes;$(SolutionDir)ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)x64\Debug;$(SolutionDir)ThirdParty\glfw-3.4\lib;$(SolutionDir)ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,7 +112,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;assimp-vc143-mtd.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;assimp-vc143-mtd.lib;VestEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -131,56 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ThirdParty\glad\src\glad.c" />
-    <ClCompile Include="Private\Resources\Model.cpp" />
-    <ClCompile Include="Private\Managers\InputHandler.cpp" />
-    <ClCompile Include="Private\Utils\EntityFactory.cpp" />
-    <ClCompile Include="Private\Managers\InputManager.cpp" />
-    <ClCompile Include="Private\Engine.cpp" />
-    <ClCompile Include="Private\Managers\ComponentManager.cpp" />
-    <ClCompile Include="Private\Camera.cpp" />
-    <ClCompile Include="Private\main.cpp" />
-    <ClCompile Include="Private\Managers\EntityManager.cpp" />
-    <ClCompile Include="Private\Resources\Mesh.cpp" />
-    <ClCompile Include="Private\Resources\Shader.cpp" />
-    <ClCompile Include="Private\Resources\Texture.cpp" />
-    <ClCompile Include="Private\Systems\Renderer.cpp" />
-    <ClCompile Include="Private\Systems\ShaderParameterCollection.cpp" />
-    <ClCompile Include="Private\Managers\ResourcesManager.cpp" />
-    <ClCompile Include="Private\Managers\WindowManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Public\Components\HierarchyComponent.h" />
-    <ClInclude Include="Public\Components\Entity.h" />
-    <ClInclude Include="Public\Components\RigidbodyComponent.h" />
-    <ClInclude Include="Public\Resources\Model.h" />
-    <ClInclude Include="Public\Managers\InputHandler.h" />
-    <ClInclude Include="Public\Systems\PhysicsSystem.h" />
-    <ClInclude Include="Public\Utils\Assert.h" />
-    <ClInclude Include="Public\Utils\EntityFactory.h" />
-    <ClInclude Include="Public\Managers\InputManager.h" />
-    <ClInclude Include="Public\Engine.h" />
-    <ClInclude Include="Public\Assets\Mesh.h" />
-    <ClInclude Include="Public\Assets\Texture.h" />
-    <ClInclude Include="Public\Components\DirectionalLightComponent.h" />
-    <ClInclude Include="Public\Components\PointLightComponent.h" />
-    <ClInclude Include="Public\Managers\ComponentManager.h" />
-    <ClInclude Include="Public\Camera.h" />
-    <ClInclude Include="Public\Components\MeshRendererComponent.h" />
-    <ClInclude Include="Public\Components\TransformComponent.h" />
-    <ClInclude Include="Public\Managers\EntityManager.h" />
-    <ClInclude Include="Public\Resources\Mesh.h" />
-    <ClInclude Include="Public\Resources\Shader.h" />
-    <ClInclude Include="Public\Resources\Texture.h" />
-    <ClInclude Include="Public\Systems\Renderer.h" />
-    <ClInclude Include="Public\Systems\TransformSystem.h" />
-    <ClInclude Include="Public\Utils\DenseArray.h" />
-    <ClInclude Include="Public\Utils\PoolAllocator.h" />
-    <ClInclude Include="Public\Utils\StackAllocator.h" />
-    <ClInclude Include="Public\Systems\ShaderParameterCollection.h" />
-    <ClInclude Include="Public\Managers\ResourcesManager.h" />
-    <ClInclude Include="Public\Managers\WindowManager.h" />
-    <ClInclude Include="Public\Resources\ResourceHandle.h" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
