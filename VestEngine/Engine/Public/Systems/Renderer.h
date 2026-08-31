@@ -42,7 +42,7 @@ public:
 
 	// note : currently unused since setupMesh does this inside mesh, should be used again though, renderer should handle OpenGL specifics
 	//GLuint createVAO(const Mesh& inMesh);
-
+	
 private:
 	ShaderParameterCollection globalShaderParameters;
 	Camera* activeCamera;

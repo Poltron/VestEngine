@@ -72,9 +72,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>lolmdr\;Public\;..\ThirdParty\glm\includes;..\ThirdParty\stb\include;..\ThirdParty\glad\include;..\ThirdParty\glfw-3.4\includes;..\ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
+    <IncludePath>Public\;..\ThirdParty\glm\includes;..\ThirdParty\stb\include;..\ThirdParty\glad\include;..\ThirdParty\glfw-3.4\includes;..\ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
     <LibraryPath>..\ThirdParty\glfw-3.4\lib;..\ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
-    <SourcePath>..\VestEngine\Private;..\ThirdParty\glad\src;$(SourcePath)</SourcePath>
+    <SourcePath>..\Engine\Private;..\ThirdParty\glad\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

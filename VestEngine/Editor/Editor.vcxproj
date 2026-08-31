@@ -72,7 +72,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)Public\;$(SolutionDir)VestEngine\Public;$(SolutionDir)ThirdParty\glm\includes;$(SolutionDir)ThirdParty\stb\include;$(SolutionDir)ThirdParty\glad\include;$(SolutionDir)ThirdParty\glfw-3.4\includes;$(SolutionDir)ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Public\;$(SolutionDir)Engine\Public;$(SolutionDir)ThirdParty\glm\includes;$(SolutionDir)ThirdParty\stb\include;$(SolutionDir)ThirdParty\glad\include;$(SolutionDir)ThirdParty\glfw-3.4\includes;$(SolutionDir)ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)x64\Debug;$(SolutionDir)ThirdParty\glfw-3.4\lib;$(SolutionDir)ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -112,7 +112,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;assimp-vc143-mtd.lib;VestEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;assimp-vc143-mtd.lib;Engine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

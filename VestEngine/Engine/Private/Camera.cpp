@@ -107,6 +107,11 @@ glm::mat4& Camera::getViewMatrix()
 	return view;
 }
 
+const Frustum& Camera::getFrustum() const
+{
+	return frustum;
+}
+
 void Camera::setFOV(float inFov)
 {
 	fov = inFov;
@@ -251,4 +256,13 @@ void Camera::updateProjectionMatrix()
 void Camera::updateViewMatrix()
 {
 	view = glm::lookAt(position, position + forward, up);
+}
+
+void Camera::updateFrustum()
+{
+	const float halfVSide = far * tanf(fov * 0.5f);
+	const float halfHSide = halfVSide * aspectRatio;
+	const glm::vec3 frontMultFar = far * forward;
+
+	//frustum.near = { position + near * forward, near};
 }
