@@ -71,9 +71,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\VestEngine\VestEngine\VestEngine\Public;D:\VestEngine\VestEngine\ThirdParty\glm\includes;D:\VestEngine\VestEngine\ThirdParty\stb\include;D:\VestEngine\VestEngine\ThirdParty\glad\include;D:\VestEngine\VestEngine\ThirdParty\glfw-3.4\includes;D:\VestEngine\VestEngine\ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\VestEngine\VestEngine\ThirdParty\glfw-3.4\lib;D:\VestEngine\VestEngine\ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
-    <SourcePath>D:\VestEngine\VestEngine\VestEngine\Private;D:\VestEngine\VestEngine\ThirdParty\glad\src;$(SourcePath)</SourcePath>
+    <IncludePath>Public\;..\ThirdParty\glm\includes;..\ThirdParty\stb\include;..\ThirdParty\glad\include;..\ThirdParty\glfw-3.4\includes;..\ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
+    <LibraryPath>..\ThirdParty\glfw-3.4\lib;..\ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
+    <SourcePath>..\VestEngine\Private;..\ThirdParty\glad\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
