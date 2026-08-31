@@ -3,6 +3,24 @@
 
 class InputManager;
 
+struct Plane
+{
+	glm::vec3 normal = { 0, 1, 0 };
+	float distance = 0.0f;
+};
+
+struct Frustum
+{
+	Plane top;
+	Plane bottom;
+
+	Plane right;
+	Plane left;
+
+	Plane far;
+	Plane near;
+};
+
 class Camera
 {
 public:
@@ -22,10 +40,12 @@ public:
 
 	glm::mat4& getProjectionMatrix();
 	glm::mat4& getViewMatrix();
+	const Frustum& getFrustum() const;
 
 private:
 	void updateProjectionMatrix();
 	void updateViewMatrix();
+	void updateFrustum();
 
 private:
 	int width = 800;
@@ -33,6 +53,7 @@ private:
 	float aspectRatio = 4.0f / 3.0f;
 	float near = 0.1f;
 	float far = 100.0f;
+	Frustum frustum;
 
 	float fov = 45.0f;
 	const float minFov = 1.0f;

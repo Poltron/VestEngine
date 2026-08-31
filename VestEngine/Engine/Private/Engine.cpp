@@ -38,12 +38,11 @@ bool Engine::initialize()
 	meshes.push_back(std::move(mesh));
 
 	ResourceHandle cubeModel = resourcesManager.createModel(std::move(meshes), "cube");
-
-	ResourceHandle bagModel = resourcesManager.loadModel("../Resources/Models/backpack/backpack.obj");
+	//ResourceHandle bagModel = resourcesManager.loadModel("../Resources/Models/backpack/backpack.obj");
 
 	// placeholder scene
 	{
-		Entity bagEntity = EntityFactory::createSceneBag(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, bagModel, litShader);
+		Entity bagEntity = EntityFactory::createSceneBag(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, cubeModel, litShader);
 		EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, bagEntity);
 		EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
 	}
