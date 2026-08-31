@@ -23,11 +23,11 @@ bool Engine::initialize()
 	renderer.setActiveCamera(&camera);
 
 	// resources
-	ResourceHandle litShader = resourcesManager.loadShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/lit_fragment.glsl");
-	ResourceHandle unlitShader = resourcesManager.loadShader("D:/VestEngine/VestEngine/Resources/Shaders/vertex.glsl", "D:/VestEngine/VestEngine/Resources/Shaders/unlit_fragment.glsl");
+	ResourceHandle litShader = resourcesManager.loadShader("../Resources/Shaders/vertex.glsl", "../Resources/Shaders/lit_fragment.glsl");
+	ResourceHandle unlitShader = resourcesManager.loadShader("../Resources/Shaders/vertex.glsl", "../Resources/Shaders/unlit_fragment.glsl");
 
-	ResourceHandle containerTexture = resourcesManager.loadTexture("D:/VestEngine/VestEngine/Resources/Textures/container2.png", "diffuse");
-	ResourceHandle containerSpecularTexture = resourcesManager.loadTexture("D:/VestEngine/VestEngine/Resources/Textures/container2_specular.png", "specular");
+	ResourceHandle containerTexture = resourcesManager.loadTexture("../Resources/Textures/container2.png", "diffuse");
+	ResourceHandle containerSpecularTexture = resourcesManager.loadTexture("../Resources/Textures/container2_specular.png", "specular");
 
 	std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
 	std::vector<unsigned int> indices;
@@ -39,7 +39,7 @@ bool Engine::initialize()
 
 	ResourceHandle cubeModel = resourcesManager.createModel(std::move(meshes), "cube");
 
-	ResourceHandle bagModel = resourcesManager.loadModel("D:/VestEngine/VestEngine/Resources/Models/backpack/backpack.obj");
+	ResourceHandle bagModel = resourcesManager.loadModel("../Resources/Models/backpack/backpack.obj");
 
 	// placeholder scene
 	{
