@@ -50,7 +50,8 @@ void Texture::loadTexture()
 	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 	if (!data)
 	{
-		std::cout << "Failed to load texture: " << path << std::endl;
+		std::cout << "ERROR: Failed to load texture: " << path << std::endl;
+		return;
 	}
 
 	GLenum internalFormat = GL_NONE;
