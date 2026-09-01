@@ -14,8 +14,11 @@ public:
 	{
 		free(buffer);
 
-		assert(inCapacity > 0);
 		capacity = inCapacity;
+		if (capacity <= 0)
+		{
+			return;
+		}
 
 		buffer = (T*)malloc(capacity * sizeof(T));
 	}
@@ -23,6 +26,11 @@ public:
 	size_t size() const
 	{
 		return maxIndex;
+	}
+
+	size_t getCapacity() const
+	{
+		return capacity;
 	}
 
 	T* add()
