@@ -5,58 +5,54 @@
 
 std::vector<std::function<void()>> tests;
 
-#define TESTBEGIN(name) \
-class name { \
+#define TEST(name) \
+class name \
+{ \
 public: \
 std::string label = #name; \
-name() { tests.push_back(std::bind(&name::test, this)); } \
-void test() \
-
-#define TESTEND(name) \
+name(); \
+void test(); \
 }; \
-name name; \
+static name testInstance_##name##;\
+name::name() { tests.push_back(std::bind(&name::test, testInstance_##name##)); } \
+void name::test()
 
-
-#define TEST(value, failMessage) \
+#define ENSURE(value) \
 if (value) \
 { \
-	std::cout << label << " succeeded." << std::endl; \
+	std::cout << label << " : " << #value << " succeeded." << std::endl; \
 } \
 else \
 { \
-	std::cerr << label << " failed : " << failMessage << std::endl; \
+	std::cerr << label << " : " << #value << " failed : " << std::endl; \
+}
+
+TEST(Test1_Capacity1)
+{
+	DenseArray<int> ints;
+	ints.initialize(1);
+
+	ENSURE(ints.getCapacity() == 1)
+}
+
+TEST(Test1_Capacity100)
+{
+	DenseArray<int> ints;
+	ints.initialize(100);
+
+	ENSURE(ints.getCapacity() == 100)
+}
+
+TEST(Test1_Capacity0)
+{
+	DenseArray<int> ints;
+	ints.initialize(0);
+
+	ENSURE(ints.getCapacity() == 0)
 }
 
 int main()
 {
-	TESTBEGIN(Test1_Capacity1)
-	{
-		DenseArray<int> ints;
-		ints.initialize(1);
-
-		TEST(ints.getCapacity() == 1, "Capacity != 1")
-	}
-	TESTEND(Test1_Capacity1)
-
-	TESTBEGIN(Test1_Capacity100)
-	{
-		DenseArray<int> ints;
-		ints.initialize(100);
-
-		TEST(ints.getCapacity() == 100, "Capacity != 100")
-	}
-	TESTEND(Test1_Capacity100)
-
-
-	TESTBEGIN(Test1_Capacity0)
-	{
-		DenseArray<int> ints;
-		ints.initialize(0);
-
-		TEST(ints.getCapacity() == 0, "Capacity != 0")
-	}
-	TESTEND(Test1_Capacity0)
-
 	for (auto test : tests)
 	{
 		test();
