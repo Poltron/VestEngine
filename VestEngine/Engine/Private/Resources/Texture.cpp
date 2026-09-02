@@ -3,7 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include "Utils/Assert.h"
+#include "Utils/Ensure.h"
 
 Texture::Texture(const char* inPath, const char* inType)
 	: path(inPath), type(inType)
@@ -64,7 +64,7 @@ void Texture::loadTexture()
 			internalFormat = GL_RGBA;
 			break;
 		default:
-			SOFT_ASSERT(false, "Texture format not handled");
+			ensure(false);
 			break;
 
 	}
