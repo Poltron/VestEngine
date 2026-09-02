@@ -104,7 +104,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;UNIT_TESTING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -129,7 +129,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Private\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Private\Framework\Test.h" />
+    <ClInclude Include="Private\Framework\TestRegistrar.h" />
+    <ClInclude Include="Private\UnitTests\UnitTests_DenseArray.h" />
+    <ClInclude Include="Private\UnitTests\UnitTests_List.h" />
+    <ClInclude Include="Public\Test.h" />
+    <ClInclude Include="Public\TestRegistrar.h" />
+    <ClInclude Include="Public\UnitTests_DenseArray.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

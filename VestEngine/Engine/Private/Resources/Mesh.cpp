@@ -133,7 +133,7 @@ void Mesh::setupMesh()
 
 void Mesh::bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const
 {
-	for (size_t i = 0; i < textures.size(); ++i)
+	for (std::vector<ResourceHandle>::size_type i = 0; i < textures.size(); ++i)
 	{
 		const ResourceHandle& textureHandle = textures[i];
 		if (!textureHandle.IsValid())
