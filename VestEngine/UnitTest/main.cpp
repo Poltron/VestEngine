@@ -24,7 +24,7 @@ if (value) \
 } \
 else \
 { \
-	std::cerr << label << " : " << #value << " failed : " << std::endl; \
+	std::cerr << label << " : " << #value << " failed." << std::endl; \
 }
 
 TEST(Test1_Capacity1)
