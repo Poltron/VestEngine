@@ -14,12 +14,13 @@ public:
 	{
 		free(buffer);
 
-		capacity = inCapacity;
-		if (capacity <= 0)
+		if (inCapacity == 0)
 		{
+			capacity = 0;
 			return;
 		}
 
+		capacity = inCapacity;
 		buffer = (T*)malloc(capacity * sizeof(T));
 	}
 
