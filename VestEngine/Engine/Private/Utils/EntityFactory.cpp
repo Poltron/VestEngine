@@ -270,7 +270,7 @@ namespace EntityFactory
 			glm::vec3(0.0f, 0.0f, 1.0f)
 		};
 
-		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
+		for (size_t i = 0; i < MAX_POINT_LIGHTS; ++i)
 		{
 			Entity pointLightID = EntityFactory::createRenderedModel(inEntityManager
 				, inLocalTransforms

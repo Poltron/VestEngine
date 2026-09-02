@@ -1,6 +1,6 @@
 #pragma once
-#include <stdlib.h>
-#include <cassert>
+
+#include "Utils/Ensure.h"
 
 template <typename T>
 class DenseArray
@@ -12,16 +12,23 @@ public:
 
 	void initialize(size_t inCapacity)
 	{
-		free(buffer);
+		clear();
 
 		if (inCapacity == 0)
 		{
-			capacity = 0;
 			return;
 		}
 
 		capacity = inCapacity;
 		buffer = (T*)malloc(capacity * sizeof(T));
+	}
+
+	void clear()
+	{
+		free(buffer);
+		buffer = nullptr;
+		capacity = 0;
+		maxIndex = 0;
 	}
 
 	size_t size() const
@@ -36,7 +43,7 @@ public:
 
 	T* add()
 	{
-		assert(maxIndex < capacity);
+		ensure(maxIndex < capacity);
 		T* element = new (buffer + maxIndex) T();
 		maxIndex++;
 		return element;
@@ -44,24 +51,34 @@ public:
 
 	void remove(T* inElement)
 	{
-		memcpy((void*)inElement, (void*)(buffer + maxIndex - 1), sizeof(T));
+		ensure(buffer != nullptr);
+		ensure(inElement != nullptr);
+		ensure(inElement > buffer);
+
+		T* lastElement = buffer + maxIndex - 1;
+		ensure((void*)inElement < (void*)lastElement);
+		
+		memcpy((void*)inElement, (void*)lastElement, sizeof(T));
 		maxIndex--;
 	}
 
 	T& at(size_t inIndex)
 	{
-		assert(inIndex < maxIndex);
+		ensure(inIndex < maxIndex);
 		return *(buffer + inIndex);
 	}
 
 	const T& at(size_t inIndex) const
 	{
-		assert(inIndex < maxIndex);
+		ensure(inIndex < maxIndex);
 		return *(buffer + inIndex);
 	}
 
 	T& last()
 	{
+		ensure(buffer != nullptr);
+		ensure(capacity > 0);
+		ensure(maxIndex > 0);
 		return *(buffer + maxIndex - 1);
 	}
 

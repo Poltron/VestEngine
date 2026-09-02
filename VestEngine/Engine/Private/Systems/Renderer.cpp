@@ -46,7 +46,7 @@ void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponen
 	globalShaderParameters.addInt("pointLightAmount", (int)inPointLights.size());
 
 	//
-	for (int i = 0; i < inPointLights.size(); ++i)
+	for (size_t i = 0; i < inPointLights.size(); ++i)
 	{
 		const PointLightComponent* pointLight = inPointLights.at(i);
 		assert(pointLight != nullptr);
