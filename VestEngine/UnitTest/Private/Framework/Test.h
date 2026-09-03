@@ -39,11 +39,7 @@ void name::run()
 
 
 #define EXPECT(value) \
-if (value) \
-{ \
-	std::cout << label << " : " << #value << " succeeded." << std::endl; \
-} \
-else \
+if (!value) \
 { \
 	std::cerr << label << " : " << #value << " failed." << std::endl; \
 }
@@ -53,6 +49,4 @@ try { \
 value; \
 	std::cerr << label << " : " << #value << " failed." << std::endl; \
 } \
-catch (const std::runtime_error&) { \
-	std::cout << label << " : " << #value << " succeeded." << std::endl; \
-}
+catch (const std::runtime_error&) {}
