@@ -29,11 +29,11 @@ void TestFactory<T>::runTest()
 	try
 	{
 		test->run();
-		std::cout << test->label << " succeeded" << std::endl;
+		std::cout << "\t" << test->name << std::endl;
 	}
 	catch (const std::runtime_error& error)
 	{
-		std::cerr  << test->label << " failed with crash : " << std::endl << "\t" << error.what();
+		std::cerr << "\t" << test->name << "failed with crash : " << std::endl << "\t" << error.what();
 		return;
 	}
 
