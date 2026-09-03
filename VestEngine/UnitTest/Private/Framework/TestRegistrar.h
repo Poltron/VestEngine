@@ -1,13 +1,15 @@
 #pragma once
 
-#include <functional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 class TestFactoryBase;
 
 class TestRegistrar
 {
-	std::vector<TestFactoryBase*> factories;
+	std::unordered_map<std::string, std::vector<TestFactoryBase*>> testGroups;
+
 public:
 	static TestRegistrar& get()
 	{
@@ -15,7 +17,7 @@ public:
 		return instance;
 	}
 
-	void registerFactory(TestFactoryBase* inFactory);
+	void registerFactory(const std::string& inGroup, TestFactoryBase* inFactory);
 	void runTests();
 	void unregisterFactories();
 };
