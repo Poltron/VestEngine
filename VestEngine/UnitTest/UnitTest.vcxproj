@@ -72,7 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(SolutionDir)x64\Debug;$(SolutionDir)ThirdParty\glfw-3.4\lib;$(SolutionDir)ThirdParty\assimp-6.0.5\lib;$(LibraryPath);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
-    <IncludePath>$(ProjectDir)Public\;$(SolutionDir)Engine\Public;$(SolutionDir)ThirdParty\glm\includes;$(SolutionDir)ThirdParty\stb\include;$(SolutionDir)ThirdParty\glad\include;$(SolutionDir)ThirdParty\glfw-3.4\includes;$(SolutionDir)ThirdParty\assimp-6.0.5\includes;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Private;$(ProjectDir)Public;$(SolutionDir)Engine\Public;$(SolutionDir)ThirdParty\glm\includes;$(SolutionDir)ThirdParty\stb\include;$(SolutionDir)ThirdParty\glad\include;$(SolutionDir)ThirdParty\glfw-3.4\includes;$(SolutionDir)ThirdParty\assimp-6.0.5\includes;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -129,10 +129,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Private\Framework\TestFactory.cpp" />
+    <ClCompile Include="Private\Framework\TestRegistrar.cpp" />
     <ClCompile Include="Private\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Private\Framework\Test.h" />
+    <ClInclude Include="Private\Framework\TestFactory.h" />
     <ClInclude Include="Private\Framework\TestRegistrar.h" />
     <ClInclude Include="Private\UnitTests\UnitTests_DenseArray.h" />
     <ClInclude Include="Private\UnitTests\UnitTests_List.h" />
