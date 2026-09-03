@@ -10,23 +10,23 @@
 #endif
 
 #ifndef NDEBUG
+    #include <iostream>
 #if defined(UNIT_TESTING)
     #include <stdexcept>
-    
-    class ensure_violation : public std::runtime_error {
-    public:
-        using std::runtime_error::runtime_error;
-    };
-    
+    #include <string> 
+
     #define ensure(condition) \
         if (!(condition)) { \
-            std::cerr   << "Ensure triggered: " << #condition \
-                        << " (" << __FILE__ << ":" << __LINE__ << ")\n"; \
-            throw std::runtime_error(""); \
+            std::string error = "Ensure triggered:"; \
+            error.append(#condition); \
+            error.append(" ("); \
+            error.append(__FILE__); \
+            error.append(":"); \
+            error.append(std::to_string(__LINE__)); \
+            error.append(")\n"); \
+            throw std::runtime_error(error); \
         }
 #else
-    #include <iostream>
-    
     // Production build: fast crash/abort or zero-overhead assert
     #define ensure(condition) \
         if (!(condition)) { \
@@ -36,5 +36,5 @@
         }
 #endif
 #else
-#define ensure(condition) ((void)0)
+    #define ensure(condition) ((void)0)
 #endif
