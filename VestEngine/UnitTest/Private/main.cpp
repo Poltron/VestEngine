@@ -4,6 +4,5 @@
 int main()
 {
 	TestRegistrar::get().runTests();
-	ensure(true == true);
 	return 0;
 }

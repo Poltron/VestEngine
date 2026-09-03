@@ -31,6 +31,16 @@ public:
 		maxIndex = 0;
 	}
 
+	T* data()
+	{
+		return buffer;
+	}
+
+	const T* data() const
+	{
+		return buffer;
+	}
+
 	size_t size() const
 	{
 		return maxIndex;
@@ -53,10 +63,10 @@ public:
 	{
 		ensure(buffer != nullptr);
 		ensure(inElement != nullptr);
-		ensure(inElement > buffer);
+		ensure(inElement >= buffer);
 
 		T* lastElement = buffer + maxIndex - 1;
-		ensure((void*)inElement < (void*)lastElement);
+		ensure((void*)inElement <= (void*)lastElement);
 		
 		memcpy((void*)inElement, (void*)lastElement, sizeof(T));
 		maxIndex--;

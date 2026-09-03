@@ -10,43 +10,43 @@
 class Test
 {
 public:
-	virtual void run() { std::cout << "Test::run()" << std::endl; }
+	virtual void run() {}
 };
 
-
-#define DECLARE_TEST(name) \
+#define DECLARE_TEST(inGroup, inName) \
 \
-class name : public Test \
+class inGroup##_##inName##_Test : public Test \
 { \
 public: \
-std::string label = #name; \
-name() = default; \
+std::string group = #inGroup; \
+std::string name = #inName; \
+inGroup##_##inName##_Test() = default; \
 virtual void run() override; \
 }; \
 \
 namespace \
 { \
-	struct FAutoRegister##name##  \
+	struct AutoRegister_##inGroup##_##inName##  \
 	{ \
-		FAutoRegister##name##() \
+		AutoRegister_##inGroup##_##inName##() \
 		{ \
-			TestRegistrar::get().registerFactory(new TestFactory<name>()); \
+			TestRegistrar::get().registerFactory(#inGroup, new TestFactory<##inGroup##_##inName##_Test>()); \
 		} \
 	}; \
-	static FAutoRegister##name autoRegister##name##; \
+	static AutoRegister_##inGroup##_##inName AutoRegister_##inGroup##_##inName##_instance; \
 } \
-void name::run()
+void inGroup##_##inName##_Test::run()
 
 
 #define EXPECT(value) \
-if (!value) \
+if (!(value)) \
 { \
-	std::cerr << label << " : " << #value << " failed." << std::endl; \
+	std::cerr << "\t" << name << " : " << #value << " failed." << std::endl; \
 }
 
 #define EXPECT_EXCEPTION(value) \
 try { \
-value; \
-	std::cerr << label << " : " << #value << " failed." << std::endl; \
+	value; \
+	std::cerr << "\t" << name << " : " << #value << " failed." << std::endl; \
 } \
 catch (const std::runtime_error&) {}
