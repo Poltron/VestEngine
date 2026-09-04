@@ -10,6 +10,8 @@ public:
 	{
 		// note: works currently because of components were created in a hierarchical depth order ( parent first ( bag ), then children ( cubes ) )
 		// need to add sorting of hierarchies / localtransforms / worldtransforms so we can just do it in a single pass and every parent is already computed
+		// 1/ modified the componentmanager's lookuptable so it links entityID to index instead of a direct ptr
+		// 2/ now I can use std::sort() to sort the hierarchycomponent hierarchy array
 
 		for (size_t i = 0; i < inLocalTransforms.size(); ++i)
 		{

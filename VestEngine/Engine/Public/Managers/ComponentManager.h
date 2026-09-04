@@ -18,10 +18,11 @@ public:
 
 	T* create(Entity inID)
 	{
-		T* element = components.add();
-		element->entity = inID;
-		lookupTable.emplace(inID, element);
-		return element;
+		size_t elementIdx = components.add();
+		T& element = components.at(elementIdx);
+		element.entity = inID;
+		lookupTable.emplace(inID, elementIdx);
+		return &element;
 	}
 
 	T* at(size_t inIndex)
@@ -42,18 +43,19 @@ public:
 
 	T* get(Entity inID)
 	{
-		return lookupTable.at(inID);
+		size_t idx = lookupTable.at(inID);
+		return components.data() + idx;
 	}
 
 	const T* get(Entity inID) const
 	{
-		return lookupTable.at(inID);
+		size_t idx = lookupTable.at(inID);
+		return components.data() + idx;
 	}
 
 	T* getData()
 	{
-		// note : don't like this dereference
-		return &components.at(0);
+		return components.data();
 	}
 
 	size_t size() const
@@ -70,6 +72,6 @@ public:
 
 private:
 	DenseArray<T> components;
-	std::unordered_map<Entity, T*> lookupTable;
+	std::unordered_map<Entity, size_t> lookupTable;
 };
 
