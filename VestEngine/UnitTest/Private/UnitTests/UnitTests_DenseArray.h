@@ -55,7 +55,7 @@ DECLARE_TEST(DenseArray, AddOneElem)
 	EXPECT(ints.getCapacity() == 1);
 	EXPECT(ints.size() == 0);
 
-	int* elem = ints.add();
+	ints.add();
 	EXPECT(ints.size() == 1);
 }
 
@@ -66,49 +66,41 @@ DECLARE_TEST(DenseArray, AddTwoElems)
 	EXPECT(ints.getCapacity() == 2);
 	EXPECT(ints.size() == 0);
 
-	int* elem = ints.add();
+	ints.add();
 	EXPECT(ints.size() == 1);
 
-	elem = ints.add();
+	ints.add();
 	EXPECT(ints.size() == 2);
 }
 
 // --- Remove
-DECLARE_TEST(DenseArray, RemoveNullptrNoInit)
+DECLARE_TEST(DenseArray, Remove0NoInit)
 {
 	DenseArray<int> ints;
-	EXPECT_EXCEPTION(ints.remove(nullptr));
+	EXPECT_EXCEPTION(ints.remove(0));
 }
 
-DECLARE_TEST(DenseArray, RemoveNullptr)
+DECLARE_TEST(DenseArray, RemoveElem0From0)
 {
 	DenseArray<int> ints;
 	ints.initialize(1);
-	EXPECT_EXCEPTION(ints.remove(nullptr));
-}
-
-DECLARE_TEST(DenseArray, RemoveElemNoAdd)
-{
-	DenseArray<int> ints;
-	ints.initialize(1);
-	int* buffer = ints.data();
-	EXPECT_EXCEPTION(ints.remove(buffer));
+	EXPECT_EXCEPTION(ints.remove(0));
 }
 
 DECLARE_TEST(DenseArray, RemoveElem0FromArray1)
 {
 	DenseArray<int> ints;
 	ints.initialize(1);
-	int* elem0 = ints.add();
-	ints.remove(elem0);
+	size_t elemIdx = ints.add();
+	ints.remove(elemIdx);
 }
 
 DECLARE_TEST(DenseArray, RemoveElem1FromArray1)
 {
 	DenseArray<int> ints;
 	ints.initialize(1);
-	int* elem0 = ints.add();
-	EXPECT_EXCEPTION(ints.remove(elem0 + 1));
+	ints.add();
+	EXPECT_EXCEPTION(ints.remove(1));
 }
 
 DECLARE_TEST(DenseArray, RemoveElem0FromArray10)
@@ -118,8 +110,7 @@ DECLARE_TEST(DenseArray, RemoveElem0FromArray10)
 	ints.add();
 	ints.add();
 	ints.add();
-	int& elem0 = ints.at(0);
-	ints.remove(&elem0);
+	ints.remove(0);
 }
 
 // --- At
@@ -141,17 +132,17 @@ DECLARE_TEST(DenseArray, At0From1)
 {
 	DenseArray<int> ints;
 	ints.initialize(1);
-	int* elem0 = ints.add();
-	*elem0 = 10;
-	int& elem0Value = ints.at(0);
-	EXPECT(elem0Value == 10);
+	size_t elemIdx = ints.add();
+	int& elem0 = ints.at(elemIdx);
+	elem0 = 10;
+	EXPECT(elem0 == 10);
 }
 
 DECLARE_TEST(DenseArray, At10From1)
 {
 	DenseArray<int> ints;
 	ints.initialize(1);
-	int* elem0 = ints.add();
+	size_t elemIdx = ints.add();
 	EXPECT_EXCEPTION(ints.at(10));
 }
 
@@ -167,7 +158,8 @@ DECLARE_TEST(DenseArray, LastFrom1)
 {
 	DenseArray<int> ints;
 	ints.initialize(1);
-	int* elem0 = ints.add();
-	*elem0 = 55;
+	size_t elemIdx = ints.add();
+	int& elem = ints.at(elemIdx);
+	elem = 55;
 	EXPECT(ints.last() == 55);
 }

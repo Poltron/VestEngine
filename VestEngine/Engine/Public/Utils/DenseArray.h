@@ -51,24 +51,28 @@ public:
 		return capacity;
 	}
 
-	T* add()
+	size_t add()
 	{
 		ensure(maxIndex < capacity);
 		T* element = new (buffer + maxIndex) T();
+		size_t elemIndex = maxIndex;
 		maxIndex++;
-		return element;
+		return elemIndex;
 	}
 
-	void remove(T* inElement)
+	void remove(size_t inElementIndex)
 	{
+		ensure(inElementIndex < maxIndex);
+		T* element = buffer + inElementIndex;
+
 		ensure(buffer != nullptr);
-		ensure(inElement != nullptr);
-		ensure(inElement >= buffer);
+		ensure(element != nullptr);
+		ensure(element >= buffer);
 
 		T* lastElement = buffer + maxIndex - 1;
-		ensure((void*)inElement <= (void*)lastElement);
-		
-		memcpy((void*)inElement, (void*)lastElement, sizeof(T));
+		ensure((void*)element <= (void*)lastElement);
+
+		memcpy((void*)element, (void*)lastElement, sizeof(T));
 		maxIndex--;
 	}
 
@@ -95,6 +99,5 @@ public:
 private:
 	T* buffer = nullptr;
 	size_t maxIndex = 0;
-
 	size_t capacity = 0;
 };
