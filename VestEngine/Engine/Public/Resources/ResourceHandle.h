@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <type_traits>
 
 // todo : introduce ref counting ?
 struct ResourceHandle

@@ -1,6 +1,4 @@
 #pragma once
-#include <vector>
-#include "Resources/Shader.h"
 
 #include "Systems/ShaderParameterCollection.h"
 

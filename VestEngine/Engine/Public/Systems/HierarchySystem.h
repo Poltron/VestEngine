@@ -7,7 +7,7 @@ struct WorldTransformComponent;
 template<typename T>
 class ComponentManager;
 
-class TransformSystem
+class HierarchySystem
 {
 public:
 	void update(ComponentManager<LocalTransformComponent>& inLocalTransforms

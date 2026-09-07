@@ -73,6 +73,25 @@ bool Engine::initialize()
 			}
 		});
 
+	inputManager.registerKeyCallback(GLFW_KEY_O
+		, [hierarchies = &hierarchyComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+		{
+			if (inState != GLFW_PRESS)
+			{
+				return;
+			}
+
+			HierarchyComponent* hierarchy = nullptr;
+			do
+			{
+				Entity randomEntity = childEntities[std::rand() % childEntities.size()];
+				hierarchy = hierarchies->get(randomEntity);
+				ensure(hierarchy);
+			} while (!EntityFuncs::isEntityValid(hierarchy->parent));
+
+			hierarchyHelper::detach(hierarchy, *hierarchies);
+		});
+
 	renderer.fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
 
 	return true;
@@ -92,8 +111,9 @@ int Engine::launch()
 
 		camera.update(deltaTime);
 
+		hierarchySystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
 		physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
-		transformSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, deltaTime);
+		transformSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
 
 		renderer.clear();
 		renderer.render(resourcesManager, worldTransformComponents, meshRendererComponents, currentFrame);
