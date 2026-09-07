@@ -74,16 +74,11 @@ private:
 		inLocalTransform->setLocalPosition(inLocalTransform->position + localPosition);
 	}
 
-	bool isEntityValid(Entity inEntity)
-	{
-		return inEntity != 0;
-	}
-
 	void setChildrenDirty(Entity inEntity, ComponentManager<HierarchyComponent>& inHierarchies, ComponentManager<LocalTransformComponent>& inLocalTransforms)
 	{
 		// note : could infinite loop
 		Entity nextChild = inEntity;
-		while (isEntityValid(nextChild))
+		while (EntityFuncs::isEntityValid(nextChild))
 		{
 			LocalTransformComponent* localTransform = inLocalTransforms.get(nextChild);
 			assert(localTransform);

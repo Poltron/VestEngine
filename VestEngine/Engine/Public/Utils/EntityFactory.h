@@ -20,9 +20,11 @@ namespace EntityFactory
 	LocalTransformComponent* addTransformTo(Entity inEntity
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
 		, const glm::vec3& inPosition
 		, const glm::vec3& inRotation
-		, const glm::vec3& inScale);
+		, const glm::vec3& inScale
+		, HierarchyComponent* inParentHierarchy);
 
 	MeshRendererComponent* addMeshRendererTo(Entity inEntity
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
@@ -47,18 +49,17 @@ namespace EntityFactory
 		, const glm::vec3& inLinearVelocity
 		, const glm::vec3& inAngularVelocity);
 
-	HierarchyComponent* addHierarchyTo(Entity inEntity
-		, ComponentManager<HierarchyComponent>& inHierarchies);
-
 	Entity createRenderedModel(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ResourceHandle inModel
 		, ResourceHandle inShader
 		, const glm::vec3& inPosition
 		, const glm::vec3& inRotation
-		, const glm::vec3& inScale);
+		, const glm::vec3& inScale
+		, HierarchyComponent* inParentHierarchy = nullptr);
 
 	Entity createSceneBag(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
@@ -69,7 +70,7 @@ namespace EntityFactory
 		, ResourceHandle inModel
 		, ResourceHandle inShader);
 
-	void createSceneCubes(EntityManager& inEntityManager
+	std::vector<Entity> createSceneCubes(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<HierarchyComponent>& inHierarchies
@@ -81,6 +82,7 @@ namespace EntityFactory
 	void createSceneLights(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
 		, ComponentManager<PointLightComponent>& inPointLights

@@ -6,6 +6,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/RigidbodyComponent.h"
 #include "Components/TransformComponent.h"
+#include "Helpers/HierarchyHelper.h"
 #include "Managers/ComponentManager.h"
 #include "Managers/EntityManager.h"
 #include "Managers/ResourcesManager.h"
@@ -16,9 +17,11 @@ namespace EntityFactory
 	LocalTransformComponent* addTransformTo(Entity inEntity
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
 		, const glm::vec3& inPosition
 		, const glm::vec3& inRotation
-		, const glm::vec3& inScale)
+		, const glm::vec3& inScale
+		, HierarchyComponent* inParentHierarchy)
 	{
 		LocalTransformComponent* localTransformComponent = inLocalTransforms.create(inEntity);
 		localTransformComponent->position = inPosition;
@@ -27,6 +30,12 @@ namespace EntityFactory
 
 		WorldTransformComponent* worldTransformComponent = inWorldTransforms.create(inEntity);
 		worldTransformComponent->model = localTransformComponent->getLocalModelMatrix();
+
+		HierarchyComponent* hierarchyComponent = inHierarchies.create(inEntity);
+		if (inParentHierarchy)
+		{
+			hierarchyHelper::attachTo(hierarchyComponent, inParentHierarchy);
+		}
 
 		return localTransformComponent;
 	}
@@ -83,27 +92,21 @@ namespace EntityFactory
 		return rigidbodyComponent;
 	}
 
-	HierarchyComponent* addHierarchyTo(Entity inEntity
-		, ComponentManager<HierarchyComponent>& inHierarchies)
-	{
-		HierarchyComponent* hierarchyComponent = inHierarchies.create(inEntity);
-		return hierarchyComponent;
-	}
-
 	Entity createRenderedModel(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ResourceHandle inModel
 		, ResourceHandle inShader
 		, const glm::vec3& inPosition
 		, const glm::vec3& inRotation
-		, const glm::vec3& inScale)
+		, const glm::vec3& inScale
+		, HierarchyComponent* inParentHierarchy)
 	{
 		Entity entity = inEntityManager.createEntity();
-		addTransformTo(entity, inLocalTransforms, inWorldTransforms, inPosition, inRotation, inScale);
+		addTransformTo(entity, inLocalTransforms, inWorldTransforms, inHierarchies, inPosition, inRotation, inScale, inParentHierarchy);
 		addMeshRendererTo(entity, inMeshRenderers, inModel, inShader);
-
 		return entity;
 	}
 
@@ -120,6 +123,7 @@ namespace EntityFactory
 		Entity entity = EntityFactory::createRenderedModel(inEntityManager
 			, inLocalTransforms
 			, inWorldTransforms
+			, inHierarchies
 			, inMeshRenderers
 			, inModel
 			, inShader
@@ -127,7 +131,6 @@ namespace EntityFactory
 			, glm::vec3(0.0f, 0.0f, 0.0f)
 			, glm::vec3(0.4f, 0.4f, 0.4f));
 
-		addHierarchyTo(entity, inHierarchies);
 		addRigidbodyTo(entity
 			, inRigidbodies
 			, glm::vec3(0.0f, 0.0f, 0.0f)
@@ -136,7 +139,7 @@ namespace EntityFactory
 		return entity;
 	}
 
-	void createSceneCubes(EntityManager& inEntityManager
+	std::vector<Entity> createSceneCubes(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<HierarchyComponent>& inHierarchies
@@ -145,6 +148,9 @@ namespace EntityFactory
 		, ResourceHandle inShader
 		, Entity inParentEntity)
 	{
+		std::vector<Entity> entities;
+		const int N = 10;
+
 		glm::vec3 cubePositions[] = {
 			glm::vec3(1.5f,  -3.2f,  0.3f),
 			glm::vec3(2.0f,  5.0f, -15.0f),
@@ -200,32 +206,33 @@ namespace EntityFactory
 		HierarchyComponent* parentHierarchy = inHierarchies.get(inParentEntity);
 		assert(parentHierarchy);
 
-		Entity cubes[10];
-		for (size_t i = 0; i < 10; ++i)
+		for (size_t i = 0; i < N; ++i)
 		{
 			Entity cube = EntityFactory::createRenderedModel(inEntityManager
 				, inLocalTransforms
 				, inWorldTransforms
+				, inHierarchies
 				, inMeshRenderers
 				, inModel
 				, inShader
 				, cubePositions[i]
 				, cubeRotations[i]
-				, cubeScales[i]);
-
-			HierarchyComponent* cubeHierarchy = addHierarchyTo(cube, inHierarchies);
-			cubeHierarchy ->attachTo(parentHierarchy);
+				, cubeScales[i]
+				, parentHierarchy);
 
 			MeshRendererComponent* meshRenderer = inMeshRenderers.get(cube);
 			meshRenderer->shaderParameters.addVec3("objectColor", cubeColors[i]);
 
-			cubes[i] = cube;
+			entities.push_back(cube);
 		}
+
+		return entities;
 	}
 
 	void createSceneLights(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
+		, ComponentManager<HierarchyComponent>& inHierarchies
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, ComponentManager<DirectionalLightComponent>& inDirectionalLights
 		, ComponentManager<PointLightComponent>& inPointLights
@@ -237,6 +244,7 @@ namespace EntityFactory
 		Entity directionalLightID = EntityFactory::createRenderedModel(inEntityManager
 			, inLocalTransforms
 			, inWorldTransforms
+			, inHierarchies
 			, inMeshRenderers
 			, inModel
 			, inShader
@@ -275,6 +283,7 @@ namespace EntityFactory
 			Entity pointLightID = EntityFactory::createRenderedModel(inEntityManager
 				, inLocalTransforms
 				, inWorldTransforms
+				, inHierarchies
 				, inMeshRenderers
 				, inModel
 				, inShader
