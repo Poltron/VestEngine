@@ -2,6 +2,7 @@
 
 #include "GLFW/glfw3.h" // for time
 
+#include "Helpers/HierarchyHelper.h"
 #include "Utils/EntityFactory.h"
 
 bool Engine::initialize()
@@ -41,11 +42,36 @@ bool Engine::initialize()
 	//ResourceHandle bagModel = resourcesManager.loadModel("../Resources/Models/backpack/backpack.obj");
 
 	// placeholder scene
-	{
-		Entity bagEntity = EntityFactory::createSceneBag(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, cubeModel, litShader);
-		EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, bagEntity);
-		EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
-	}
+	Entity parentEntity = EntityFactory::createSceneBag(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, cubeModel, litShader);
+	std::vector<Entity> childEntities = EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, parentEntity);
+	EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
+
+	inputManager.registerKeyCallback(GLFW_KEY_P
+		, [hierarchies = &hierarchyComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+		{
+			if (inState != GLFW_PRESS)
+			{
+				return;
+			}
+
+			for (Entity childEntity : childEntities)
+			{
+				HierarchyComponent* hierarchy = hierarchies->get(childEntity);
+				if (!hierarchy)
+				{
+					continue;
+				}
+
+				if (EntityFuncs::isEntityValid(hierarchy->parent))
+				{
+					hierarchyHelper::detach(hierarchy, *hierarchies);
+				}
+				else
+				{
+					hierarchyHelper::attachTo(hierarchy, parentEntity, *hierarchies);
+				}
+			}
+		});
 
 	renderer.fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
 

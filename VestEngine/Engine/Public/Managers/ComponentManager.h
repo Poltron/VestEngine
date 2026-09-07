@@ -53,6 +53,11 @@ public:
 		return components.data() + idx;
 	}
 
+	size_t getIndex(Entity inID) const
+	{
+		return lookupTable.at(inID);
+	}
+
 	T* getData()
 	{
 		return components.data();
@@ -65,13 +70,14 @@ public:
 
 	void destroy(Entity inID)
 	{
-		T* element = lookupTable.at(inID);
-		components.remove(element);
+		size_t elementIdx = lookupTable.at(inID);
+		components.remove(elementIdx);
 		lookupTable.erase(inID);
 	}
 
 private:
 	DenseArray<T> components;
+	// change to a sparse array of entityID to component index
 	std::unordered_map<Entity, size_t> lookupTable;
 };
 

@@ -31,7 +31,7 @@ public:
 		memcpy(buffer, inOther.buffer, sizeof(T) * capacity);
 	}
 
-	DenseArray(DenseArray<T>&& inOther)
+	DenseArray(DenseArray<T>&& inOther) noexcept
 	{
 		clear();
 
@@ -44,7 +44,7 @@ public:
 		inOther.maxIndex = 0;
 	}
 
-	DenseArray& operator=(DenseArray<T>&& inOther)
+	DenseArray& operator=(DenseArray<T>&& inOther) noexcept
 	{
 		if (&inOther != this)
 		{
