@@ -54,11 +54,15 @@ void InputManager::processInput(GLFWwindow* inWindow, double inDeltaTime)
 		}
 	}
 
-
 	if (glfwGetKey(inWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(inWindow, true);
 	}
+
+	keyInputs.clear();
+	mouseInputs.clear();
+	cursorPosInputs.clear();
+	scrollInputs.clear();
 
 	//if (glfwGetKey(inWindow, GLFW_KEY_T) == GLFW_PRESS)
 	//{
