@@ -10,6 +10,58 @@ public:
 		: capacity(0), maxIndex(0), buffer(nullptr)
 	{}
 
+	~DenseArray()
+	{
+		clear();
+	}
+
+	DenseArray(const DenseArray<T>& inOther)
+	{	
+		initialize(inOther.capacity);
+		maxIndex = inOther.maxIndex;
+
+		memcpy(buffer, inOther.buffer, sizeof(T) * capacity);
+	}
+
+	DenseArray& operator=(const DenseArray<T>& inOther)
+	{
+		initialize(inOther.capacity);
+		maxIndex = inOther.maxIndex;
+
+		memcpy(buffer, inOther.buffer, sizeof(T) * capacity);
+	}
+
+	DenseArray(DenseArray<T>&& inOther)
+	{
+		clear();
+
+		capacity = inOther.capacity;
+		maxIndex = inOther.maxIndex;
+		buffer = inOther.buffer;
+
+		inOther.buffer = nullptr;
+		inOther.capacity = 0;
+		inOther.maxIndex = 0;
+	}
+
+	DenseArray& operator=(DenseArray<T>&& inOther)
+	{
+		if (&inOther != this)
+		{
+			clear();
+
+			capacity = inOther.capacity;
+			maxIndex = inOther.maxIndex;
+			buffer = inOther.buffer;
+
+			inOther.buffer = nullptr;
+			inOther.capacity = 0;
+			inOther.maxIndex = 0;
+		}
+
+		return *this;
+	}
+
 	void initialize(size_t inCapacity)
 	{
 		clear();
@@ -31,25 +83,13 @@ public:
 		maxIndex = 0;
 	}
 
-	T* data()
-	{
-		return buffer;
-	}
+	T* data() { return buffer; }
+	const T* data() const { return buffer; }
 
-	const T* data() const
-	{
-		return buffer;
-	}
+	void setSize(size_t inSize) { maxIndex = inSize; }
+	size_t size() const { return maxIndex; }
 
-	size_t size() const
-	{
-		return maxIndex;
-	}
-
-	size_t getCapacity() const
-	{
-		return capacity;
-	}
+	size_t getCapacity() const { return capacity; }
 
 	size_t add()
 	{
