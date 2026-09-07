@@ -75,6 +75,21 @@ public:
 		lookupTable.erase(inID);
 	}
 
+	void moveData(DenseArray<T>&& inData)
+	{
+		components = std::move(inData);
+	}
+
+	void rebuildLookupTable()
+	{
+		lookupTable.clear();
+		for (size_t i = 0; i < components.size() ; ++i)
+		{
+			const T& component = components.at(i);
+			lookupTable.insert({ component.entity, i});
+		}
+	}
+
 private:
 	DenseArray<T> components;
 	// change to a sparse array of entityID to component index

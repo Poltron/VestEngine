@@ -9,6 +9,7 @@
 #include "Managers/ResourcesManager.h"
 #include "Managers/WindowManager.h"
 #include "Systems/Renderer.h"
+#include "Systems/HierarchySystem.h"
 #include "Systems/PhysicsSystem.h"
 #include "Systems/TransformSystem.h"
 
@@ -40,6 +41,7 @@ class Engine
 	ComponentManager<DirectionalLightComponent> directionalLightComponents;
 	ComponentManager<PointLightComponent> pointLightComponents;
 
+	HierarchySystem hierarchySystem;
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
 
