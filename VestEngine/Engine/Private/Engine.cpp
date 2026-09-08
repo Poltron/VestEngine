@@ -19,6 +19,7 @@ bool Engine::initialize()
 	inputHandler.initialize(&inputManager, &windowManager);
 
 	renderer.initialize();
+	uiManager.initialize(window);
 
 	camera.initialize(&inputManager);
 	renderer.setActiveCamera(&camera);
@@ -140,6 +141,8 @@ int Engine::launch()
 
 		inputManager.processInput(windowManager.getWindow(), deltaTime);
 
+		uiManager.startFrame();
+
 		camera.update(deltaTime);
 
 		hierarchySystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
@@ -148,6 +151,7 @@ int Engine::launch()
 
 		renderer.clear();
 		renderer.render(resourcesManager, worldTransformComponents, meshRendererComponents, currentFrame);
+		uiManager.render();
 		renderer.swap(windowManager.getWindow());
 	}
 	
@@ -157,6 +161,7 @@ int Engine::launch()
 
 void Engine::shutdown()
 {
+	uiManager.cleanup();
 	windowManager.destroyWindow();
 }
 
