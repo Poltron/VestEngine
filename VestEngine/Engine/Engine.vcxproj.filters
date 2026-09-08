@@ -1,186 +1,236 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
+    <Filter Include="Public">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Private">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Shader Files">
-      <UniqueIdentifier>{5f74a633-4590-42ab-8e84-952da0e63f83}</UniqueIdentifier>
+    <Filter Include="ThirdParty">
+      <UniqueIdentifier>{6f9dfa71-75c2-4a23-97ee-9b5c3bbea7d8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\ThirdParty\glad\src\glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Private\Camera.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\main.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\EntityManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\ComponentManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Resources\Mesh.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Resources\Shader.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Resources\Texture.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Systems\Renderer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Systems\ShaderParameterCollection.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\ResourcesManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Engine.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\InputManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\WindowManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\EntityFactory.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\InputHandler.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Resources\Model.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Helpers\HierarchyHelper.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Systems\HierarchySystem.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Systems\PhysicsSystem.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Systems\TransformSystem.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\glad\src\glad.c">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Managers\UIManager.cpp">
+      <Filter>Private</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\Camera.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\TransformComponent.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Systems\TransformSystem.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\MeshRendererComponent.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Managers\EntityManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\PoolAllocator.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\StackAllocator.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Managers\ComponentManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\DenseArray.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Assets\Mesh.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Assets\Texture.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\Mesh.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\Shader.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\Texture.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Systems\Renderer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\DirectionalLightComponent.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\PointLightComponent.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Systems\ShaderParameterCollection.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Managers\ResourcesManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Engine.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Managers\InputManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Managers\WindowManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\EntityFactory.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Managers\InputHandler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\Model.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\ResourceHandle.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\Entity.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\HierarchyComponent.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Components\RigidbodyComponent.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Systems\PhysicsSystem.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\Ensure.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Systems\HierarchySystem.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Helpers\HierarchyHelper.h">
-      <Filter>Header Files</Filter>
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Managers\UIManager.h">
+      <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

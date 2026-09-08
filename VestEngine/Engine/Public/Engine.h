@@ -7,6 +7,7 @@
 #include "Managers/InputHandler.h"
 #include "Managers/InputManager.h"
 #include "Managers/ResourcesManager.h"
+#include "Managers/UIManager.h"
 #include "Managers/WindowManager.h"
 #include "Systems/Renderer.h"
 #include "Systems/HierarchySystem.h"
@@ -26,11 +27,13 @@ class Engine
 	InputHandler inputHandler;
 	InputManager inputManager;
 	WindowManager windowManager;
+	UIManager uiManager;
 
 	Renderer renderer;
 	Camera camera;
 
 	EntityManager entityManager;
+
 
 	ComponentManager<LocalTransformComponent> localTransformComponents;
 	ComponentManager<WorldTransformComponent> worldTransformComponents;

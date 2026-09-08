@@ -72,9 +72,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>Public\;..\ThirdParty\glm\includes;..\ThirdParty\stb\include;..\ThirdParty\glad\include;..\ThirdParty\glfw-3.4\includes;..\ThirdParty\assimp-6.0.5\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>..\ThirdParty\glfw-3.4\lib;..\ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
-    <SourcePath>..\Engine\Private;..\ThirdParty\glad\src;$(SourcePath)</SourcePath>
+    <IncludePath>$(ProjectDir)Public\;$(SolutionDir)ThirdParty\glm\includes;$(SolutionDir)ThirdParty\stb\include;$(SolutionDir)ThirdParty\glad\include;$(SolutionDir)ThirdParty\glfw-3.4\includes;$(SolutionDir)ThirdParty\assimp-6.0.5\includes;$(SolutionDir)ThirdParty\imgui;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ThirdParty\glfw-3.4\lib;$(SolutionDir)ThirdParty\assimp-6.0.5\lib;$(LibraryPath)</LibraryPath>
+    <SourcePath>$(ProjectDir)Private;$(SolutionDir)ThirdParty\glad\src;$(SolutionDir)ThirdParty\imgui;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -132,6 +132,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\glad\src\glad.c" />
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Private\Helpers\HierarchyHelper.cpp" />
     <ClCompile Include="Private\Resources\Model.cpp" />
     <ClCompile Include="Private\Managers\InputHandler.cpp" />
@@ -152,8 +159,18 @@
     <ClCompile Include="Private\Systems\ShaderParameterCollection.cpp" />
     <ClCompile Include="Private\Managers\ResourcesManager.cpp" />
     <ClCompile Include="Private\Managers\WindowManager.cpp" />
+    <ClCompile Include="Private\Managers\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
     <ClInclude Include="Public\Helpers\HierarchyHelper.h" />
     <ClInclude Include="Public\Components\HierarchyComponent.h" />
     <ClInclude Include="Public\Components\Entity.h" />
@@ -187,6 +204,7 @@
     <ClInclude Include="Public\Managers\ResourcesManager.h" />
     <ClInclude Include="Public\Managers\WindowManager.h" />
     <ClInclude Include="Public\Resources\ResourceHandle.h" />
+    <ClInclude Include="Public\Managers\UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
