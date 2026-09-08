@@ -47,7 +47,7 @@ bool Engine::initialize()
 	EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
 
 	inputManager.registerKeyCallback(GLFW_KEY_P
-		, [hierarchies = &hierarchyComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
 		{
 			if (inState != GLFW_PRESS)
 			{
@@ -64,32 +64,63 @@ bool Engine::initialize()
 
 				if (EntityFuncs::isEntityValid(hierarchy->parent))
 				{
-					hierarchyHelper::detach(hierarchy, *hierarchies);
+					hierarchyHelper::detach(hierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
 				}
 				else
 				{
-					hierarchyHelper::attachTo(hierarchy, parentEntity, *hierarchies);
+					HierarchyComponent* parentHierarchy = hierarchies->get(parentEntity);
+					hierarchyHelper::attachTo(hierarchy, parentHierarchy, EAttachmentRules::KeepWorld, *localTransforms, *worldTransforms);
 				}
 			}
 		});
 
 	inputManager.registerKeyCallback(GLFW_KEY_O
-		, [hierarchies = &hierarchyComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
 		{
 			if (inState != GLFW_PRESS)
 			{
 				return;
 			}
 
-			HierarchyComponent* hierarchy = nullptr;
-			do
+			HierarchyComponent* firstHierarchy = hierarchies->get(childEntities[0]);
+			if (EntityFuncs::isEntityValid(firstHierarchy->parent))
 			{
-				Entity randomEntity = childEntities[std::rand() % childEntities.size()];
-				hierarchy = hierarchies->get(randomEntity);
-				ensure(hierarchy);
-			} while (!EntityFuncs::isEntityValid(hierarchy->parent));
+				hierarchyHelper::detach(firstHierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
+			}
+			else
+			{
+				HierarchyComponent* parentHierarchy = hierarchies->get(parentEntity);
+				hierarchyHelper::attachTo(firstHierarchy, parentHierarchy, EAttachmentRules::KeepWorld, *localTransforms, *worldTransforms);
+			}
+		});
 
-			hierarchyHelper::detach(hierarchy, *hierarchies);
+	inputManager.registerKeyCallback(GLFW_KEY_I
+		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+		{
+			if (inState != GLFW_PRESS)
+			{
+				return;
+			}
+
+			std::vector<Entity> parentedEntities;
+			for (size_t i = 0; i < hierarchies->size(); ++i)
+			{
+				HierarchyComponent* hierarchy = hierarchies->at(i);
+				if (hierarchy && hierarchy->parent)
+				{
+					parentedEntities.push_back(hierarchy->entity);
+				}
+			}
+			
+			if (parentedEntities.size() == 0)
+			{
+				return;
+			}
+
+			Entity randomEntity = parentedEntities[std::rand() % parentedEntities.size()];
+			HierarchyComponent* hierarchy = hierarchies->get(randomEntity);
+			hierarchyHelper::detach(hierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
+
 		});
 
 	renderer.fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
@@ -112,7 +143,7 @@ int Engine::launch()
 		camera.update(deltaTime);
 
 		hierarchySystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
-		physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
+		//physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
 		transformSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
 
 		renderer.clear();

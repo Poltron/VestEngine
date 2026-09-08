@@ -31,8 +31,8 @@ void PhysicsSystem::update(ComponentManager<LocalTransformComponent>& inLocalTra
 		}
 		else
 		{
-			localTransform->setLocalRotation(localTransform->rotation + rotation);
-			localTransform->setLocalPosition(localTransform->position + translation);
+			localTransform->setLocalRotation(localTransform->getRotation() + rotation);
+			localTransform->setLocalPosition(localTransform->getPosition() + translation);
 		}
 
 		if (hierarchy)
@@ -55,7 +55,7 @@ void PhysicsSystem::addWorldRotation(const glm::vec3& inRotation, LocalTransform
 	glm::mat4 invParent = glm::inverse(inParentWorldTransform->model);
 	glm::vec3 localRotation = glm::mat3(invParent) * inRotation;
 
-	inLocalTransform->setLocalRotation(inLocalTransform->rotation + localRotation);
+	inLocalTransform->setLocalRotation(inLocalTransform->getRotation() + localRotation);
 }
 
 void PhysicsSystem::addWorldTranslation(const glm::vec3& inPosition, LocalTransformComponent* inLocalTransform, WorldTransformComponent* inParentWorldTransform)
@@ -63,7 +63,7 @@ void PhysicsSystem::addWorldTranslation(const glm::vec3& inPosition, LocalTransf
 	glm::mat4 invParent = glm::inverse(inParentWorldTransform->model);
 	glm::vec3 localPosition = glm::vec3(invParent * glm::vec4(inPosition, 0.0f));
 
-	inLocalTransform->setLocalPosition(inLocalTransform->position + localPosition);
+	inLocalTransform->setLocalPosition(inLocalTransform->getPosition() + localPosition);
 }
 
 void PhysicsSystem::setChildrenDirty(Entity inEntity, ComponentManager<HierarchyComponent>& inHierarchies, ComponentManager<LocalTransformComponent>& inLocalTransforms)
@@ -74,7 +74,7 @@ void PhysicsSystem::setChildrenDirty(Entity inEntity, ComponentManager<Hierarchy
 	{
 		LocalTransformComponent* localTransform = inLocalTransforms.get(nextChild);
 		assert(localTransform);
-		localTransform->bDirty = true;
+		localTransform->setDirty(true);
 
 		HierarchyComponent* hierarchyComponent = inHierarchies.get(nextChild);
 		assert(hierarchyComponent);

@@ -9,5 +9,7 @@ struct HierarchyComponent
 	Entity parent = 0;
 	Entity firstChild = 0;
 	Entity nextSibling = 0;
+
+	bool bDirty = false;
 };
 

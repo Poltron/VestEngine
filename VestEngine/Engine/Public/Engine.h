@@ -36,7 +36,6 @@ class Engine
 	ComponentManager<WorldTransformComponent> worldTransformComponents;
 	ComponentManager<HierarchyComponent> hierarchyComponents;
 	ComponentManager<RigidbodyComponent> rigidbodyComponents;
-
 	ComponentManager<MeshRendererComponent> meshRendererComponents;
 	ComponentManager<DirectionalLightComponent> directionalLightComponents;
 	ComponentManager<PointLightComponent> pointLightComponents;

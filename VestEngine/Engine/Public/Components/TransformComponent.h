@@ -3,6 +3,7 @@
 #include "glm/vec3.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
 
 #include "Components/Entity.h"
 
@@ -13,13 +14,15 @@
 
 struct LocalTransformComponent
 {
-	Entity entity = 0;
-
+private:
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::vec3 scale;
 
 	bool bDirty = false;
+
+public:
+	Entity entity = 0;
 
 	LocalTransformComponent()
 	{
@@ -30,19 +33,40 @@ struct LocalTransformComponent
 		scale = glm::vec3(1, 1, 1);
 	}
 
+	const glm::vec3& getPosition() const { return position; }
 	void setLocalPosition(const glm::vec3& inNewPosition)
 	{
 		position = inNewPosition;
 		bDirty = true;
 	}
 
+	const glm::vec3& getRotation() const { return rotation; }
 	void setLocalRotation(const glm::vec3& inNewRotation)
 	{
 		rotation = inNewRotation;
 		bDirty = true;
 	}
 
-	glm::mat4 getLocalModelMatrix()
+	void setLocalRotation(const glm::quat& inNewRotation)
+	{
+		rotation = glm::eulerAngles(inNewRotation);
+		bDirty = true;
+	}
+
+	const glm::vec3& getScale() const { return scale; }
+	void setLocalScale(const glm::vec3& inNewScale)
+	{
+		scale = inNewScale;
+		bDirty = true;
+	}
+
+	bool isDirty() const { return bDirty; }
+	void setDirty(bool inDirty)
+	{ 
+		bDirty = inDirty; 
+	}
+
+	glm::mat4 getLocalModelMatrix() const
 	{
 		glm::mat4 model = glm::translate(glm::mat4(1.0), position);
 

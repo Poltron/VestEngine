@@ -24,9 +24,9 @@ namespace EntityFactory
 		, HierarchyComponent* inParentHierarchy)
 	{
 		LocalTransformComponent* localTransformComponent = inLocalTransforms.create(inEntity);
-		localTransformComponent->position = inPosition;
-		localTransformComponent->rotation = inRotation;
-		localTransformComponent->scale = inScale;
+		localTransformComponent->setLocalPosition(inPosition);
+		localTransformComponent->setLocalRotation(inRotation);
+		localTransformComponent->setLocalScale(inScale);
 
 		WorldTransformComponent* worldTransformComponent = inWorldTransforms.create(inEntity);
 		worldTransformComponent->model = localTransformComponent->getLocalModelMatrix();
@@ -34,7 +34,7 @@ namespace EntityFactory
 		HierarchyComponent* hierarchyComponent = inHierarchies.create(inEntity);
 		if (inParentHierarchy)
 		{
-			hierarchyHelper::attachTo(hierarchyComponent, inParentHierarchy);
+			hierarchyHelper::attachTo(hierarchyComponent, inParentHierarchy, EAttachmentRules::KeepWorld, inLocalTransforms, inWorldTransforms);
 		}
 
 		return localTransformComponent;
@@ -165,7 +165,7 @@ namespace EntityFactory
 		};
 
 		glm::vec3 cubeRotations[] = {
-			glm::vec3(0, 0, 0),
+			glm::vec3(1, 1, 1),
 			glm::vec3(0, 15, 50),
 			glm::vec3(75, 20, 250),
 			glm::vec3(10, 63, 84),
