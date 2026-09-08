@@ -23,6 +23,7 @@ DECLARE_TEST(DenseArray, Capacity1)
 	EXPECT(ints.size() == 0);
 }
 
+// Clear
 DECLARE_TEST(DenseArray, Clear0)
 {
 	DenseArray<int> ints;
@@ -45,6 +46,47 @@ DECLARE_TEST(DenseArray, Clear1)
 	ints.clear();
 	EXPECT(ints.getCapacity() == 0);
 	EXPECT(ints.data() == nullptr);
+}
+
+// --- Size
+DECLARE_TEST(DenseArray, SetSize0NoInit)
+{
+	DenseArray<int> ints;
+	EXPECT(ints.getCapacity() == 0);
+	ints.setSize(0);
+}
+
+DECLARE_TEST(DenseArray, SetSize1NoInit)
+{
+	DenseArray<int> ints;
+	EXPECT(ints.getCapacity() == 0);
+	EXPECT_EXCEPTION(ints.setSize(1));
+}
+
+DECLARE_TEST(DenseArray, SetSize0)
+{
+	DenseArray<int> ints;
+	ints.initialize(1);
+	EXPECT(ints.getCapacity() == 1);
+	ints.setSize(0);
+	EXPECT(ints.size() == 0);
+}
+
+DECLARE_TEST(DenseArray, SetSize1)
+{
+	DenseArray<int> ints;
+	ints.initialize(1);
+	EXPECT(ints.getCapacity() == 1);
+	ints.setSize(1);
+	EXPECT(ints.size() == 1);
+}
+
+DECLARE_TEST(DenseArray, SetSize2)
+{
+	DenseArray<int> ints;
+	ints.initialize(1);
+	EXPECT(ints.getCapacity() == 1);
+	EXPECT_EXCEPTION(ints.setSize(2));
 }
 
 // --- Add

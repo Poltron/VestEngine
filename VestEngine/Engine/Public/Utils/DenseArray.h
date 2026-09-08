@@ -86,10 +86,14 @@ public:
 	T* data() { return buffer; }
 	const T* data() const { return buffer; }
 
-	void setSize(size_t inSize) { maxIndex = inSize; }
 	size_t size() const { return maxIndex; }
-
 	size_t getCapacity() const { return capacity; }
+
+	void setSize(size_t inSize)
+	{
+		ensure(inSize <= getCapacity());
+		maxIndex = inSize;
+	}
 
 	size_t add()
 	{
