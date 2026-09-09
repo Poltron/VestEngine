@@ -174,6 +174,11 @@ void platform::shutdown()
 	g_GLFWWindowManager->destroyWindow();
 }
 
+double platform::getTime()
+{
+	return glfwGetTime();
+}
+
 InputManager& platform::getInputManager()
 {
 	return *g_GLFWInputManager;
