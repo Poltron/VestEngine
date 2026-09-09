@@ -229,6 +229,9 @@
     <ClInclude Include="Public\Platform\Platform.h">
       <Filter>Public</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Platform\Input.h">
+      <Filter>Public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Public\Platform\GLFW\GLFWPlatform.inl">
