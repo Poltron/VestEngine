@@ -1,6 +1,6 @@
 #include "Engine.h"
 
-#include "GLFW/glfw3.h" // tmp for time + inputs
+#include "GLFW/glfw3.h" // tmp inputs
 
 #include "Helpers/HierarchyHelper.h"
 #include "Platform/InputManager.h"
@@ -121,11 +121,11 @@ bool Engine::initialize()
 
 int Engine::launch()
 {
-	double lastFrame = glfwGetTime();
+	double lastFrame = platform::getTime();
 
 	while (!isShutdownRequested())
 	{
-		double currentFrame = glfwGetTime();
+		double currentFrame = platform::getTime();
 		double deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
