@@ -2,13 +2,12 @@
 
 #include <functional>
 
-#include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 
-namespace camera_private
+namespace
 {
 	bool floatEquals(float a, float b)
 	{
@@ -31,39 +30,39 @@ void Camera::initialize()
 {
 
 	platform::getInputManager().registerCursorPosCallback(
-		[this](double xPos, double yPos, double deltaTime)
+		[this](double inX, double inY, double inDeltaTime)
 		{
-			onMouseMoved(xPos, yPos, deltaTime);
+			onMouseMoved(inX, inY, inDeltaTime);
 		});
 
 	platform::getInputManager().registerScrollCallback(
-		[this](double xPos, double yPos, double deltaTime)
+		[this](double inX, double inY, double inDeltaTime)
 		{
-			onMouseScrolled(xPos, yPos, deltaTime);
+			onMouseScrolled(inX, inY, inDeltaTime);
 		});
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_UP
-		, [this](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::UP
+		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyUpPressed(inState, inMods);
+			onKeyUpPressed(inState, inModifiers);
 		});
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_DOWN
-		, [this](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::DOWN
+		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyDownPressed(inState, inMods);
+			onKeyDownPressed(inState, inModifiers);
 		});
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_LEFT
-		, [this](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::LEFT
+		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyLeftPressed(inState, inMods);
+			onKeyLeftPressed(inState, inModifiers);
 		});
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_RIGHT
-		, [this](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::RIGHT
+		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyRightPressed(inState, inMods);
+			onKeyRightPressed(inState, inModifiers);
 		});
 }
 
@@ -156,13 +155,13 @@ void Camera::consumeKeyboardInputs(float inHorizontalAxis, float inVerticalAxis,
 	bool bDirty = false;
 	float speed = moveSpeed * (float)inDeltaTime;
 
-	if (!camera_private::floatEquals(inHorizontalAxis, 0))
+	if (!floatEquals(inHorizontalAxis, 0))
 	{
 		position += glm::normalize(glm::cross(forward, up)) * inHorizontalAxis * speed;
 		bDirty = true;
 	}
 
-	if (!camera_private::floatEquals(inVerticalAxis, 0))
+	if (!floatEquals(inVerticalAxis, 0))
 	{
 		position += forward * inVerticalAxis * speed;
 		bDirty = true;
@@ -199,49 +198,49 @@ void Camera::onMouseScrolled(double inX, double inY, double inDeltaTime)
 	consumeMouseScrollInputs(0, adjustedY, inDeltaTime);
 }
 
-void Camera::onKeyUpPressed(int inState, int inMods)
+void Camera::onKeyUpPressed(input::EInputState inState, input::EKeyModifier inModifiers)
 {
-	if (inState == GLFW_PRESS)
+	if (inState == input::EInputState::PRESS)
 	{
 		verticalAxis = 1.0f;
 	}
-	else if (inState == GLFW_RELEASE)
+	else if (inState == input::EInputState::RELEASE)
 	{
 		verticalAxis = 0;
 	}
 }
 
-void Camera::onKeyDownPressed(int inState, int inMods)
+void Camera::onKeyDownPressed(input::EInputState inState, input::EKeyModifier inModifiers)
 {
-	if (inState == GLFW_PRESS)
+	if (inState == input::EInputState::PRESS)
 	{
 		verticalAxis = -1.0f;
 	}
-	else if (inState == GLFW_RELEASE)
+	else if (inState == input::EInputState::RELEASE)
 	{
 		verticalAxis = 0;
 	}
 }
 
-void Camera::onKeyLeftPressed(int inState, int inMods)
+void Camera::onKeyLeftPressed(input::EInputState inState, input::EKeyModifier inModifiers)
 {
-	if (inState == GLFW_PRESS)
+	if (inState == input::EInputState::PRESS)
 	{
 		horizontalAxis = -1.0f;
 	}
-	else if (inState == GLFW_RELEASE)
+	else if (inState == input::EInputState::RELEASE)
 	{
 		horizontalAxis = 0;
 	}
 }
 
-void Camera::onKeyRightPressed(int inState, int inMods)
+void Camera::onKeyRightPressed(input::EInputState inState, input::EKeyModifier inModifiers)
 {
-	if (inState == GLFW_PRESS)
+	if (inState == input::EInputState::PRESS)
 	{
 		horizontalAxis = 1.0f;
 	}
-	else if (inState == GLFW_RELEASE)
+	else if (inState == input::EInputState::RELEASE)
 	{
 		horizontalAxis = 0;
 	}

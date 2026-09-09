@@ -170,6 +170,7 @@
     <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
     <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="Public\Platform\Input.h" />
     <ClInclude Include="Public\Platform\Platform.h" />
     <ClInclude Include="Public\Helpers\HierarchyHelper.h" />
     <ClInclude Include="Public\Components\HierarchyComponent.h" />

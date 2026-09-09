@@ -1,7 +1,7 @@
 #pragma once
 #include "glm/glm.hpp"
 
-class InputManager;
+#include "Platform/Input.h"
 
 struct Plane
 {
@@ -77,12 +77,12 @@ private:
 	void onMouseScrolled(double inX, double inY, double inDeltaTime);
 
 	// todo : handle this as an axis
-	void onKeyUpPressed(int inState, int inMods);
-	void onKeyDownPressed(int inState, int inMods);
+	void onKeyUpPressed(input::EInputState inState, input::EKeyModifier inModifiers);
+	void onKeyDownPressed(input::EInputState inState, input::EKeyModifier inModifiers);
 
 	// todo : handle this as an axis
-	void onKeyLeftPressed(int inState, int inMods);
-	void onKeyRightPressed(int inState, int inMods);
+	void onKeyLeftPressed(input::EInputState inState, input::EKeyModifier inModifiers);
+	void onKeyRightPressed(input::EInputState inState, input::EKeyModifier inModifiers);
 
 	void consumeMouseMovementInputs(float inXOffset, float inYOffset, double inDeltaTime);
 	void consumeMouseScrollInputs(float inXOffset, float inYOffset, double inDeltaTime);

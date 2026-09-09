@@ -3,23 +3,25 @@
 #include <functional>
 #include <unordered_map>
 
+#include "Platform/Input.h"
+
 struct KeyInput
 {
-	int key;
-	int state;
-	int mods;
+	input::EKey key;
+	input::EInputState state;
+	input::EKeyModifier mods;
 
-	KeyInput(int inKey, int inState, int inMods)
+	KeyInput(input::EKey inKey, input::EInputState inState, input::EKeyModifier inMods)
 		: key(inKey), state(inState), mods(inMods)
 	{}
 };
 
 struct MouseInput
 {
-	int button;
-	int state;
+	input::EMouseButton button;
+	input::EInputState state;
 
-	MouseInput(int inButton, int inState)
+	MouseInput(input::EMouseButton inButton, input::EInputState inState)
 		: button(inButton), state(inState)
 	{}
 };
@@ -53,26 +55,26 @@ enum class EInputMode
 class InputManager
 {
 public:
-	virtual void initialize() = 0;
+	virtual void initialize();
 	void processInput(double inDeltaTime);
 
 protected:
 	virtual void pollEvents() = 0;
 
 public:
-	using KeyCallback = std::function<void(int/* state */, int/* mods */, double/* deltaTime */)>;
-	using MouseCallback = std::function<void(int /* state */, double/* deltaTime */)>;
+	using KeyCallback = std::function<void(input::EInputState/* state */, input::EKeyModifier/* mods */, double/* deltaTime */)>;
+	using MouseCallback = std::function<void(input::EInputState /* state */, double/* deltaTime */)>;
 	using CursorPosCallback = std::function<void(double/* xPos */, double/* yPos */, double/* deltaTime */)>;
 	using ScrollCallback = std::function<void(double/* x */, double/* y */, double/* deltaTime */)>;
 
-	void registerKeyCallback(int key, KeyCallback inCallback);
-	void registerMouseCallback(int button, MouseCallback inCallback);
+	void registerKeyCallback(input::EKey key, KeyCallback inCallback);
+	void registerMouseCallback(input::EMouseButton button, MouseCallback inCallback);
 	void registerCursorPosCallback(CursorPosCallback inCallback);
 	void registerScrollCallback(ScrollCallback inScrollback);
 
 protected:
-	std::unordered_map<int, std::vector<KeyCallback>> keyCallbacks;
-	std::unordered_map<int, std::vector<MouseCallback>> mouseCallbacks;
+	std::unordered_map<input::EKey, std::vector<KeyCallback>> keyCallbacks;
+	std::unordered_map<input::EMouseButton, std::vector<MouseCallback>> mouseCallbacks;
 	std::vector<CursorPosCallback> cursorPosCallbacks;
 	std::vector<ScrollCallback> scrollCallbacks;
 

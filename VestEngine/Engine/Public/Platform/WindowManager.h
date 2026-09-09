@@ -9,6 +9,7 @@ public:
 	virtual void* createWindow(int width, int height) = 0;
 	virtual void destroyWindow() = 0;
 
+	virtual void closeWindow() = 0;
 	virtual bool shouldCloseWindow() const = 0;
 
 	virtual void swapBuffers() = 0;

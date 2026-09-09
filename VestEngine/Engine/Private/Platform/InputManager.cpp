@@ -1,5 +1,17 @@
 #include "Platform/InputManager.h"
 
+#include "Platform/Platform.h"
+#include "Platform/WindowManager.h"
+
+void InputManager::initialize()
+{
+	registerKeyCallback(input::EKey::ESCAPE
+		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
+		{
+			platform::getWindowManager().closeWindow();
+		});
+}
+
 void InputManager::processInput(double inDeltaTime)
 {
 	pollEvents();
@@ -48,7 +60,7 @@ void InputManager::processInput(double inDeltaTime)
 	scrollInputs.clear();
 }
 
-void InputManager::registerKeyCallback(int key, KeyCallback inCallback)
+void InputManager::registerKeyCallback(input::EKey key, KeyCallback inCallback)
 {
 	// note : syntaxe des enfers, contains() seulement en C++20 ???
 	if (auto existingPair = keyCallbacks.find(key); existingPair != keyCallbacks.end())
@@ -61,7 +73,7 @@ void InputManager::registerKeyCallback(int key, KeyCallback inCallback)
 	}
 }
 
-void InputManager::registerMouseCallback(int button, MouseCallback inCallback)
+void InputManager::registerMouseCallback(input::EMouseButton button, MouseCallback inCallback)
 {
 	// note : syntaxe des enfers, contains() seulement en C++20 ???
 	if (auto existingPair = mouseCallbacks.find(button); existingPair != mouseCallbacks.end())

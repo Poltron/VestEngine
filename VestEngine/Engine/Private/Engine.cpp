@@ -1,7 +1,5 @@
 #include "Engine.h"
 
-#include "GLFW/glfw3.h" // tmp inputs
-
 #include "Helpers/HierarchyHelper.h"
 #include "Platform/InputManager.h"
 #include "Utils/EntityFactory.h"
@@ -37,10 +35,10 @@ bool Engine::initialize()
 	std::vector<Entity> childEntities = EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, parentEntity);
 	EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_P
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::P
+		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
 		{
-			if (inState != GLFW_PRESS)
+			if (inState != input::EInputState::PRESS)
 			{
 				return;
 			}
@@ -65,10 +63,10 @@ bool Engine::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_O
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::O
+		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
 		{
-			if (inState != GLFW_PRESS)
+			if (inState != input::EInputState::PRESS)
 			{
 				return;
 			}
@@ -85,10 +83,10 @@ bool Engine::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(GLFW_KEY_I
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
+	platform::getInputManager().registerKeyCallback(input::EKey::I
+		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
 		{
-			if (inState != GLFW_PRESS)
+			if (inState != input::EInputState::PRESS)
 			{
 				return;
 			}
