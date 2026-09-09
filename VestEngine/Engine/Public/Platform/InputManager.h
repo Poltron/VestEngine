@@ -3,8 +3,6 @@
 #include <functional>
 #include <unordered_map>
 
-struct GLFWwindow;
-
 struct KeyInput
 {
 	int key;
@@ -46,12 +44,20 @@ struct ScrollInput
 	{}
 };
 
+enum class EInputMode
+{
+	Capture,
+	Free
+};
+
 class InputManager
 {
-
 public:
-	void initialize(GLFWwindow* inWindow);
-	void processInput(GLFWwindow* inWindow, double inDeltaTime);
+	virtual void initialize() = 0;
+	void processInput(double inDeltaTime);
+
+protected:
+	virtual void pollEvents() = 0;
 
 public:
 	using KeyCallback = std::function<void(int/* state */, int/* mods */, double/* deltaTime */)>;
@@ -64,7 +70,7 @@ public:
 	void registerCursorPosCallback(CursorPosCallback inCallback);
 	void registerScrollCallback(ScrollCallback inScrollback);
 
-private:
+protected:
 	std::unordered_map<int, std::vector<KeyCallback>> keyCallbacks;
 	std::unordered_map<int, std::vector<MouseCallback>> mouseCallbacks;
 	std::vector<CursorPosCallback> cursorPosCallbacks;
@@ -75,7 +81,4 @@ private:
 	std::vector<MouseInput> mouseInputs;
 	std::vector<CursorPosInput> cursorPosInputs;
 	std::vector<ScrollInput> scrollInputs;
-
-private:
-	friend struct InputHandler;
 };

@@ -47,16 +47,10 @@
     <ClCompile Include="Private\Engine.cpp">
       <Filter>Private</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Managers\InputManager.cpp">
-      <Filter>Private</Filter>
-    </ClCompile>
-    <ClCompile Include="Private\Managers\WindowManager.cpp">
+    <ClCompile Include="Private\Platform\InputManager.cpp">
       <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\EntityFactory.cpp">
-      <Filter>Private</Filter>
-    </ClCompile>
-    <ClCompile Include="Private\Managers\InputHandler.cpp">
       <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Resources\Model.cpp">
@@ -99,6 +93,9 @@
       <Filter>Private</Filter>
     </ClCompile>
     <ClCompile Include="Private\Managers\UIManager.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Platform\Platform.cpp">
       <Filter>Private</Filter>
     </ClCompile>
   </ItemGroup>
@@ -163,16 +160,13 @@
     <ClInclude Include="Public\Engine.h">
       <Filter>Public</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Managers\InputManager.h">
+    <ClInclude Include="Public\Platform\InputManager.h">
       <Filter>Public</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Managers\WindowManager.h">
+    <ClInclude Include="Public\Platform\WindowManager.h">
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\EntityFactory.h">
-      <Filter>Public</Filter>
-    </ClInclude>
-    <ClInclude Include="Public\Managers\InputHandler.h">
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Resources\Model.h">
@@ -232,5 +226,13 @@
     <ClInclude Include="Public\Managers\UIManager.h">
       <Filter>Public</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Platform\Platform.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Public\Platform\GLFW\GLFWPlatform.inl">
+      <Filter>Public</Filter>
+    </None>
   </ItemGroup>
 </Project>

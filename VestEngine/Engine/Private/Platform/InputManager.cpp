@@ -1,20 +1,8 @@
-#include "Managers/InputManager.h"
+#include "Platform/InputManager.h"
 
-#include "GLFW/glfw3.h"
-
-#include <iostream>
-
-#include "Managers/InputHandler.h"
-#include "Managers/WindowManager.h"
-
-void InputManager::initialize(GLFWwindow* inWindow)
+void InputManager::processInput(double inDeltaTime)
 {
-	glfwSetInputMode(inWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-}
-
-void InputManager::processInput(GLFWwindow* inWindow, double inDeltaTime)
-{
-	glfwPollEvents();
+	pollEvents();
 
 	for (auto& keyInput : keyInputs)
 	{
@@ -54,24 +42,10 @@ void InputManager::processInput(GLFWwindow* inWindow, double inDeltaTime)
 		}
 	}
 
-	if (glfwGetKey(inWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(inWindow, true);
-	}
-
 	keyInputs.clear();
 	mouseInputs.clear();
 	cursorPosInputs.clear();
 	scrollInputs.clear();
-
-	//if (glfwGetKey(inWindow, GLFW_KEY_T) == GLFW_PRESS)
-	//{
-	//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	//}
-	//if (glfwGetKey(inWindow, GLFW_KEY_Y) == GLFW_PRESS)
-	//{
-	//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//}
 }
 
 void InputManager::registerKeyCallback(int key, KeyCallback inCallback)

@@ -5,7 +5,8 @@
 #include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
 
-#include "Managers/InputManager.h"
+#include "Platform/InputManager.h"
+#include "Platform/Platform.h"
 
 namespace camera_private
 {
@@ -26,42 +27,40 @@ Camera::Camera()
 	updateViewMatrix();
 }
 
-void Camera::initialize(InputManager* inInputManager)
+void Camera::initialize()
 {
-	if (!inInputManager)
-		return;
 
-	inInputManager->registerCursorPosCallback(
+	platform::getInputManager().registerCursorPosCallback(
 		[this](double xPos, double yPos, double deltaTime)
 		{
 			onMouseMoved(xPos, yPos, deltaTime);
 		});
 
-	inInputManager->registerScrollCallback(
+	platform::getInputManager().registerScrollCallback(
 		[this](double xPos, double yPos, double deltaTime)
 		{
 			onMouseScrolled(xPos, yPos, deltaTime);
 		});
 
-	inInputManager->registerKeyCallback(GLFW_KEY_UP
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_UP
 		, [this](int inState, int inMods, double inDeltaTime)
 		{
 			onKeyUpPressed(inState, inMods);
 		});
 
-	inInputManager->registerKeyCallback(GLFW_KEY_DOWN
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_DOWN
 		, [this](int inState, int inMods, double inDeltaTime)
 		{
 			onKeyDownPressed(inState, inMods);
 		});
 
-	inInputManager->registerKeyCallback(GLFW_KEY_LEFT
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_LEFT
 		, [this](int inState, int inMods, double inDeltaTime)
 		{
 			onKeyLeftPressed(inState, inMods);
 		});
 
-	inInputManager->registerKeyCallback(GLFW_KEY_RIGHT
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_RIGHT
 		, [this](int inState, int inMods, double inDeltaTime)
 		{
 			onKeyRightPressed(inState, inMods);

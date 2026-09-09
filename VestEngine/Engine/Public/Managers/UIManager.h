@@ -4,10 +4,13 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
+#include "Platform/Platform.h"
+#include "Platform/WindowManager.h"
+
 class UIManager
 {
 public:
-	void initialize(GLFWwindow* inWindow)
+	void initialize()
 	{
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -18,7 +21,8 @@ public:
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
 		// Setup Platform/Renderer backends
-		ImGui_ImplGlfw_InitForOpenGL(inWindow, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
+		GLFWwindow* window = static_cast<GLFWwindow*>(platform::getWindowManager().getWindow());
+		ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
 		ImGui_ImplOpenGL3_Init();
 	}
 	

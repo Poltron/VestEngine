@@ -12,8 +12,6 @@ class Camera;
 class Mesh;
 class Shader;
 
-struct GLFWwindow;
-
 struct DirectionalLightComponent;
 struct MeshRendererComponent;
 struct PointLightComponent;
@@ -30,7 +28,7 @@ public:
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<MeshRendererComponent>& inMeshRenderers
 		, double inCurrentFrame);
-	void swap(GLFWwindow* inWindow);
+	void swap();
 
 	//
 	void fillLightParameters(const ComponentManager<WorldTransformComponent>& inTransforms

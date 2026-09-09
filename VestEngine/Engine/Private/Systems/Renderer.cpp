@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "glad/glad.h"
-#include "GLFW/glfw3.h"
 #include "glm/gtc/type_ptr.hpp"
 
 #include "Camera.h"
@@ -13,6 +12,8 @@
 #include "Components/TransformComponent.h"
 #include "Managers/ComponentManager.h"
 #include "Managers/ResourcesManager.h"
+#include "Platform/Platform.h"
+#include "Platform/WindowManager.h"
 #include "Resources/Mesh.h"
 #include "Resources/Shader.h"
 
@@ -128,9 +129,9 @@ void Renderer::render(ResourcesManager& inResourcesManager
 	}
 }
 
-void Renderer::swap(GLFWwindow* inWindow)
+void Renderer::swap()
 {
-	glfwSwapBuffers(inWindow);
+	platform::getWindowManager().swapBuffers();
 }
 
 //GLuint Renderer::createVAO(const Mesh& inMesh)
