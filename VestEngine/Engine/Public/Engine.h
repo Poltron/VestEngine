@@ -4,11 +4,9 @@
 
 #include "Managers/ComponentManager.h"
 #include "Managers/EntityManager.h"
-#include "Managers/InputHandler.h"
-#include "Managers/InputManager.h"
 #include "Managers/ResourcesManager.h"
 #include "Managers/UIManager.h"
-#include "Managers/WindowManager.h"
+#include "Platform/Platform.h"
 #include "Systems/Renderer.h"
 #include "Systems/HierarchySystem.h"
 #include "Systems/PhysicsSystem.h"
@@ -24,16 +22,12 @@
 class Engine
 {
 	ResourcesManager resourcesManager;
-	InputHandler inputHandler;
-	InputManager inputManager;
-	WindowManager windowManager;
 	UIManager uiManager;
 
 	Renderer renderer;
 	Camera camera;
 
 	EntityManager entityManager;
-
 
 	ComponentManager<LocalTransformComponent> localTransformComponents;
 	ComponentManager<WorldTransformComponent> worldTransformComponents;

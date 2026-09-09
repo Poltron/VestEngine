@@ -1,27 +1,17 @@
 #include "Engine.h"
 
-#include "GLFW/glfw3.h" // for time
+#include "GLFW/glfw3.h" // tmp for time + inputs
 
 #include "Helpers/HierarchyHelper.h"
+#include "Platform/InputManager.h"
 #include "Utils/EntityFactory.h"
 
 bool Engine::initialize()
 {
-	int width = 800;
-	int height = 600;
-	GLFWwindow* window = windowManager.createWindow(width, height);
-	if (!window)
-	{
-		return false;
-	}
-
-	inputManager.initialize(window);
-	inputHandler.initialize(&inputManager, &windowManager);
-
 	renderer.initialize();
-	uiManager.initialize(window);
+	uiManager.initialize();
 
-	camera.initialize(&inputManager);
+	camera.initialize();
 	renderer.setActiveCamera(&camera);
 
 	// resources
@@ -47,7 +37,7 @@ bool Engine::initialize()
 	std::vector<Entity> childEntities = EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, parentEntity);
 	EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
 
-	inputManager.registerKeyCallback(GLFW_KEY_P
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_P
 		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
 		{
 			if (inState != GLFW_PRESS)
@@ -75,7 +65,7 @@ bool Engine::initialize()
 			}
 		});
 
-	inputManager.registerKeyCallback(GLFW_KEY_O
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_O
 		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
 		{
 			if (inState != GLFW_PRESS)
@@ -95,7 +85,7 @@ bool Engine::initialize()
 			}
 		});
 
-	inputManager.registerKeyCallback(GLFW_KEY_I
+	platform::getInputManager().registerKeyCallback(GLFW_KEY_I
 		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](int inState, int inMods, double inDeltaTime)
 		{
 			if (inState != GLFW_PRESS)
@@ -139,20 +129,20 @@ int Engine::launch()
 		double deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		inputManager.processInput(windowManager.getWindow(), deltaTime);
+		platform::getInputManager().processInput(deltaTime);
 
 		uiManager.startFrame();
 
 		camera.update(deltaTime);
 
 		hierarchySystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
-		//physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
+		physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
 		transformSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
 
 		renderer.clear();
 		renderer.render(resourcesManager, worldTransformComponents, meshRendererComponents, currentFrame);
 		uiManager.render();
-		renderer.swap(windowManager.getWindow());
+		renderer.swap();
 	}
 	
 	shutdown();
@@ -162,11 +152,9 @@ int Engine::launch()
 void Engine::shutdown()
 {
 	uiManager.cleanup();
-	windowManager.destroyWindow();
 }
 
-//
 bool Engine::isShutdownRequested()
 {
-	return windowManager.shouldCloseWindow();
+	return platform::getWindowManager().shouldCloseWindow();
 }

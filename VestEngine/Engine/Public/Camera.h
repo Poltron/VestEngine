@@ -27,7 +27,7 @@ public:
 	Camera();
 
 public:
-	void initialize(InputManager* inInputManager);
+	void initialize();
 	void update(double inDeltaTime);
 
 	const glm::vec3& getRotation() const;
