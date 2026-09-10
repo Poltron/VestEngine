@@ -2,10 +2,20 @@
 
 #include "Helpers/HierarchyHelper.h"
 #include "Platform/InputManager.h"
+#include "Platform/Platform.h"
+#include "Platform/WindowManager.h"
 #include "Utils/EntityFactory.h"
 
 bool Engine::initialize()
 {
+	localTransformComponents.setLabel("localTransforms");
+	worldTransformComponents.setLabel("worldTransforms");
+	hierarchyComponents.setLabel("hierarchies");
+	rigidbodyComponents.setLabel("rigidbodies");
+	meshRendererComponents.setLabel("meshRenderers");
+	directionalLightComponents.setLabel("directionalLights");
+	pointLightComponents.setLabel("pointLights");
+	
 	renderer.initialize();
 	uiManager.initialize();
 
@@ -132,6 +142,10 @@ int Engine::launch()
 		uiManager.startFrame();
 
 		camera.update(deltaTime);
+
+		hierarchyComponents.drawDebug(50, 50);
+		localTransformComponents.drawDebug(300, 50);
+		worldTransformComponents.drawDebug(550, 50);
 
 		hierarchySystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
 		physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
