@@ -1,6 +1,9 @@
 #pragma once
 
+#include <string>
 #include <unordered_map>
+
+#include "imgui.h"
 
 #include "Managers/EntityManager.h"
 #include "Utils/DenseArray.h"
@@ -14,6 +17,11 @@ public:
 	ComponentManager()
 	{
 		components.initialize(COMPONENT_MAX);
+	}
+
+	void setLabel(const std::string& inLabel)
+	{
+		label = inLabel;
 	}
 
 	T* create(Entity inID)
@@ -90,9 +98,53 @@ public:
 		}
 	}
 
+	void drawDebug(float inPositionX, float inPositionY)
+	{
+		if (ImGui::Begin(label.c_str()))
+		{
+			ImGui::SetWindowPos(ImVec2(inPositionX, inPositionY), ImGuiCond_FirstUseEver);
+			ImGui::SetWindowSize(ImVec2(75, 400), ImGuiCond_FirstUseEver);
+
+			if (ImGui::BeginTable(label.c_str(), 2))
+			{
+				ImGui::TableHeadersRow();
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Entity");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Index");
+
+				for (const auto& element : lookupTable)
+				{
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					std::string first = std::to_string(element.first);
+					ImGuiTextCentered(first.c_str());
+
+					ImGui::TableNextColumn();
+					std::string second = std::to_string(element.second);
+					ImGuiTextCentered(second.c_str());
+				}
+				ImGui::EndTable();
+			}
+
+			ImGui::End();
+		}
+	}
+
 private:
 	DenseArray<T> components;
 	// change to a sparse array of entityID to component index
 	std::unordered_map<Entity, size_t> lookupTable;
+	std::string label;
+
+	void ImGuiTextCentered(const char* text)
+	{
+		float windowWidth = ImGui::GetContentRegionAvail().x;
+		float textWidth = ImGui::CalcTextSize(text).x;
+
+		// Center cursor within the cell
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (windowWidth - textWidth) * 0.5f);
+		ImGui::TextUnformatted(text);
+	}
 };
 
