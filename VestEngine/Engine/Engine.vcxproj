@@ -159,6 +159,7 @@
     <ClCompile Include="Private\Systems\ShaderParameterCollection.cpp" />
     <ClCompile Include="Private\Managers\ResourcesManager.cpp" />
     <ClCompile Include="Private\Managers\UIManager.cpp" />
+    <ClCompile Include="Private\Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h" />
@@ -205,6 +206,7 @@
     <ClInclude Include="Public\Platform\WindowManager.h" />
     <ClInclude Include="Public\Resources\ResourceHandle.h" />
     <ClInclude Include="Public\Managers\UIManager.h" />
+    <ClInclude Include="Public\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Public\Platform\GLFW\GLFWPlatform.inl" />

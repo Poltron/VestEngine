@@ -1,133 +1,87 @@
 #include "Engine.h"
 
+#include "Scene.h"
 #include "Helpers/HierarchyHelper.h"
+#include "Managers/ResourcesManager.h"
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Utils/EntityFactory.h"
 
-bool Engine::initialize()
+class VestEngine final : public Engine
 {
-	localTransformComponents.setLabel("localTransforms");
-	worldTransformComponents.setLabel("worldTransforms");
-	hierarchyComponents.setLabel("hierarchies");
-	rigidbodyComponents.setLabel("rigidbodies");
-	meshRendererComponents.setLabel("meshRenderers");
-	directionalLightComponents.setLabel("directionalLights");
-	pointLightComponents.setLabel("pointLights");
-	
-	renderer.initialize();
+public:
+	bool initialize();
+	void launch();
+	void shutdown();
+
+private:
+	bool isShutdownRequested();
+};
+
+namespace engine
+{
+	VestEngine* g_Engine = nullptr;
+	Scene* g_Scene = nullptr;
+	ResourcesManager* g_Resources = nullptr;
+
+	Engine* getEngine()
+	{
+		return g_Engine;
+	}
+
+	Scene* getScene()
+	{
+		return g_Scene;
+	}
+
+	ResourcesManager* getResources()
+	{
+		return g_Resources;
+	}
+
+	bool initialize()
+	{
+		g_Engine = new VestEngine();
+		g_Resources = new ResourcesManager();
+		g_Scene = new Scene();
+
+		return g_Engine->initialize()
+			&& g_Scene->initialize();
+	}
+
+	void launch()
+	{
+		g_Engine->launch();
+	}
+
+	void shutdown()
+	{
+		if (g_Engine)
+		{
+			g_Engine->shutdown();
+		}
+
+		delete g_Scene;
+		g_Scene = nullptr;
+		delete g_Resources;
+		g_Resources = nullptr;
+		delete g_Engine;
+		g_Engine = nullptr;
+	}
+}
+
+bool VestEngine::initialize()
+{
 	uiManager.initialize();
 
 	camera.initialize();
-	renderer.setActiveCamera(&camera);
-
-	// resources
-	ResourceHandle litShader = resourcesManager.loadShader("../Resources/Shaders/vertex.glsl", "../Resources/Shaders/lit_fragment.glsl");
-	ResourceHandle unlitShader = resourcesManager.loadShader("../Resources/Shaders/vertex.glsl", "../Resources/Shaders/unlit_fragment.glsl");
-
-	ResourceHandle containerTexture = resourcesManager.loadTexture("../Resources/Textures/container2.png", "diffuse");
-	ResourceHandle containerSpecularTexture = resourcesManager.loadTexture("../Resources/Textures/container2_specular.png", "specular");
-
-	std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
-	std::vector<unsigned int> indices;
-	std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
-	Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
-
-	std::vector<Mesh> meshes;
-	meshes.push_back(std::move(mesh));
-
-	ResourceHandle cubeModel = resourcesManager.createModel(std::move(meshes), "cube");
-	//ResourceHandle bagModel = resourcesManager.loadModel("../Resources/Models/backpack/backpack.obj");
-
-	// placeholder scene
-	Entity parentEntity = EntityFactory::createSceneBag(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, cubeModel, litShader);
-	std::vector<Entity> childEntities = EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, parentEntity);
-	EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
-
-	platform::getInputManager().registerKeyCallback(input::EKey::P
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
-
-			for (Entity childEntity : childEntities)
-			{
-				HierarchyComponent* hierarchy = hierarchies->get(childEntity);
-				if (!hierarchy)
-				{
-					continue;
-				}
-
-				if (EntityFuncs::isEntityValid(hierarchy->parent))
-				{
-					hierarchyHelper::detach(hierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
-				}
-				else
-				{
-					HierarchyComponent* parentHierarchy = hierarchies->get(parentEntity);
-					hierarchyHelper::attachTo(hierarchy, parentHierarchy, EAttachmentRules::KeepWorld, *localTransforms, *worldTransforms);
-				}
-			}
-		});
-
-	platform::getInputManager().registerKeyCallback(input::EKey::O
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
-
-			HierarchyComponent* firstHierarchy = hierarchies->get(childEntities[0]);
-			if (EntityFuncs::isEntityValid(firstHierarchy->parent))
-			{
-				hierarchyHelper::detach(firstHierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
-			}
-			else
-			{
-				HierarchyComponent* parentHierarchy = hierarchies->get(parentEntity);
-				hierarchyHelper::attachTo(firstHierarchy, parentHierarchy, EAttachmentRules::KeepWorld, *localTransforms, *worldTransforms);
-			}
-		});
-
-	platform::getInputManager().registerKeyCallback(input::EKey::I
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
-
-			std::vector<Entity> parentedEntities;
-			for (size_t i = 0; i < hierarchies->size(); ++i)
-			{
-				HierarchyComponent* hierarchy = hierarchies->at(i);
-				if (hierarchy && hierarchy->parent)
-				{
-					parentedEntities.push_back(hierarchy->entity);
-				}
-			}
-			
-			if (parentedEntities.size() == 0)
-			{
-				return;
-			}
-
-			Entity randomEntity = parentedEntities[std::rand() % parentedEntities.size()];
-			HierarchyComponent* hierarchy = hierarchies->get(randomEntity);
-			hierarchyHelper::detach(hierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
-
-		});
-
-	renderer.fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
+	renderer::getRenderer()->setActiveCamera(&camera);
 
 	return true;
 }
 
-int Engine::launch()
+void VestEngine::launch()
 {
 	double lastFrame = platform::getTime();
 
@@ -143,30 +97,30 @@ int Engine::launch()
 
 		camera.update(deltaTime);
 
-		hierarchyComponents.drawDebug(50, 50);
-		localTransformComponents.drawDebug(300, 50);
-		worldTransformComponents.drawDebug(550, 50);
+		Scene* scene = engine::getScene();
+		ensure(scene);
 
-		hierarchySystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
-		physicsSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, deltaTime);
-		transformSystem.update(localTransformComponents, worldTransformComponents, hierarchyComponents);
+		scene->hierarchyComponents.drawDebug(50, 50);
+		scene->localTransformComponents.drawDebug(300, 50);
+		scene->worldTransformComponents.drawDebug(550, 50);
 
-		renderer.clear();
-		renderer.render(resourcesManager, worldTransformComponents, meshRendererComponents, currentFrame);
+		hierarchySystem.update(scene->localTransformComponents, scene->worldTransformComponents, scene->hierarchyComponents);
+		physicsSystem.update(scene->localTransformComponents, scene->worldTransformComponents, scene->hierarchyComponents, scene->rigidbodyComponents, deltaTime);
+		transformSystem.update(scene->localTransformComponents, scene->worldTransformComponents, scene->hierarchyComponents);
+
+		renderer::getRenderer()->clear();
+		renderer::getRenderer()->render(*engine::getResources(), scene->worldTransformComponents, scene->meshRendererComponents, currentFrame);
 		uiManager.render();
-		renderer.swap();
+		renderer::getRenderer()->swap();
 	}
-	
-	shutdown();
-	return 0;
 }
 
-void Engine::shutdown()
+void VestEngine::shutdown()
 {
 	uiManager.cleanup();
 }
 
-bool Engine::isShutdownRequested()
+bool VestEngine::isShutdownRequested()
 {
 	return platform::getWindowManager().shouldCloseWindow();
 }

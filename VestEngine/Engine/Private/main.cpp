@@ -3,14 +3,5 @@
 
 int main()
 {
-	platform::initialize();
-
-	Engine engine;
-	if (engine.initialize())
-	{
-		engine.launch();
-	}
-
-	platform::shutdown();
 	return 0;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Systems/ShaderParameterCollection.h"
+#include "Utils/Ensure.h"
 
 #define MAX_POINT_LIGHTS 3
 
@@ -21,8 +22,6 @@ struct WorldTransformComponent;
 class Renderer
 {
 public:
-	void initialize();
-
 	void clear();
 	void render(ResourcesManager& inResourcesManager
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
@@ -44,3 +43,9 @@ private:
 	Camera* activeCamera;
 };
 
+namespace renderer
+{
+	bool initialize();
+	void shutdown();
+	Renderer* getRenderer();
+}

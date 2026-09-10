@@ -17,6 +17,7 @@ public:
 	ComponentManager()
 	{
 		components.initialize(COMPONENT_MAX);
+		label = " ";
 	}
 
 	void setLabel(const std::string& inLabel)

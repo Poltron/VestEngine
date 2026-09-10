@@ -4,4 +4,7 @@
     <LocalDebuggerCommandArguments />
     <RemoteDebuggerCommandArguments />
   </PropertyGroup>
+  <PropertyGroup>
+    <ShowAllFiles>true</ShowAllFiles>
+  </PropertyGroup>
 </Project>

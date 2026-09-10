@@ -61,7 +61,7 @@ namespace EntityFactory
 		, const glm::vec3& inScale
 		, HierarchyComponent* inParentHierarchy = nullptr);
 
-	Entity createSceneBag(EntityManager& inEntityManager
+	Entity createScenePivot(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<HierarchyComponent>& inHierarchies
