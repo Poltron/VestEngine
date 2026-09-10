@@ -17,56 +17,49 @@
 #include "Resources/Mesh.h"
 #include "Resources/Shader.h"
 
-void Renderer::initialize()
+class VestRenderer final : public Renderer
 {
-	glEnable(GL_DEPTH_TEST);
-}
+public:
+	bool initialize();
+	void shutdown();
+};
 
-void Renderer::setActiveCamera(Camera* inCamera)
+namespace renderer
 {
-	activeCamera = inCamera;
-}
+	VestRenderer* g_Renderer = nullptr;
 
-void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponent>& inWorldTransforms
-	, const ComponentManager<PointLightComponent>& inPointLights
-	, const ComponentManager<DirectionalLightComponent>& inDirectionalLights)
-{
-	globalShaderParameters.addVec3("ambientLight.color", { 0.1f, 0.1f, 0.2f });
-	globalShaderParameters.addFloat("ambientLight.intensity", 1.0f);
-
-	const DirectionalLightComponent* directionalLightComp = inDirectionalLights.at(0);
-	const WorldTransformComponent* directionalLightTransform = inWorldTransforms.get(directionalLightComp->entity);
-
-	//
-	globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
-	globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
-	globalShaderParameters.addVec3("directionalLight.direction", directionalLightTransform->getModelForward());
-
-	assert(inPointLights.size() <= MAX_POINT_LIGHTS);
-
-	globalShaderParameters.addInt("pointLightAmount", (int)inPointLights.size());
-
-	//
-	for (size_t i = 0; i < inPointLights.size(); ++i)
+	bool initialize()
 	{
-		const PointLightComponent* pointLight = inPointLights.at(i);
-		assert(pointLight != nullptr);
-		std::string pointLightName = "pointLights[";
-		pointLightName.append(std::to_string(i));
-		pointLightName.append("]");
+		ensure(!g_Renderer);
+		g_Renderer = new VestRenderer();
+		return g_Renderer->initialize();
+	}
 
-		globalShaderParameters.addVec3(pointLightName + ".color", pointLight->color);
-		globalShaderParameters.addFloat(pointLightName + ".intensity", pointLight->intensity);
-		globalShaderParameters.addFloat(pointLightName + ".constant", pointLight->constant);
-		globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
-		globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
+	void shutdown()
+	{
+		if (g_Renderer)
+		{
+			g_Renderer->shutdown();
+		}
+		delete g_Renderer;
+		g_Renderer = nullptr;
+	}
 
-		const WorldTransformComponent* pointLightTransform = inWorldTransforms.get(pointLight->entity);
-		assert(pointLightTransform != nullptr);
-
-		globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());
+	Renderer* getRenderer()
+	{
+		return g_Renderer;
 	}
 }
+
+
+bool VestRenderer::initialize()
+{
+	glEnable(GL_DEPTH_TEST);
+	return true;
+}
+
+void VestRenderer::shutdown()
+{}
 
 void Renderer::clear()
 {
@@ -132,6 +125,52 @@ void Renderer::render(ResourcesManager& inResourcesManager
 void Renderer::swap()
 {
 	platform::getWindowManager().swapBuffers();
+}
+
+void Renderer::setActiveCamera(Camera* inCamera)
+{
+	activeCamera = inCamera;
+}
+
+void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponent>& inWorldTransforms
+	, const ComponentManager<PointLightComponent>& inPointLights
+	, const ComponentManager<DirectionalLightComponent>& inDirectionalLights)
+{
+	globalShaderParameters.addVec3("ambientLight.color", { 0.1f, 0.1f, 0.2f });
+	globalShaderParameters.addFloat("ambientLight.intensity", 1.0f);
+
+	const DirectionalLightComponent* directionalLightComp = inDirectionalLights.at(0);
+	const WorldTransformComponent* directionalLightTransform = inWorldTransforms.get(directionalLightComp->entity);
+
+	//
+	globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
+	globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
+	globalShaderParameters.addVec3("directionalLight.direction", directionalLightTransform->getModelForward());
+
+	assert(inPointLights.size() <= MAX_POINT_LIGHTS);
+
+	globalShaderParameters.addInt("pointLightAmount", (int)inPointLights.size());
+
+	//
+	for (size_t i = 0; i < inPointLights.size(); ++i)
+	{
+		const PointLightComponent* pointLight = inPointLights.at(i);
+		assert(pointLight != nullptr);
+		std::string pointLightName = "pointLights[";
+		pointLightName.append(std::to_string(i));
+		pointLightName.append("]");
+
+		globalShaderParameters.addVec3(pointLightName + ".color", pointLight->color);
+		globalShaderParameters.addFloat(pointLightName + ".intensity", pointLight->intensity);
+		globalShaderParameters.addFloat(pointLightName + ".constant", pointLight->constant);
+		globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
+		globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
+
+		const WorldTransformComponent* pointLightTransform = inWorldTransforms.get(pointLight->entity);
+		assert(pointLightTransform != nullptr);
+
+		globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());
+	}
 }
 
 //GLuint Renderer::createVAO(const Mesh& inMesh)

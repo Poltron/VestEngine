@@ -98,6 +98,9 @@
     <ClCompile Include="Private\Platform\Platform.cpp">
       <Filter>Private</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Scene.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\Camera.h">
@@ -230,6 +233,9 @@
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Platform\Input.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Scene.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>

@@ -12,41 +12,27 @@
 #include "Systems/PhysicsSystem.h"
 #include "Systems/TransformSystem.h"
 
-#include "Components/DirectionalLightComponent.h"
-#include "Components/HierarchyComponent.h"
-#include "Components/MeshRendererComponent.h"
-#include "Components/PointLightComponent.h"
-#include "Components/RigidbodyComponent.h"
-#include "Components/TransformComponent.h"
+class Scene;
 
 class Engine
 {
-	ResourcesManager resourcesManager;
+protected:
 	UIManager uiManager;
 
-	Renderer renderer;
 	Camera camera;
-
-	EntityManager entityManager;
-
-	ComponentManager<LocalTransformComponent> localTransformComponents;
-	ComponentManager<WorldTransformComponent> worldTransformComponents;
-	ComponentManager<HierarchyComponent> hierarchyComponents;
-	ComponentManager<RigidbodyComponent> rigidbodyComponents;
-	ComponentManager<MeshRendererComponent> meshRendererComponents;
-	ComponentManager<DirectionalLightComponent> directionalLightComponents;
-	ComponentManager<PointLightComponent> pointLightComponents;
 
 	HierarchySystem hierarchySystem;
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
-
-public:
-	bool initialize();
-	int launch();
-	void shutdown();
-
-private:
-	bool isShutdownRequested();
 };
 
+namespace engine
+{
+	bool initialize();
+	void launch();
+	void shutdown();
+
+	Engine* getEngine();
+	Scene* getScene();
+	ResourcesManager* getResources();
+}

@@ -111,7 +111,7 @@ namespace EntityFactory
 	}
 
 
-	Entity createSceneBag(EntityManager& inEntityManager
+	Entity createScenePivot(EntityManager& inEntityManager
 		, ComponentManager<LocalTransformComponent>& inLocalTransforms
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<HierarchyComponent>& inHierarchies
