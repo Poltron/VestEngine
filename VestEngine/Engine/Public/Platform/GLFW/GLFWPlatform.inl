@@ -10,6 +10,15 @@
 
 #include "Utils/Ensure.h"
 
+#define PLATFORM_KEY_SIZE GLFW_KEY_LAST + 1
+#define PLATFORM_MOUSE_BUTTON_SIZE GLFW_MOUSE_BUTTON_LAST + 1
+#define PLATFORM_INPUT_STATE_SIZE GLFW_REPEAT + 1
+#define PLATFORM_KEY_MODIFIERS_SIZE 0 /* todo */
+
+#define PLATFORM_CURSOR_INPUT_MODE_FIRST GLFW_CURSOR_NORMAL
+#define PLATFORM_CURSOR_INPUT_MODE_LAST GLFW_CURSOR_CAPTURED
+#define PLATFORM_CURSOR_INPUT_MODE_SIZE (PLATFORM_CURSOR_INPUT_MODE_LAST - PLATFORM_CURSOR_INPUT_MODE_FIRST + 1)
+
 class GLFWPlatform;
 class GLFWInputManager;
 class GLFWWindowManager;
@@ -24,10 +33,10 @@ using namespace GLFW;
 //
 namespace InputCallbacks
 {
-	void cursorPos_callback(GLFWwindow* window, double xPos, double yPos);
-	void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
-	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-	void mouseButton_callback(GLFWwindow* window, int button, int action, int mods);
+	void cursorPos_callback(GLFWwindow* inWindow, double inX, double inY);
+	void scroll_callback(GLFWwindow* inWindow, double inX, double inY);
+	void key_callback(GLFWwindow* inWindow, int inKey, int inScancode, int inAction, int inMods);
+	void mouseButton_callback(GLFWwindow* inWindow, int inButton, int inAction, int inMods);
 }
 
 class GLFWInputManager final : public InputManager
@@ -35,13 +44,16 @@ class GLFWInputManager final : public InputManager
 public:
 	virtual void initialize() override
 	{
-		// input events
+		InputManager::initialize();
+
+		fillInputLookupTables();
+
 		glfwSetKeyCallback(g_GLFWWindow, InputCallbacks::key_callback);
 		glfwSetMouseButtonCallback(g_GLFWWindow, InputCallbacks::mouseButton_callback);
 		glfwSetScrollCallback(g_GLFWWindow, InputCallbacks::scroll_callback);
 		glfwSetCursorPosCallback(g_GLFWWindow, InputCallbacks::cursorPos_callback);
 
-		glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
 	std::vector<KeyInput>& getKeyInputs() { return keyInputs; }
@@ -49,305 +61,338 @@ public:
 	std::vector<CursorPosInput>& getCursorPosInputs() { return cursorPosInputs; }
 	std::vector<ScrollInput>& getScrollInputs() { return scrollInputs; }
 
-	input::EKey fromGLFWKey(int inKey)
+	virtual void setCursorInputMode(input::ECursorInputMode inInputMode) override
 	{
-		switch (inKey)
-		{
-		case GLFW_KEY_SPACE:
-			return input::EKey::SPACE;
-		case GLFW_KEY_APOSTROPHE:
-			return input::EKey::APOSTROPHE;
-		case GLFW_KEY_COMMA:
-			return input::EKey::COMMA;
-		case GLFW_KEY_MINUS:
-			return input::EKey::MINUS;
-		case GLFW_KEY_PERIOD:
-			return input::EKey::PERIOD;
-		case GLFW_KEY_SLASH:
-			return input::EKey::SLASH;
-		case GLFW_KEY_0:
-			return input::EKey::KB_0;
-		case GLFW_KEY_1:
-			return input::EKey::KB_1;
-		case GLFW_KEY_2:
-			return input::EKey::KB_2;
-		case GLFW_KEY_3:
-			return input::EKey::KB_3;
-		case GLFW_KEY_4:
-			return input::EKey::KB_4;
-		case GLFW_KEY_5:
-			return input::EKey::KB_5;
-		case GLFW_KEY_6:
-			return input::EKey::KB_6;
-		case GLFW_KEY_7:
-			return input::EKey::KB_7;
-		case GLFW_KEY_8:
-			return input::EKey::KB_8;
-		case GLFW_KEY_9:
-			return input::EKey::KB_9;
-		case GLFW_KEY_SEMICOLON:
-			return input::EKey::SEMICOLON;
-		case GLFW_KEY_EQUAL:
-			return input::EKey::EQUAL;
-		case GLFW_KEY_A:
-			return input::EKey::A;
-		case GLFW_KEY_B:
-			return input::EKey::B;
-		case GLFW_KEY_C:
-			return input::EKey::C;
-		case GLFW_KEY_D:
-			return input::EKey::D;
-		case GLFW_KEY_E:
-			return input::EKey::E;
-		case GLFW_KEY_F:
-			return input::EKey::F;
-		case GLFW_KEY_G:
-			return input::EKey::G;
-		case GLFW_KEY_H:
-			return input::EKey::H;
-		case GLFW_KEY_I:
-			return input::EKey::I;
-		case GLFW_KEY_J:
-			return input::EKey::J;
-		case GLFW_KEY_K:
-			return input::EKey::K;
-		case GLFW_KEY_L:
-			return input::EKey::L;
-		case GLFW_KEY_M:
-			return input::EKey::M;
-		case GLFW_KEY_N:
-			return input::EKey::N;
-		case GLFW_KEY_O:
-			return input::EKey::O;
-		case GLFW_KEY_P:
-			return input::EKey::P;
-		case GLFW_KEY_Q:
-			return input::EKey::Q;
-		case GLFW_KEY_R:
-			return input::EKey::R;
-		case GLFW_KEY_S:
-			return input::EKey::S;
-		case GLFW_KEY_T:
-			return input::EKey::T;
-		case GLFW_KEY_U:
-			return input::EKey::U;
-		case GLFW_KEY_V:
-			return input::EKey::V;
-		case GLFW_KEY_W:
-			return input::EKey::W;
-		case GLFW_KEY_X:
-			return input::EKey::X;
-		case GLFW_KEY_Y:
-			return input::EKey::Y;
-		case GLFW_KEY_Z:
-			return input::EKey::Z;
-		case GLFW_KEY_LEFT_BRACKET:
-			return input::EKey::LEFT_BRACKET;
-		case GLFW_KEY_BACKSLASH:
-			return input::EKey::BACKSLASH;
-		case GLFW_KEY_RIGHT_BRACKET:
-			return input::EKey::RIGHT_BRACKET;
-		case GLFW_KEY_GRAVE_ACCENT:
-			return input::EKey::GRAVE_ACCENT;
-		case GLFW_KEY_WORLD_1:
-			return input::EKey::WORLD_1;
-		case GLFW_KEY_WORLD_2:
-			return input::EKey::WORLD_2;
-		case GLFW_KEY_ESCAPE:
-			return input::EKey::ESCAPE;
-		case GLFW_KEY_ENTER:
-			return input::EKey::ENTER;
-		case GLFW_KEY_TAB:
-			return input::EKey::TAB;
-		case GLFW_KEY_BACKSPACE:
-			return input::EKey::BACKSPACE;
-		case GLFW_KEY_INSERT:
-			return input::EKey::INSERT;
-		case GLFW_KEY_DELETE:
-			return input::EKey::DELETE;
-		case GLFW_KEY_RIGHT:
-			return input::EKey::RIGHT;
-		case GLFW_KEY_LEFT:
-			return input::EKey::LEFT;
-		case GLFW_KEY_DOWN:
-			return input::EKey::DOWN;
-		case GLFW_KEY_UP:
-			return input::EKey::UP;
-		case GLFW_KEY_PAGE_UP:
-			return input::EKey::PAGE_UP;
-		case GLFW_KEY_PAGE_DOWN:
-			return input::EKey::PAGE_DOWN;
-		case GLFW_KEY_HOME:
-			return input::EKey::HOME;
-		case GLFW_KEY_END:
-			return input::EKey::END;
-		case GLFW_KEY_CAPS_LOCK:
-			return input::EKey::CAPS_LOCK;
-		case GLFW_KEY_SCROLL_LOCK:
-			return input::EKey::SCROLL_LOCK;
-		case GLFW_KEY_NUM_LOCK:
-			return input::EKey::NUM_LOCK;
-		case GLFW_KEY_PRINT_SCREEN:
-			return input::EKey::PRINT_SCREEN;
-		case GLFW_KEY_PAUSE:
-			return input::EKey::PAUSE;
-		case GLFW_KEY_F1:
-			return input::EKey::F1;
-		case GLFW_KEY_F2:
-			return input::EKey::F2;
-		case GLFW_KEY_F3:
-			return input::EKey::F3;
-		case GLFW_KEY_F4:
-			return input::EKey::F4;
-		case GLFW_KEY_F5:
-			return input::EKey::F5;
-		case GLFW_KEY_F6:
-			return input::EKey::F6;
-		case GLFW_KEY_F7:
-			return input::EKey::F7;
-		case GLFW_KEY_F8:
-			return input::EKey::F8;
-		case GLFW_KEY_F9:
-			return input::EKey::F9;
-		case GLFW_KEY_F10:
-			return input::EKey::F10;
-		case GLFW_KEY_F11:
-			return input::EKey::F11;
-		case GLFW_KEY_F12:
-			return input::EKey::F12;
-		case GLFW_KEY_F13:
-			return input::EKey::F13;
-		case GLFW_KEY_F14:
-			return input::EKey::F14;
-		case GLFW_KEY_F15:
-			return input::EKey::F15;
-		case GLFW_KEY_F16:
-			return input::EKey::F16;
-		case GLFW_KEY_F17:
-			return input::EKey::F17;
-		case GLFW_KEY_F18:
-			return input::EKey::F18;
-		case GLFW_KEY_F19:
-			return input::EKey::F19;
-		case GLFW_KEY_F20:
-			return input::EKey::F20;
-		case GLFW_KEY_F21:
-			return input::EKey::F21;
-		case GLFW_KEY_F22:
-			return input::EKey::F22;
-		case GLFW_KEY_F23:
-			return input::EKey::F23;
-		case GLFW_KEY_F24:
-			return input::EKey::F24;
-		case GLFW_KEY_F25:
-			return input::EKey::F25;
-		case GLFW_KEY_KP_0:
-			return input::EKey::KP_0;
-		case GLFW_KEY_KP_1:
-			return input::EKey::KP_1;
-		case GLFW_KEY_KP_2:
-			return input::EKey::KP_2;
-		case GLFW_KEY_KP_3:
-			return input::EKey::KP_3;
-		case GLFW_KEY_KP_4:
-			return input::EKey::KP_4;
-		case GLFW_KEY_KP_5:
-			return input::EKey::KP_5;
-		case GLFW_KEY_KP_6:
-			return input::EKey::KP_6;
-		case GLFW_KEY_KP_7:
-			return input::EKey::KP_7;
-		case GLFW_KEY_KP_8:
-			return input::EKey::KP_8;
-		case GLFW_KEY_KP_9:
-			return input::EKey::KP_9;
-		case GLFW_KEY_KP_DECIMAL:
-			return input::EKey::KP_DECIMAL;
-		case GLFW_KEY_KP_DIVIDE:
-			return input::EKey::KP_DIVIDE;
-		case GLFW_KEY_KP_MULTIPLY:
-			return input::EKey::KP_MULTIPLY;
-		case GLFW_KEY_KP_SUBTRACT:
-			return input::EKey::KP_SUBTRACT;
-		case GLFW_KEY_KP_ADD:
-			return input::EKey::KP_ADD;
-		case GLFW_KEY_KP_ENTER:
-			return input::EKey::KP_ENTER;
-		case GLFW_KEY_KP_EQUAL:
-			return input::EKey::KP_EQUAL;
-		case GLFW_KEY_LEFT_SHIFT:
-			return input::EKey::LEFT_SHIFT;
-		case GLFW_KEY_LEFT_CONTROL:
-			return input::EKey::LEFT_CONTROL;
-		case GLFW_KEY_LEFT_ALT:
-			return input::EKey::LEFT_ALT;
-		case GLFW_KEY_LEFT_SUPER:
-			return input::EKey::LEFT_SUPER;
-		case GLFW_KEY_RIGHT_SHIFT:
-			return input::EKey::RIGHT_SHIFT;
-		case GLFW_KEY_RIGHT_CONTROL:
-			return input::EKey::RIGHT_CONTROL;
-		case GLFW_KEY_RIGHT_ALT:
-			return input::EKey::RIGHT_ALT;
-		case GLFW_KEY_RIGHT_SUPER:
-			return input::EKey::RIGHT_SUPER;
-		case GLFW_KEY_MENU:
-			return input::EKey::MENU;
-		};
-
-		return input::EKey::UNKNOWN;
+		glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, toGLFWCursorInputMode[(int)inInputMode]);
 	}
 
-	input::EMouseButton fromGLFWMouseButton(int inButton)
+	virtual input::ECursorInputMode getCursorInputMode() override
 	{
-		switch (inButton)
-		{
-		case GLFW_MOUSE_BUTTON_LEFT:
-			return input::EMouseButton::LEFT;
-		case GLFW_MOUSE_BUTTON_RIGHT:
-			return input::EMouseButton::RIGHT;
-		case GLFW_MOUSE_BUTTON_MIDDLE:
-			return input::EMouseButton::MIDDLE;
-		case GLFW_MOUSE_BUTTON_4:
-			return input::EMouseButton::BUTTON_4;
-		case GLFW_MOUSE_BUTTON_5:
-			return input::EMouseButton::BUTTON_5;
-		case GLFW_MOUSE_BUTTON_6:
-			return input::EMouseButton::BUTTON_6;
-		case GLFW_MOUSE_BUTTON_7:
-			return input::EMouseButton::BUTTON_7;
-		case GLFW_MOUSE_BUTTON_8:
-			return input::EMouseButton::BUTTON_8;
-		}
-
-		return input::EMouseButton::UNKNOWN;
+		int value = glfwGetInputMode(g_GLFWWindow, GLFW_CURSOR);
+		return fromGLFWCursorInputMode[value - PLATFORM_CURSOR_INPUT_MODE_FIRST];
 	}
 
-	input::EInputState fromGLFWState(int inState)
+	virtual bool isKeyPressed(input::EKey inKey) override
 	{
-		switch (inState)
-		{
-		case GLFW_PRESS:
-			return input::EInputState::PRESS;
-		case GLFW_RELEASE:
-			return input::EInputState::RELEASE;
-		case GLFW_REPEAT:
-			return input::EInputState::REPEAT;
-			
-		}
+		ensure(inKey != input::EKey::UNKNOWN);
 
-		return input::EInputState::UNKNOWN;
+		int glfwKey = toGLFWKey[static_cast<int>(inKey)];
+		int state = glfwGetKey(g_GLFWWindow, glfwKey);
+		return fromGLFWInputState[state] == input::EInputState::PRESS;
 	}
 
-	input::EKeyModifier fromGLFWKeyModifiers(int inModifiers)
+	virtual bool isButtonPressed(input::EMouseButton inButton) override
 	{
-		return input::EKeyModifier::NONE;
+		ensure(inButton != input::EMouseButton::UNKNOWN);
+
+		int glfwButton = toGLFWMouseButton[static_cast<int>(inButton)];
+		int state = glfwGetMouseButton(g_GLFWWindow, glfwButton);
+		return fromGLFWInputState[state] == input::EInputState::PRESS;
 	}
+
+	input::EKey fromGLFWKey[PLATFORM_KEY_SIZE];
+	int toGLFWKey[(int)input::EKey::ENUM_SIZE];
+
+	input::EMouseButton fromGLFWMouseButton[PLATFORM_MOUSE_BUTTON_SIZE];
+	int toGLFWMouseButton[(int)input::EMouseButton::ENUM_SIZE];
+
+	input::EInputState fromGLFWInputState[PLATFORM_INPUT_STATE_SIZE];
+	int toGLFWInputState[(int)input::EInputState::ENUM_SIZE];
+
+	input::ECursorInputMode fromGLFWCursorInputMode[PLATFORM_CURSOR_INPUT_MODE_SIZE];
+	int toGLFWCursorInputMode[(int)input::ECursorInputMode::ENUM_SIZE];
 
 protected:
 	virtual void pollEvents() override
 	{
 		glfwPollEvents();
+	}
+
+private:
+	// note: would like some const arrays but GLFW values are not sequential,
+	// would like designated initializers but they aren't available until C++20
+	void fillInputLookupTables()
+	{
+		fromGLFWKey[GLFW_KEY_SPACE] = input::EKey::SPACE;
+		fromGLFWKey[GLFW_KEY_APOSTROPHE] = input::EKey::APOSTROPHE;
+		fromGLFWKey[GLFW_KEY_COMMA]	= input::EKey::COMMA;
+		fromGLFWKey[GLFW_KEY_MINUS] = input::EKey::MINUS;
+		fromGLFWKey[GLFW_KEY_PERIOD] = input::EKey::PERIOD;
+		fromGLFWKey[GLFW_KEY_SLASH] = input::EKey::SLASH;
+		fromGLFWKey[GLFW_KEY_0] = input::EKey::KB_0;
+		fromGLFWKey[GLFW_KEY_1] = input::EKey::KB_1;
+		fromGLFWKey[GLFW_KEY_2] = input::EKey::KB_2;
+		fromGLFWKey[GLFW_KEY_3] = input::EKey::KB_3;
+		fromGLFWKey[GLFW_KEY_4] = input::EKey::KB_4;
+		fromGLFWKey[GLFW_KEY_5] = input::EKey::KB_5;
+		fromGLFWKey[GLFW_KEY_6] = input::EKey::KB_6;
+		fromGLFWKey[GLFW_KEY_7] = input::EKey::KB_7;
+		fromGLFWKey[GLFW_KEY_8] = input::EKey::KB_8;
+		fromGLFWKey[GLFW_KEY_9] = input::EKey::KB_9;
+		fromGLFWKey[GLFW_KEY_SEMICOLON] = input::EKey::SEMICOLON;
+		fromGLFWKey[GLFW_KEY_EQUAL] = input::EKey::EQUAL;
+		fromGLFWKey[GLFW_KEY_A] = input::EKey::A;
+		fromGLFWKey[GLFW_KEY_B] = input::EKey::B;
+		fromGLFWKey[GLFW_KEY_C] = input::EKey::C;
+		fromGLFWKey[GLFW_KEY_D] = input::EKey::D;
+		fromGLFWKey[GLFW_KEY_E] = input::EKey::E;
+		fromGLFWKey[GLFW_KEY_F] = input::EKey::F;
+		fromGLFWKey[GLFW_KEY_G] = input::EKey::G;
+		fromGLFWKey[GLFW_KEY_H] = input::EKey::H;
+		fromGLFWKey[GLFW_KEY_I] = input::EKey::I;
+		fromGLFWKey[GLFW_KEY_J] = input::EKey::J;
+		fromGLFWKey[GLFW_KEY_K] = input::EKey::K;
+		fromGLFWKey[GLFW_KEY_L] = input::EKey::L;
+		fromGLFWKey[GLFW_KEY_M] = input::EKey::M;
+		fromGLFWKey[GLFW_KEY_N] = input::EKey::N;
+		fromGLFWKey[GLFW_KEY_O] = input::EKey::O;
+		fromGLFWKey[GLFW_KEY_P] = input::EKey::P;
+		fromGLFWKey[GLFW_KEY_Q] = input::EKey::Q;
+		fromGLFWKey[GLFW_KEY_R] = input::EKey::R;
+		fromGLFWKey[GLFW_KEY_S] = input::EKey::S;
+		fromGLFWKey[GLFW_KEY_T] = input::EKey::T;
+		fromGLFWKey[GLFW_KEY_U] = input::EKey::U;
+		fromGLFWKey[GLFW_KEY_V] = input::EKey::V;
+		fromGLFWKey[GLFW_KEY_W] = input::EKey::W;
+		fromGLFWKey[GLFW_KEY_X] = input::EKey::X;
+		fromGLFWKey[GLFW_KEY_Y] = input::EKey::Y;
+		fromGLFWKey[GLFW_KEY_Z] = input::EKey::Z;
+		fromGLFWKey[GLFW_KEY_LEFT_BRACKET] = input::EKey::LEFT_BRACKET;
+		fromGLFWKey[GLFW_KEY_BACKSLASH] = input::EKey::BACKSLASH;
+		fromGLFWKey[GLFW_KEY_RIGHT_BRACKET] = input::EKey::RIGHT_BRACKET;
+		fromGLFWKey[GLFW_KEY_GRAVE_ACCENT] = input::EKey::GRAVE_ACCENT;
+		fromGLFWKey[GLFW_KEY_WORLD_1] = input::EKey::WORLD_1;
+		fromGLFWKey[GLFW_KEY_WORLD_2] = input::EKey::WORLD_2;
+		fromGLFWKey[GLFW_KEY_ESCAPE] = input::EKey::ESCAPE;
+		fromGLFWKey[GLFW_KEY_ENTER] = input::EKey::ENTER;
+		fromGLFWKey[GLFW_KEY_TAB] = input::EKey::TAB;
+		fromGLFWKey[GLFW_KEY_BACKSPACE] = input::EKey::BACKSPACE;
+		fromGLFWKey[GLFW_KEY_INSERT] = input::EKey::INSERT;
+		fromGLFWKey[GLFW_KEY_DELETE] = input::EKey::DELETE;
+		fromGLFWKey[GLFW_KEY_RIGHT] = input::EKey::RIGHT;
+		fromGLFWKey[GLFW_KEY_LEFT] = input::EKey::LEFT;
+		fromGLFWKey[GLFW_KEY_DOWN] = input::EKey::DOWN;
+		fromGLFWKey[GLFW_KEY_UP] = input::EKey::UP;
+		fromGLFWKey[GLFW_KEY_PAGE_UP] = input::EKey::PAGE_UP;
+		fromGLFWKey[GLFW_KEY_PAGE_DOWN] = input::EKey::PAGE_DOWN;
+		fromGLFWKey[GLFW_KEY_HOME] = input::EKey::HOME;
+		fromGLFWKey[GLFW_KEY_END] = input::EKey::END;
+		fromGLFWKey[GLFW_KEY_CAPS_LOCK] = input::EKey::CAPS_LOCK;
+		fromGLFWKey[GLFW_KEY_SCROLL_LOCK] = input::EKey::SCROLL_LOCK;
+		fromGLFWKey[GLFW_KEY_NUM_LOCK] = input::EKey::NUM_LOCK;
+		fromGLFWKey[GLFW_KEY_PRINT_SCREEN] = input::EKey::PRINT_SCREEN;
+		fromGLFWKey[GLFW_KEY_PAUSE] = input::EKey::PAUSE;
+		fromGLFWKey[GLFW_KEY_F1] = input::EKey::F1;
+		fromGLFWKey[GLFW_KEY_F2] = input::EKey::F2;
+		fromGLFWKey[GLFW_KEY_F3] = input::EKey::F3;
+		fromGLFWKey[GLFW_KEY_F4] = input::EKey::F4;
+		fromGLFWKey[GLFW_KEY_F5] = input::EKey::F5;
+		fromGLFWKey[GLFW_KEY_F6] = input::EKey::F6;
+		fromGLFWKey[GLFW_KEY_F7] = input::EKey::F7;
+		fromGLFWKey[GLFW_KEY_F8] = input::EKey::F8;
+		fromGLFWKey[GLFW_KEY_F9] = input::EKey::F9;
+		fromGLFWKey[GLFW_KEY_F10] = input::EKey::F10;
+		fromGLFWKey[GLFW_KEY_F11] = input::EKey::F11;
+		fromGLFWKey[GLFW_KEY_F12] = input::EKey::F12;
+		fromGLFWKey[GLFW_KEY_F13] = input::EKey::F13;
+		fromGLFWKey[GLFW_KEY_F14] = input::EKey::F14;
+		fromGLFWKey[GLFW_KEY_F15] = input::EKey::F15;
+		fromGLFWKey[GLFW_KEY_F16] = input::EKey::F16;
+		fromGLFWKey[GLFW_KEY_F17] = input::EKey::F17;
+		fromGLFWKey[GLFW_KEY_F18] = input::EKey::F18;
+		fromGLFWKey[GLFW_KEY_F19] = input::EKey::F19;
+		fromGLFWKey[GLFW_KEY_F20] = input::EKey::F20;
+		fromGLFWKey[GLFW_KEY_F21] = input::EKey::F21;
+		fromGLFWKey[GLFW_KEY_F22] = input::EKey::F22;
+		fromGLFWKey[GLFW_KEY_F23] = input::EKey::F23;
+		fromGLFWKey[GLFW_KEY_F24] = input::EKey::F24;
+		fromGLFWKey[GLFW_KEY_F25] = input::EKey::F25;
+		fromGLFWKey[GLFW_KEY_KP_0] = input::EKey::KP_0;
+		fromGLFWKey[GLFW_KEY_KP_1] = input::EKey::KP_1;
+		fromGLFWKey[GLFW_KEY_KP_2] = input::EKey::KP_2;
+		fromGLFWKey[GLFW_KEY_KP_3] = input::EKey::KP_3;
+		fromGLFWKey[GLFW_KEY_KP_4] = input::EKey::KP_4;
+		fromGLFWKey[GLFW_KEY_KP_5] = input::EKey::KP_5;
+		fromGLFWKey[GLFW_KEY_KP_6] = input::EKey::KP_6;
+		fromGLFWKey[GLFW_KEY_KP_7] = input::EKey::KP_7;
+		fromGLFWKey[GLFW_KEY_KP_8] = input::EKey::KP_8;
+		fromGLFWKey[GLFW_KEY_KP_9] = input::EKey::KP_9;
+		fromGLFWKey[GLFW_KEY_KP_DECIMAL] = input::EKey::KP_DECIMAL;
+		fromGLFWKey[GLFW_KEY_KP_DIVIDE] = input::EKey::KP_DIVIDE;
+		fromGLFWKey[GLFW_KEY_KP_MULTIPLY] = input::EKey::KP_MULTIPLY;
+		fromGLFWKey[GLFW_KEY_KP_SUBTRACT] = input::EKey::KP_SUBTRACT;
+		fromGLFWKey[GLFW_KEY_KP_ADD] = input::EKey::KP_ADD;
+		fromGLFWKey[GLFW_KEY_KP_ENTER] = input::EKey::KP_ENTER;
+		fromGLFWKey[GLFW_KEY_KP_EQUAL] = input::EKey::KP_EQUAL;
+		fromGLFWKey[GLFW_KEY_LEFT_SHIFT] = input::EKey::LEFT_SHIFT;
+		fromGLFWKey[GLFW_KEY_LEFT_CONTROL] = input::EKey::LEFT_CONTROL;
+		fromGLFWKey[GLFW_KEY_LEFT_ALT] = input::EKey::LEFT_ALT;
+		fromGLFWKey[GLFW_KEY_LEFT_SUPER] = input::EKey::LEFT_SUPER;
+		fromGLFWKey[GLFW_KEY_RIGHT_SHIFT] = input::EKey::RIGHT_SHIFT;
+		fromGLFWKey[GLFW_KEY_RIGHT_CONTROL] = input::EKey::RIGHT_CONTROL;
+		fromGLFWKey[GLFW_KEY_RIGHT_ALT] = input::EKey::RIGHT_ALT;
+		fromGLFWKey[GLFW_KEY_RIGHT_SUPER] = input::EKey::RIGHT_SUPER;
+		fromGLFWKey[GLFW_KEY_MENU] = input::EKey::MENU;
+
+		toGLFWKey[(int)input::EKey::SPACE] = GLFW_KEY_SPACE;
+		toGLFWKey[(int)input::EKey::APOSTROPHE] = GLFW_KEY_APOSTROPHE;
+		toGLFWKey[(int)input::EKey::COMMA] = GLFW_KEY_COMMA;
+		toGLFWKey[(int)input::EKey::MINUS] = GLFW_KEY_MINUS;
+		toGLFWKey[(int)input::EKey::PERIOD] = GLFW_KEY_PERIOD;
+		toGLFWKey[(int)input::EKey::SLASH] = GLFW_KEY_SLASH;
+		toGLFWKey[(int)input::EKey::KB_0] = GLFW_KEY_0;
+		toGLFWKey[(int)input::EKey::KB_1] = GLFW_KEY_1;
+		toGLFWKey[(int)input::EKey::KB_2] = GLFW_KEY_2;
+		toGLFWKey[(int)input::EKey::KB_3] = GLFW_KEY_3;
+		toGLFWKey[(int)input::EKey::KB_4] = GLFW_KEY_4;
+		toGLFWKey[(int)input::EKey::KB_5] = GLFW_KEY_5;
+		toGLFWKey[(int)input::EKey::KB_6] = GLFW_KEY_6;
+		toGLFWKey[(int)input::EKey::KB_7] = GLFW_KEY_7;
+		toGLFWKey[(int)input::EKey::KB_8] = GLFW_KEY_8;
+		toGLFWKey[(int)input::EKey::KB_9] = GLFW_KEY_9;
+		toGLFWKey[(int)input::EKey::SEMICOLON] = GLFW_KEY_SEMICOLON;
+		toGLFWKey[(int)input::EKey::EQUAL] = GLFW_KEY_EQUAL;
+		toGLFWKey[(int)input::EKey::A] = GLFW_KEY_A;
+		toGLFWKey[(int)input::EKey::B] = GLFW_KEY_B;
+		toGLFWKey[(int)input::EKey::C] = GLFW_KEY_C;
+		toGLFWKey[(int)input::EKey::D] = GLFW_KEY_D;
+		toGLFWKey[(int)input::EKey::E] = GLFW_KEY_E;
+		toGLFWKey[(int)input::EKey::F] = GLFW_KEY_F;
+		toGLFWKey[(int)input::EKey::G] = GLFW_KEY_G;
+		toGLFWKey[(int)input::EKey::H] = GLFW_KEY_H;
+		toGLFWKey[(int)input::EKey::I] = GLFW_KEY_I;
+		toGLFWKey[(int)input::EKey::J] = GLFW_KEY_J;
+		toGLFWKey[(int)input::EKey::K] = GLFW_KEY_K;
+		toGLFWKey[(int)input::EKey::L] = GLFW_KEY_L;
+		toGLFWKey[(int)input::EKey::M] = GLFW_KEY_M;
+		toGLFWKey[(int)input::EKey::N] = GLFW_KEY_N;
+		toGLFWKey[(int)input::EKey::O] = GLFW_KEY_O;
+		toGLFWKey[(int)input::EKey::P] = GLFW_KEY_P;
+		toGLFWKey[(int)input::EKey::Q] = GLFW_KEY_Q;
+		toGLFWKey[(int)input::EKey::R] = GLFW_KEY_R;
+		toGLFWKey[(int)input::EKey::S] = GLFW_KEY_S;
+		toGLFWKey[(int)input::EKey::T] = GLFW_KEY_T;
+		toGLFWKey[(int)input::EKey::U] = GLFW_KEY_U;
+		toGLFWKey[(int)input::EKey::V] = GLFW_KEY_V;
+		toGLFWKey[(int)input::EKey::W] = GLFW_KEY_W;
+		toGLFWKey[(int)input::EKey::X] = GLFW_KEY_X;
+		toGLFWKey[(int)input::EKey::Y] = GLFW_KEY_Y;
+		toGLFWKey[(int)input::EKey::Z] = GLFW_KEY_Z;
+		toGLFWKey[(int)input::EKey::LEFT_BRACKET] = GLFW_KEY_LEFT_BRACKET;
+		toGLFWKey[(int)input::EKey::BACKSLASH] = GLFW_KEY_BACKSLASH;
+		toGLFWKey[(int)input::EKey::RIGHT_BRACKET] = GLFW_KEY_RIGHT_BRACKET;
+		toGLFWKey[(int)input::EKey::GRAVE_ACCENT] = GLFW_KEY_GRAVE_ACCENT;
+		toGLFWKey[(int)input::EKey::WORLD_1] = GLFW_KEY_WORLD_1;
+		toGLFWKey[(int)input::EKey::WORLD_2] = GLFW_KEY_WORLD_2;
+		toGLFWKey[(int)input::EKey::ESCAPE] = GLFW_KEY_ESCAPE;
+		toGLFWKey[(int)input::EKey::ENTER] = GLFW_KEY_ENTER;
+		toGLFWKey[(int)input::EKey::TAB] = GLFW_KEY_TAB;
+		toGLFWKey[(int)input::EKey::BACKSPACE] = GLFW_KEY_BACKSPACE;
+		toGLFWKey[(int)input::EKey::INSERT] = GLFW_KEY_INSERT;
+		toGLFWKey[(int)input::EKey::DELETE] = GLFW_KEY_DELETE;
+		toGLFWKey[(int)input::EKey::RIGHT] = GLFW_KEY_RIGHT;
+		toGLFWKey[(int)input::EKey::LEFT] = GLFW_KEY_LEFT;
+		toGLFWKey[(int)input::EKey::DOWN] = GLFW_KEY_DOWN;
+		toGLFWKey[(int)input::EKey::UP] = GLFW_KEY_UP;
+		toGLFWKey[(int)input::EKey::PAGE_UP] = GLFW_KEY_PAGE_UP;
+		toGLFWKey[(int)input::EKey::PAGE_DOWN] = GLFW_KEY_PAGE_DOWN;
+		toGLFWKey[(int)input::EKey::HOME] = GLFW_KEY_HOME;
+		toGLFWKey[(int)input::EKey::END] = GLFW_KEY_END;
+		toGLFWKey[(int)input::EKey::CAPS_LOCK] = GLFW_KEY_CAPS_LOCK;
+		toGLFWKey[(int)input::EKey::SCROLL_LOCK] = GLFW_KEY_SCROLL_LOCK;
+		toGLFWKey[(int)input::EKey::NUM_LOCK] = GLFW_KEY_NUM_LOCK;
+		toGLFWKey[(int)input::EKey::PRINT_SCREEN] = GLFW_KEY_PRINT_SCREEN;
+		toGLFWKey[(int)input::EKey::PAUSE] = GLFW_KEY_PAUSE;
+		toGLFWKey[(int)input::EKey::F1] = GLFW_KEY_F1;
+		toGLFWKey[(int)input::EKey::F2] = GLFW_KEY_F2;
+		toGLFWKey[(int)input::EKey::F3] = GLFW_KEY_F3;
+		toGLFWKey[(int)input::EKey::F4] = GLFW_KEY_F4;
+		toGLFWKey[(int)input::EKey::F5] = GLFW_KEY_F5;
+		toGLFWKey[(int)input::EKey::F6] = GLFW_KEY_F6;
+		toGLFWKey[(int)input::EKey::F7] = GLFW_KEY_F7;
+		toGLFWKey[(int)input::EKey::F8] = GLFW_KEY_F8;
+		toGLFWKey[(int)input::EKey::F9] = GLFW_KEY_F9;
+		toGLFWKey[(int)input::EKey::F10] = GLFW_KEY_F10;
+		toGLFWKey[(int)input::EKey::F11] = GLFW_KEY_F11;
+		toGLFWKey[(int)input::EKey::F12] = GLFW_KEY_F12;
+		toGLFWKey[(int)input::EKey::F13] = GLFW_KEY_F13;
+		toGLFWKey[(int)input::EKey::F14] = GLFW_KEY_F14;
+		toGLFWKey[(int)input::EKey::F15] = GLFW_KEY_F15;
+		toGLFWKey[(int)input::EKey::F16] = GLFW_KEY_F16;
+		toGLFWKey[(int)input::EKey::F17] = GLFW_KEY_F17;
+		toGLFWKey[(int)input::EKey::F18] = GLFW_KEY_F18;
+		toGLFWKey[(int)input::EKey::F19] = GLFW_KEY_F19;
+		toGLFWKey[(int)input::EKey::F20] = GLFW_KEY_F20;
+		toGLFWKey[(int)input::EKey::F21] = GLFW_KEY_F21;
+		toGLFWKey[(int)input::EKey::F22] = GLFW_KEY_F22;
+		toGLFWKey[(int)input::EKey::F23] = GLFW_KEY_F23;
+		toGLFWKey[(int)input::EKey::F24] = GLFW_KEY_F24;
+		toGLFWKey[(int)input::EKey::F25] = GLFW_KEY_F25;
+		toGLFWKey[(int)input::EKey::KP_0] = GLFW_KEY_KP_0;
+		toGLFWKey[(int)input::EKey::KP_1] = GLFW_KEY_KP_1;
+		toGLFWKey[(int)input::EKey::KP_2] = GLFW_KEY_KP_2;
+		toGLFWKey[(int)input::EKey::KP_3] = GLFW_KEY_KP_3;
+		toGLFWKey[(int)input::EKey::KP_4] = GLFW_KEY_KP_4;
+		toGLFWKey[(int)input::EKey::KP_5] = GLFW_KEY_KP_5;
+		toGLFWKey[(int)input::EKey::KP_6] = GLFW_KEY_KP_6;
+		toGLFWKey[(int)input::EKey::KP_7] = GLFW_KEY_KP_7;
+		toGLFWKey[(int)input::EKey::KP_8] = GLFW_KEY_KP_8;
+		toGLFWKey[(int)input::EKey::KP_9] = GLFW_KEY_KP_9;
+		toGLFWKey[(int)input::EKey::KP_DECIMAL] = GLFW_KEY_KP_DECIMAL;
+		toGLFWKey[(int)input::EKey::KP_DIVIDE] = GLFW_KEY_KP_DIVIDE;
+		toGLFWKey[(int)input::EKey::KP_MULTIPLY] = GLFW_KEY_KP_MULTIPLY;
+		toGLFWKey[(int)input::EKey::KP_SUBTRACT] = GLFW_KEY_KP_SUBTRACT;
+		toGLFWKey[(int)input::EKey::KP_ADD] = GLFW_KEY_KP_ADD;
+		toGLFWKey[(int)input::EKey::KP_ENTER] = GLFW_KEY_KP_ENTER;
+		toGLFWKey[(int)input::EKey::KP_EQUAL] = GLFW_KEY_KP_EQUAL;
+		toGLFWKey[(int)input::EKey::LEFT_SHIFT] = GLFW_KEY_LEFT_SHIFT;
+		toGLFWKey[(int)input::EKey::LEFT_CONTROL] = GLFW_KEY_LEFT_CONTROL;
+		toGLFWKey[(int)input::EKey::LEFT_ALT] = GLFW_KEY_LEFT_ALT;
+		toGLFWKey[(int)input::EKey::LEFT_SUPER] = GLFW_KEY_LEFT_SUPER;
+		toGLFWKey[(int)input::EKey::RIGHT_SHIFT] = GLFW_KEY_RIGHT_SHIFT;
+		toGLFWKey[(int)input::EKey::RIGHT_CONTROL] = GLFW_KEY_RIGHT_CONTROL;
+		toGLFWKey[(int)input::EKey::RIGHT_ALT] = GLFW_KEY_RIGHT_ALT;
+		toGLFWKey[(int)input::EKey::RIGHT_SUPER] = GLFW_KEY_RIGHT_SUPER;
+		toGLFWKey[(int)input::EKey::MENU] = GLFW_KEY_MENU;
+
+		//
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_LEFT] = input::EMouseButton::LEFT;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_RIGHT] = input::EMouseButton::RIGHT;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_MIDDLE] = input::EMouseButton::MIDDLE;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_4] = input::EMouseButton::BUTTON_4;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_5] = input::EMouseButton::BUTTON_5;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_6] = input::EMouseButton::BUTTON_6;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_7] = input::EMouseButton::BUTTON_7;
+		fromGLFWMouseButton[GLFW_MOUSE_BUTTON_8] = input::EMouseButton::BUTTON_8;
+
+		toGLFWMouseButton[(int)input::EMouseButton::LEFT] = GLFW_MOUSE_BUTTON_LEFT;
+		toGLFWMouseButton[(int)input::EMouseButton::RIGHT] = GLFW_MOUSE_BUTTON_RIGHT;
+		toGLFWMouseButton[(int)input::EMouseButton::MIDDLE] = GLFW_MOUSE_BUTTON_MIDDLE;
+		toGLFWMouseButton[(int)input::EMouseButton::BUTTON_4] = GLFW_MOUSE_BUTTON_4;
+		toGLFWMouseButton[(int)input::EMouseButton::BUTTON_5] = GLFW_MOUSE_BUTTON_5;
+		toGLFWMouseButton[(int)input::EMouseButton::BUTTON_6] = GLFW_MOUSE_BUTTON_6;
+		toGLFWMouseButton[(int)input::EMouseButton::BUTTON_7] = GLFW_MOUSE_BUTTON_7;
+		toGLFWMouseButton[(int)input::EMouseButton::BUTTON_8] = GLFW_MOUSE_BUTTON_8;
+
+		//
+		fromGLFWInputState[GLFW_RELEASE] = input::EInputState::RELEASE;
+		fromGLFWInputState[GLFW_PRESS] = input::EInputState::PRESS;
+		fromGLFWInputState[GLFW_REPEAT] = input::EInputState::REPEAT;
+
+		toGLFWInputState[(int)input::EInputState::RELEASE] = GLFW_RELEASE;
+		toGLFWInputState[(int)input::EInputState::PRESS] = GLFW_PRESS;
+		toGLFWInputState[(int)input::EInputState::REPEAT] = GLFW_REPEAT;
+
+		//
+		fromGLFWCursorInputMode[GLFW_CURSOR_NORMAL - PLATFORM_CURSOR_INPUT_MODE_FIRST] = input::ECursorInputMode::NORMAL;
+		fromGLFWCursorInputMode[GLFW_CURSOR_HIDDEN - PLATFORM_CURSOR_INPUT_MODE_FIRST] = input::ECursorInputMode::HIDDEN;
+		fromGLFWCursorInputMode[GLFW_CURSOR_DISABLED - PLATFORM_CURSOR_INPUT_MODE_FIRST] = input::ECursorInputMode::DISABLED;
+		fromGLFWCursorInputMode[GLFW_CURSOR_CAPTURED - PLATFORM_CURSOR_INPUT_MODE_FIRST] = input::ECursorInputMode::CAPTURED;
+
+		toGLFWCursorInputMode[(int)input::ECursorInputMode::NORMAL] = GLFW_CURSOR_NORMAL;
+		toGLFWCursorInputMode[(int)input::ECursorInputMode::HIDDEN] = GLFW_CURSOR_HIDDEN;
+		toGLFWCursorInputMode[(int)input::ECursorInputMode::DISABLED] = GLFW_CURSOR_DISABLED;
+		toGLFWCursorInputMode[(int)input::ECursorInputMode::CAPTURED] = GLFW_CURSOR_CAPTURED;
 	}
 };
 
@@ -363,25 +408,26 @@ void InputCallbacks::scroll_callback(GLFWwindow* inWindow, double inX, double in
 
 void InputCallbacks::key_callback(GLFWwindow* inWindow, int inGLFWKey, int inScancode, int inAction, int inMods)
 {
-	input::EKey key = g_GLFWInputManager->fromGLFWKey(inGLFWKey);
-	input::EInputState state = g_GLFWInputManager->fromGLFWState(inAction);
-	input::EKeyModifier mods = g_GLFWInputManager->fromGLFWKeyModifiers(inMods);
+	input::EKey key = g_GLFWInputManager->fromGLFWKey[inGLFWKey];
+	input::EInputState state = g_GLFWInputManager->fromGLFWInputState[inAction];
+	input::EKeyModifier mods = input::EKeyModifier::NONE; // todo
 	g_GLFWInputManager->getKeyInputs().push_back({ key, state, mods });
-	std::cout << inGLFWKey << " / " << inScancode << " / " << inAction << " / " << inMods << std::endl;
+	std::cout << "Key: " << inGLFWKey << " / " << inAction << " / " << inMods << std::endl;
 }
 
 void InputCallbacks::mouseButton_callback(GLFWwindow* inWindow, int inGLFWButton, int inAction, int inMods)
 {
-	input::EMouseButton button = g_GLFWInputManager->fromGLFWMouseButton(inGLFWButton);
-	input::EInputState state = g_GLFWInputManager->fromGLFWState(inAction);
+	input::EMouseButton button = g_GLFWInputManager->fromGLFWMouseButton[inGLFWButton];
+	input::EInputState state = g_GLFWInputManager->fromGLFWInputState[inAction];
 	g_GLFWInputManager->getMouseInputs().push_back({ button, state });
+	std::cout << "Button: " << inGLFWButton << " / " << inAction << " / " << inMods << std::endl;
 }
 
 
 //
 namespace WindowEvents
 {
-	void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+	void framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, int inHeight);
 }
 
 class GLFWWindowManager final : public WindowManager
@@ -445,9 +491,9 @@ public:
 	}
 };
 
-void WindowEvents::framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void WindowEvents::framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, int inHeight)
 {
-	g_GLFWWindowManager->resize(width, height);
+	g_GLFWWindowManager->resize(inWidth, inHeight);
 }
 
 //

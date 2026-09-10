@@ -46,17 +46,16 @@ struct ScrollInput
 	{}
 };
 
-enum class EInputMode
-{
-	Capture,
-	Free
-};
-
 class InputManager
 {
 public:
 	virtual void initialize();
 	void processInput(double inDeltaTime);
+
+	virtual input::ECursorInputMode getCursorInputMode() = 0;
+	virtual void setCursorInputMode(input::ECursorInputMode inButton) = 0;
+	virtual bool isKeyPressed(input::EKey inKey) = 0;
+	virtual bool isButtonPressed(input::EMouseButton inButton) = 0;
 
 protected:
 	virtual void pollEvents() = 0;

@@ -28,41 +28,71 @@ Camera::Camera()
 
 void Camera::initialize()
 {
-
 	platform::getInputManager().registerCursorPosCallback(
 		[this](double inX, double inY, double inDeltaTime)
 		{
-			onMouseMoved(inX, inY, inDeltaTime);
+			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
+			{
+				onMouseMoved(inX, inY, inDeltaTime);
+			}
 		});
 
 	platform::getInputManager().registerScrollCallback(
 		[this](double inX, double inY, double inDeltaTime)
 		{
-			onMouseScrolled(inX, inY, inDeltaTime);
+			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
+			{
+				onMouseScrolled(inX, inY, inDeltaTime);
+			}
+		});
+
+	platform::getInputManager().registerMouseCallback(input::EMouseButton::RIGHT
+		, [this](input::EInputState inState, double inDeltaTime)
+		{
+			if (inState == input::EInputState::PRESS)
+			{
+				platform::getInputManager().setCursorInputMode(input::ECursorInputMode::DISABLED);
+			}
+			else if (inState == input::EInputState::RELEASE)
+			{
+				platform::getInputManager().setCursorInputMode(input::ECursorInputMode::NORMAL);
+			}
 		});
 
 	platform::getInputManager().registerKeyCallback(input::EKey::UP
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyUpPressed(inState, inModifiers);
+			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
+			{
+				onKeyUpPressed(inState, inModifiers);
+			}
 		});
 
 	platform::getInputManager().registerKeyCallback(input::EKey::DOWN
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyDownPressed(inState, inModifiers);
+			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
+			{
+				onKeyDownPressed(inState, inModifiers);
+			}
 		});
 
 	platform::getInputManager().registerKeyCallback(input::EKey::LEFT
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyLeftPressed(inState, inModifiers);
+			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
+			{
+				onKeyLeftPressed(inState, inModifiers);
+			}
 		});
 
 	platform::getInputManager().registerKeyCallback(input::EKey::RIGHT
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			onKeyRightPressed(inState, inModifiers);
+			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
+			{
+				onKeyRightPressed(inState, inModifiers);
+			}
 		});
 }
 
