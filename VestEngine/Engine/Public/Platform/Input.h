@@ -124,7 +124,8 @@ namespace input
 		RIGHT_CONTROL,
 		RIGHT_ALT,
 		RIGHT_SUPER,
-		MENU
+		MENU,
+		ENUM_SIZE
 	};
 
 	enum class EKeyModifier : int
@@ -135,7 +136,8 @@ namespace input
 		ALT = 0x0004,
 		SUPER = 0x0008,
 		CAPS_LOCK = 0x0010,
-		NUM_LOCK = 0x0020
+		NUM_LOCK = 0x0020,
+		ENUM_SIZE = 0x0040
 	};
 
 	enum class EMouseButton : int
@@ -148,7 +150,8 @@ namespace input
 		BUTTON_5,
 		BUTTON_6,
 		BUTTON_7,
-		BUTTON_8
+		BUTTON_8,
+		ENUM_SIZE
 	};
 
 	enum class EInputState : int
@@ -156,15 +159,16 @@ namespace input
 		UNKNOWN = -1,
 		RELEASE = 0,
 		PRESS,
-		REPEAT
+		REPEAT,
+		ENUM_SIZE
 	};
 
-	enum class EInputMode : int
+	enum class ECursorInputMode : int
 	{
-		UNKNOWN = -1,
 		NORMAL = 0,
 		HIDDEN,
 		DISABLED,
-		CAPTURED
+		CAPTURED,
+		ENUM_SIZE
 	};
 }
