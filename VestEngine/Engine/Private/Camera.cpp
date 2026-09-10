@@ -35,6 +35,11 @@ void Camera::initialize()
 			{
 				onMouseMoved(inX, inY, inDeltaTime);
 			}
+			else
+			{
+				lastXPos = -1.0f;
+				lastYPos = -1.0f;
+			}
 		});
 
 	platform::getInputManager().registerScrollCallback(
