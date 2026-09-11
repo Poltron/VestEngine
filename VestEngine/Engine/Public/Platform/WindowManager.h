@@ -1,20 +1,22 @@
 #pragma once
 
+#include <functional>
+
 class WindowManager
 {
 public:
 	void* getWindow() { return window; }
 	const void* getWindow() const { return window; }
+protected:
+	void* window;
 
-	virtual void* createWindow(int width, int height) = 0;
-	virtual void destroyWindow() = 0;
-
-	virtual void closeWindow() = 0;
-	virtual bool shouldCloseWindow() const = 0;
-
+public:
 	virtual void swapBuffers() = 0;
 	virtual void resize(int inWidth, int inHeight) = 0;
 
+	using WindowCloseRequestCallback = std::function<void()>;
+	void registerWindowCloseRequestCallback(WindowCloseRequestCallback inScrollback);
+
 protected:
-	void* window;
+	WindowCloseRequestCallback windowCloseRequestCallback;
 };

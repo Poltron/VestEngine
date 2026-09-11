@@ -5,7 +5,7 @@ class WindowManager;
 
 namespace platform
 {
-	void initialize();
+	bool initialize();
 	void shutdown();
 
 	double getTime();

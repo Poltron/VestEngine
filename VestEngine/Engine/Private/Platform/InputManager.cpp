@@ -3,13 +3,17 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 
-void InputManager::initialize()
+bool InputManager::initialize()
 {
-	registerKeyCallback(input::EKey::ESCAPE
-		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
-		{
-			platform::getWindowManager().closeWindow();
-		});
+	return true;
+}
+
+void InputManager::shutdown()
+{
+	keyCallbacks.clear();
+	mouseCallbacks.clear();
+	cursorPosCallbacks.clear();
+	scrollCallbacks.clear();
 }
 
 void InputManager::processInput(double inDeltaTime)

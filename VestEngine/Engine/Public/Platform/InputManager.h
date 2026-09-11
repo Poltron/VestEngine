@@ -49,7 +49,8 @@ struct ScrollInput
 class InputManager
 {
 public:
-	virtual void initialize();
+	virtual bool initialize();
+	virtual void shutdown();
 	void processInput(double inDeltaTime);
 
 	virtual input::ECursorInputMode getCursorInputMode() = 0;
