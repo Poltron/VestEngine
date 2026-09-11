@@ -1,0 +1,65 @@
+#include "Render/ShaderParameterCollection.h"
+
+#include "Core/ResourcesManager.h"
+#include "Core/Resources/Shader.h"
+
+void ShaderParameterCollection::applyToShader(const Shader& inShader, const ResourcesManager& inResources)
+{
+	for (const auto& intParameter : intParameters)
+	{
+		inShader.setInt(intParameter.first, intParameter.second);
+	}
+
+	for (const auto& floatParameter : floatParameters)
+	{
+		inShader.setFloat(floatParameter.first, floatParameter.second);
+	}
+
+	for (const auto& vec3Parameter : vec3Parameters)
+	{
+		inShader.setVec3(vec3Parameter.first, vec3Parameter.second);
+	}
+
+	for (size_t i = 0; i < textureParameters.size(); ++i)
+	{
+		const auto& textureParameter = textureParameters[i];
+
+		glActiveTexture(GL_TEXTURE0 + (GLenum)i);
+
+		// note: kind of a hack, passing resourcehandle internal value in textureparameter.second
+		ResourceHandle resourceHandle(textureParameter.second);
+		if (resourceHandle.IsValid())
+		{
+			const Texture* texture = inResources.getTexture(ResourceHandle(textureParameter.second));
+			assert(texture != nullptr);
+
+			glBindTexture(GL_TEXTURE_2D, texture->getTextureID());
+		}
+		else
+		{
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+
+		inShader.setInt(textureParameter.first, (int)i);
+	}
+}
+
+void ShaderParameterCollection::addTexture(const std::string& inName, GLuint inValue)
+{
+	textureParameters.push_back({ inName, inValue });
+}
+
+void ShaderParameterCollection::addInt(const std::string& inName, int inValue)
+{
+	intParameters.push_back({ inName, inValue });
+}
+
+void ShaderParameterCollection::addFloat(const std::string& inName, float inValue)
+{
+	floatParameters.push_back({ inName, inValue });
+}
+
+void ShaderParameterCollection::addVec3(const std::string& inName, const glm::vec3& inValue)
+{
+	vec3Parameters.push_back({ inName, inValue });
+}

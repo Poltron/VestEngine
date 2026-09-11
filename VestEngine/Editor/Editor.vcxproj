@@ -130,14 +130,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Editor.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Private\Editor\Editor.cpp" />
+    <ClCompile Include="Private\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Editor.h" />
+    <ClInclude Include="Public\Editor\Editor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,10 +5,9 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
+#include "Core/Ensure.h"
 #include "Platform/InputManager.h"
 #include "Platform/WindowManager.h"
-
-#include "Utils/Ensure.h"
 
 #define PLATFORM_KEY_SIZE GLFW_KEY_LAST + 1
 #define PLATFORM_MOUSE_BUTTON_SIZE GLFW_MOUSE_BUTTON_LAST + 1
@@ -41,9 +40,9 @@ namespace InputCallbacks
 class GLFWInputManager final : public InputManager
 {
 public:
-	virtual void initialize() override
+	virtual bool initialize() override
 	{
-		InputManager::initialize();
+		bool bSuccess = InputManager::initialize();
 
 		fillInputLookupTables();
 
@@ -53,6 +52,8 @@ public:
 		glfwSetCursorPosCallback(g_GLFWWindow, InputCallbacks::cursorPos_callback);
 
 		glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+		return bSuccess;
 	}
 
 	std::vector<KeyInput>& getKeyInputs() { return keyInputs; }
@@ -426,13 +427,14 @@ void InputCallbacks::mouseButton_callback(GLFWwindow* inWindow, int inGLFWButton
 //
 namespace WindowEvents
 {
+	void windows_close_callback(GLFWwindow* inWindow);
 	void framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, int inHeight);
 }
 
 class GLFWWindowManager final : public WindowManager
 {
 public:
-	virtual void* createWindow(int width, int height) override
+	void* createWindow(int width, int height)
 	{
 		glfwInit();
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -457,6 +459,7 @@ public:
 			return nullptr;
 		}
 
+		glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
 		glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
 		
 		glViewport(0, 0, width, height);
@@ -464,19 +467,19 @@ public:
 		return g_GLFWWindow;
 	}
 
-	virtual void destroyWindow() override
+	void destroyWindow()
 	{
 		glfwTerminate();
 	}
 
-	virtual void closeWindow() override
+	void closeWindow()
 	{
 		glfwSetWindowShouldClose(g_GLFWWindow, true);
 	}
 
-	virtual bool shouldCloseWindow() const
+	void receivedCloseWindowRequest()
 	{
-		return glfwWindowShouldClose(static_cast<GLFWwindow*>(window));
+		windowCloseRequestCallback();
 	}
 
 	virtual void swapBuffers() override
@@ -490,13 +493,18 @@ public:
 	}
 };
 
+void WindowEvents::windows_close_callback(GLFWwindow* inWindow)
+{
+	g_GLFWWindowManager->receivedCloseWindowRequest();
+}
+
 void WindowEvents::framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, int inHeight)
 {
 	g_GLFWWindowManager->resize(inWidth, inHeight);
 }
 
 //
-void platform::initialize()
+bool platform::initialize()
 {
 	g_GLFWWindowManager = new GLFWWindowManager();
 
@@ -505,15 +513,16 @@ void platform::initialize()
 	void* window = g_GLFWWindowManager->createWindow(width, height);
 	if (!window)
 	{
-		return;
+		return false;
 	}
 
 	g_GLFWInputManager = new GLFWInputManager();
-	g_GLFWInputManager->initialize();
+	return g_GLFWInputManager->initialize();
 }
 
 void platform::shutdown()
 {
+	g_GLFWInputManager->shutdown();
 	g_GLFWWindowManager->destroyWindow();
 }
 
