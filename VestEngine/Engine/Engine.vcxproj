@@ -139,6 +139,7 @@
     <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Private\ECS\ComponentType.cpp" />
     <ClCompile Include="Private\Platform\Platform.cpp" />
     <ClCompile Include="Private\ECS\HierarchyHelper.cpp" />
     <ClCompile Include="Private\Core\Resources\Model.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
     <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="Public\ECS\ComponentType.h" />
     <ClInclude Include="Public\Platform\Input.h" />
     <ClInclude Include="Public\Platform\Platform.h" />
     <ClInclude Include="Public\ECS\HierarchyHelper.h" />

@@ -101,6 +101,9 @@
     <ClCompile Include="Private\Platform\WindowManager.cpp">
       <Filter>Private</Filter>
     </ClCompile>
+    <ClCompile Include="Private\ECS\ComponentType.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\Camera.h">
@@ -236,6 +239,9 @@
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="Public\Core\Scene.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\ECS\ComponentType.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>

@@ -68,6 +68,10 @@ void VestEngine::launch()
 
 		render::getRenderer()->clear();
 		render::getRenderer()->render(*engine::getResources(), scene->worldTransformComponents, scene->meshRendererComponents, currentFrame);
+		if (uiUpdateCallback)
+		{
+			uiUpdateCallback();
+		}
 		ui::render();
 		render::getRenderer()->swap();
 	}
