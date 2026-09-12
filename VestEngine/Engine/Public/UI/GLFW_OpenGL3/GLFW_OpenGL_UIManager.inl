@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "GLFW/glfw3.h"
 
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
@@ -58,6 +59,7 @@ bool GLFWOpenGLUIManager::initialize()
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;	// Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;	// Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;		// IF using Docking Branch
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	// Setup Platform/Renderer backends
 	GLFWwindow* window = static_cast<GLFWwindow*>(platform::getWindowManager().getWindow());
@@ -91,6 +93,15 @@ void GLFWOpenGLUIManager::render()
 	// Rendering
 	// (Your code clears your framebuffer, renders your other stuff etc.)
 	ImGui::Render();
+	
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		GLFWwindow* backup_current_context = glfwGetCurrentContext();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		glfwMakeContextCurrent(backup_current_context);
+	}
+
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	// (Your code calls glfwSwapBuffers() etc.)
 }
