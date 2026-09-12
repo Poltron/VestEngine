@@ -1,7 +1,9 @@
 #pragma once
 
-class Editor
-{};
+#include "Widgets/Inspector.h"
+
+class Editor;
+class Inspector;
 
 namespace editor
 {
@@ -13,3 +15,11 @@ namespace editor
 
 	void loadDemoScene();
 }
+
+class Editor
+{
+	Inspector inspector;
+
+public:
+	Inspector& getInspector() { return inspector; }
+};

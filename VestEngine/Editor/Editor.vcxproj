@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -132,12 +132,46 @@
   <ItemGroup>
     <ClCompile Include="Private\Editor\Editor.cpp" />
     <ClCompile Include="Private\main.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\DirectionalLightComponentToolkit.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\HierarchyComponentToolkit.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\LocalTransformComponentToolkit.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\MeshRendererComponentToolkit.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\PointLightComponentToolkit.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\RigidbodyComponentToolkit.cpp" />
+    <ClCompile Include="Private\Toolkits\Components\WorldTransformComponentToolkit.cpp" />
+    <ClCompile Include="Private\Widgets\Components\DirectionalLightComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Components\HierarchyComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Components\LocalTransformComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Components\MeshRendererComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Components\PointLightComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Components\RigidbodyComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Components\WorldTransformComponentInspector.cpp" />
+    <ClCompile Include="Private\Widgets\Inspector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Public\Toolkits\Components\DirectionalLightComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\Components\HierarchyComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\Components\LocalTransformComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\Components\MeshRendererComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\Components\PointLightComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\Components\RigidbodyComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\Components\WorldTransformComponentToolkit.h" />
+    <ClInclude Include="Public\Toolkits\IToolkit.h" />
+    <ClInclude Include="Public\Widgets\Components\DirectionalLightComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\Components\HierarchyComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\ComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\Components\LocalTransformComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\Components\MeshRendererComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\Components\PointLightComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\Components\RigidbodyComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\Components\WorldTransformComponentInspector.h" />
+    <ClInclude Include="Public\Widgets\EntityInspector.h" />
     <ClInclude Include="Public\Editor\Editor.h" />
+    <ClInclude Include="Public\Widgets\Inspector.h" />
+    <ClInclude Include="Public\Widgets\InspectorElement.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

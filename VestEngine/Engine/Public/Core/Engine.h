@@ -24,6 +24,16 @@ public:
 	State getState() { return state; }
 	void setState(State inState) { state = inState; }
 
+	// todo: clarify tick groups
+	using UIUpdateCallback = std::function<void()>;
+	void registerUIUpdateCallback(UIUpdateCallback inCallback)
+	{
+		uiUpdateCallback = inCallback;
+	}
+
+protected:
+	UIUpdateCallback uiUpdateCallback;
+
 private:
 	State state;
 
@@ -34,7 +44,6 @@ protected:
 	HierarchySystem hierarchySystem;
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
-
 };
 
 namespace engine

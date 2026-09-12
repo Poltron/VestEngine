@@ -12,10 +12,8 @@ class VestEditor final : public Editor
 public:
 	bool initialize();
 	void launch();
+	void update();
 	void shutdown();
-
-private:
-	Entity selectedEntity;
 };
 
 namespace editor
@@ -53,6 +51,8 @@ namespace editor
 
 bool VestEditor::initialize()
 {
+	getInspector().initialize();
+
 	platform::getWindowManager().registerWindowCloseRequestCallback(
 		[]()
 		{
@@ -77,7 +77,17 @@ bool VestEditor::initialize()
 			ensure(scene);
 
 			size_t index = std::rand() % scene->worldTransformComponents.size();
-			selectedEntity = scene->worldTransformComponents.at(index)->entity;
+			Entity selectedEntity = scene->worldTransformComponents.at(index)->entity;
+			if (EntityFuncs::isEntityValid(selectedEntity))
+			{
+				getInspector().show(selectedEntity);
+			}
+		});
+
+	engine::getEngine()->registerUIUpdateCallback(
+		[this]()
+		{
+			editor::g_Editor->update();
 		});
 
 	return true;
@@ -86,6 +96,11 @@ bool VestEditor::initialize()
 void VestEditor::launch()
 {
 	engine::launch();
+}
+
+void VestEditor::update()
+{
+	getInspector().update();
 }
 
 void VestEditor::shutdown()
