@@ -21,6 +21,7 @@ void MeshRendererComponentInspector::update()
 
 	model = meshRenderer->model.handle;
 	shader = meshRenderer->shader.handle;
+	bOutline = meshRenderer->bOutline;
 
 	if (ImGui::InputScalar("Model", ImGuiDataType_U32, &model))
 	{
@@ -30,5 +31,10 @@ void MeshRendererComponentInspector::update()
 	if (ImGui::InputScalar("Shader", ImGuiDataType_U32, &shader))
 	{
 		meshRenderer->shader = shader;
+	}
+
+	if (ImGui::Checkbox("Outline", &bOutline))
+	{
+		meshRenderer->bOutline = bOutline;
 	}
 }

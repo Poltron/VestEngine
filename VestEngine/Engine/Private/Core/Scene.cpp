@@ -127,5 +127,6 @@ void Scene::loadPlaceholderScene()
 
 		});
 
+	render::getRenderer()->setOutlineShader(unlitShader);
 	render::getRenderer()->fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
 }

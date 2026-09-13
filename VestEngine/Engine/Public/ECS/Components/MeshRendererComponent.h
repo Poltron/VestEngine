@@ -11,6 +11,7 @@ struct MeshRendererComponent
 	
 	ResourceHandle model;
 	ResourceHandle shader;
+	bool bOutline;
 
 	ShaderParameterCollection shaderParameters;
 };
