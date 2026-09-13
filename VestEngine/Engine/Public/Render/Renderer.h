@@ -2,6 +2,7 @@
 
 #include "Render/ShaderParameterCollection.h"
 #include "Core/Ensure.h"
+#include "Core/ResourceHandle.h"
 
 #define MAX_POINT_LIGHTS 3
 
@@ -34,6 +35,7 @@ public:
 		, const ComponentManager<PointLightComponent>& inPointLights
 		, const ComponentManager<DirectionalLightComponent>& inDirectionalLights);
 	void setActiveCamera(Camera* inCamera);
+	void setOutlineShader(ResourceHandle inResourceHandle);
 
 	// note : currently unused since setupMesh does this inside mesh, should be used again though, renderer should handle OpenGL specifics
 	//GLuint createVAO(const Mesh& inMesh);
@@ -41,6 +43,7 @@ public:
 private:
 	ShaderParameterCollection globalShaderParameters;
 	Camera* activeCamera;
+	ResourceHandle outlineShaderHandle;
 };
 
 namespace render

@@ -6,6 +6,7 @@ class MeshRendererComponentInspector : public IInspectorElement
 {
 	unsigned int model = 0;
 	unsigned int shader = 0;
+	bool bOutline;
 
 public:
 	MeshRendererComponentInspector(Entity inEntity)

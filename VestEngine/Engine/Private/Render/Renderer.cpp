@@ -6,6 +6,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "Camera.h"
+#include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Mesh.h"
 #include "Core/Resources/Shader.h"
@@ -33,7 +34,16 @@ using namespace render;
 //
 bool VestRenderer::initialize()
 {
+	// depth test
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	// stencil test
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
+
 	return true;
 }
 
@@ -43,7 +53,7 @@ void VestRenderer::shutdown()
 void Renderer::clear()
 {
 	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 void Renderer::render(ResourcesManager& inResourcesManager
@@ -69,7 +79,6 @@ void Renderer::render(ResourcesManager& inResourcesManager
 
 		Shader* shader = inResourcesManager.getShader(meshRenderer->shader);
 		assert(shader != nullptr);
-
 		shader->use();
 
 		//
@@ -96,8 +105,32 @@ void Renderer::render(ResourcesManager& inResourcesManager
 		meshRenderer->shaderParameters.applyToShader(*shader, inResourcesManager);
 
 		shader->setFloat("material.shininess", 32.0f);
-		
+
 		model->draw();
+
+		if (meshRenderer->bOutline)
+		{
+			ensure(outlineShaderHandle.IsValid());
+			Shader* shader = engine::getResources()->getShader(outlineShaderHandle);
+			ensure(shader);
+			shader->use();
+
+			glm::mat4 outlineMat = worldTransform->model;
+			outlineMat = glm::scale(outlineMat, glm::vec3(1.1f, 1.1f, 1.1f));
+
+			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+			glStencilMask(0x00);
+			glDisable(GL_DEPTH_TEST);
+
+			shader->setMat4("model", glm::value_ptr(outlineMat));
+			shader->setVec3("objectColor", glm::vec3(1.0f, 1.0f, 0.0f));
+
+			model->draw();
+
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilMask(0xFF);
+			glEnable(GL_DEPTH_TEST);
+		}
 	}
 }
 
@@ -109,6 +142,11 @@ void Renderer::swap()
 void Renderer::setActiveCamera(Camera* inCamera)
 {
 	activeCamera = inCamera;
+}
+
+void Renderer::setOutlineShader(ResourceHandle inResourceHandle)
+{
+	outlineShaderHandle = inResourceHandle;
 }
 
 void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponent>& inWorldTransforms

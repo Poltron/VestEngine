@@ -133,7 +133,7 @@ namespace EntityFactory
 		addRigidbodyTo(entity
 			, inRigidbodies
 			, glm::vec3(0.0f, 0.0f, 0.0f)
-			, glm::vec3(0.0f, 2.0f, 0.0f));
+			, glm::vec3(0.0f, 0.5f, 0.0f));
 
 		return entity;
 	}
