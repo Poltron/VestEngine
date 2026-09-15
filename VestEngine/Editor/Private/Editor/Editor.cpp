@@ -24,7 +24,16 @@ namespace editor
 	bool initialize()
 	{
 		g_Editor = new VestEditor();
-		return g_Editor->initialize();
+		bool bSuccess = g_Editor->initialize();
+		if (bSuccess)
+		{
+			std::cout << "Editor initialization success." << std::endl << std::endl;
+		}
+		else
+		{
+			std::cout << "Editor initialization failed." << std::endl << std::endl;
+		}
+		return bSuccess;
 	}
 
 	void launch()

@@ -226,7 +226,16 @@ bool render::initialize()
 {
 	ensure(!g_Renderer);
 	g_Renderer = new VestRenderer();
-	return g_Renderer->initialize();
+	bool bSuccess = g_Renderer->initialize();
+	if (bSuccess)
+	{
+		std::cout << "Renderer initialization success." << std::endl;
+	}
+	else
+	{
+		std::cout << "Renderer initialization failed." << std::endl;
+	}
+	return bSuccess;
 }
 
 void render::shutdown()

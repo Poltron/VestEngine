@@ -93,7 +93,16 @@ bool engine::initialize()
 	g_Resources = new ResourcesManager();
 	g_Scene = new Scene();
 
-	return g_Engine->initialize() && g_Scene->initialize();
+	bool bSuccess = g_Engine->initialize() && g_Scene->initialize();
+	if (bSuccess)
+	{
+		std::cout << "Engine initialization success." << std::endl;
+	}
+	else
+	{
+		std::cout << "Engine initialization failed." << std::endl;
+	}
+	return bSuccess;
 }
 
 void engine::launch()

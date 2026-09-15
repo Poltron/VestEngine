@@ -2,7 +2,7 @@
 
 #include "Framework/Test.h"
 
-#include "Utils/DenseArray.h"
+#include "Core/Containers/DenseArray.h"
 
 // --- Capacity
 DECLARE_TEST(DenseArray, Capacity0)
