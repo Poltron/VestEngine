@@ -17,22 +17,24 @@ void PhysicsSystem::update(ComponentManager<LocalTransformComponent>& inLocalTra
 		assert(rigidbody);
 
 		LocalTransformComponent* localTransform = inLocalTransforms.get(rigidbody->entity);
-		const glm::vec3 rotation = rigidbody->angularVelocity * (float)inDeltaTime;
-		const glm::vec3 translation = rigidbody->linearVelocity * (float)inDeltaTime;
+		const glm::vec3 rotationVelocity = rigidbody->angularVelocity * (float)inDeltaTime;
+		const glm::vec3 translationVelocity = rigidbody->linearVelocity * (float)inDeltaTime;
 
 		HierarchyComponent* hierarchy = inHierarchies.get(rigidbody->entity);
 		if (hierarchy && hierarchy->parent)
 		{
 			WorldTransformComponent* parentWorldTransform = inWorldTransforms.get(hierarchy->parent);
-			addWorldRotation(rotation, localTransform, parentWorldTransform);
-			addWorldTranslation(translation, localTransform, parentWorldTransform);
+			addWorldRotation(rotationVelocity, localTransform, parentWorldTransform);
+			addWorldTranslation(translationVelocity, localTransform, parentWorldTransform);
 
 			setChildrenDirty(hierarchy->firstChild, inHierarchies, inLocalTransforms);
 		}
 		else
 		{
-			localTransform->setLocalRotation(localTransform->getRotation() + rotation);
-			localTransform->setLocalPosition(localTransform->getPosition() + translation);
+			glm::quat newRot = localTransform->getRotation() * glm::quat(glm::radians(rotationVelocity));
+			localTransform->setLocalRotation(newRot);
+			glm::vec3 newPos = localTransform->getPosition() + translationVelocity;
+			localTransform->setLocalPosition(newPos);
 		}
 
 		if (hierarchy)
@@ -55,7 +57,9 @@ void PhysicsSystem::addWorldRotation(const glm::vec3& inRotation, LocalTransform
 	glm::mat4 invParent = glm::inverse(inParentWorldTransform->model);
 	glm::vec3 localRotation = glm::mat3(invParent) * inRotation;
 
-	inLocalTransform->setLocalRotation(inLocalTransform->getRotation() + localRotation);
+
+	glm::quat newRot = inLocalTransform->getRotation() * glm::quat(glm::radians(inRotation));
+	inLocalTransform->setLocalRotation(newRot);
 }
 
 void PhysicsSystem::addWorldTranslation(const glm::vec3& inPosition, LocalTransformComponent* inLocalTransform, WorldTransformComponent* inParentWorldTransform)
