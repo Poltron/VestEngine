@@ -194,36 +194,6 @@ void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponen
 	}
 }
 
-//GLuint Renderer::createVAO(const Mesh& inMesh)
-//{
-//	GLuint VAO;
-//	glGenVertexArrays(1, &VAO);
-//	glBindVertexArray(VAO);
-//
-//	GLuint VBO;
-//	glGenBuffers(1, &VBO);
-//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * inMesh.vertices.size(), inMesh.vertices.data(), GL_STATIC_DRAW);
-//
-//	// info : vertex = x y z u v
-//	GLuint vertexAttribPointer = 0; // vertex layout location in vertex shader
-//	GLsizei stride = 8 * sizeof(float);
-//	glVertexAttribPointer(vertexAttribPointer, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-//	glEnableVertexAttribArray(vertexAttribPointer);
-//
-//	vertexAttribPointer = 1; // normal layout location in vertex shader
-//	glVertexAttribPointer(vertexAttribPointer, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-//	glEnableVertexAttribArray(vertexAttribPointer);
-//
-//	vertexAttribPointer = 2; // texcoord layout location in vertex shader
-//	glVertexAttribPointer(vertexAttribPointer, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
-//	glEnableVertexAttribArray(vertexAttribPointer);
-//
-//	glBindVertexArray(0);
-//
-//	return VAO;
-//}
-
 //
 Renderer* render::getRenderer() { return g_Renderer; }
 bool render::initialize()

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Render/GraphicResourceHandle.h"
 #include "Render/ShaderParameterCollection.h"
 #include "Core/Ensure.h"
 #include "Core/ResourceHandle.h"
@@ -36,9 +37,6 @@ public:
 		, const ComponentManager<DirectionalLightComponent>& inDirectionalLights);
 	void setActiveCamera(Camera* inCamera);
 	void setOutlineShader(ResourceHandle inResourceHandle);
-
-	// note : currently unused since setupMesh does this inside mesh, should be used again though, renderer should handle OpenGL specifics
-	//GLuint createVAO(const Mesh& inMesh);
 	
 private:
 	ShaderParameterCollection globalShaderParameters;

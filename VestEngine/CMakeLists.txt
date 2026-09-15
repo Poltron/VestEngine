@@ -26,12 +26,12 @@ file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
 	
 add_library(Engine STATIC ${ENGINE_FILES})
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
-target_link_libraries(Engine PUBLIC 	glfw)
-target_link_libraries(Engine PUBLIC 	glad) #todo: should be private but usage of GLuint makes this needed
-target_link_libraries(Engine PUBLIC 	glm)
+target_link_libraries(Engine PRIVATE 	glfw)
+target_link_libraries(Engine PRIVATE 	glad)
 target_link_libraries(Engine PRIVATE 	stb)
-target_link_libraries(Engine PUBLIC 	imgui)
 target_link_libraries(Engine PRIVATE 	assimp)
+target_link_libraries(Engine PUBLIC 	glm)
+target_link_libraries(Engine PUBLIC 	imgui)
 
 add_custom_command(TARGET Engine POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
