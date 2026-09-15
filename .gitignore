@@ -22,7 +22,6 @@
 *.dylib
 *.so.*
 
-
 # Fortran module files
 *.mod
 *.smod
@@ -66,8 +65,10 @@ vcpkg_installed/
 Testing/
 .cache/
 
-##############
-
+# visual studio output
 x64/
 .vs/
 
+# allowed folders - everything in there is voluntary
+!VestEngine/Resources/**
+!VestEngine/ThirdParty/**
