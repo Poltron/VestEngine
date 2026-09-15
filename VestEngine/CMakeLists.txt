@@ -25,9 +25,7 @@ file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public/*.h")
 	
 add_library(Engine STATIC ${ENGINE_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${ENGINE_FILES})
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
-# target_compile_options(Engine PRIVATE /W4 /permissive- /Zc:preprocessor /MP -Wall)
 
 target_link_libraries(Engine PUBLIC 	glfw)
 target_link_libraries(Engine PUBLIC 	glad) #todo: should be private but usage of GLuint makes this needed
@@ -53,11 +51,20 @@ file(GLOB_RECURSE EDITOR_FILES CONFIGURE_DEPENDS
 add_executable(Editor ${EDITOR_FILES})
 
 target_include_directories(Editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Editor/Public")
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${EDITOR_FILES})
-
 target_link_libraries(Editor PRIVATE Engine)
 
-#macro
+# =====
+# DEFINES
+# =====
+
 target_compile_definitions(Engine PUBLIC WORKDIR="${CMAKE_SOURCE_DIR}")
 
+# =====
+# VISUAL STUDIO
+# =====
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${ENGINE_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${EDITOR_FILES})
+target_compile_options(Engine PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
+target_compile_options(Editor PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Editor)
