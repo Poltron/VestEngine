@@ -503,6 +503,24 @@ void WindowEvents::framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, 
 	g_GLFWWindowManager->resize(inWidth, inHeight);
 }
 
+namespace
+{
+	void centerWindow(GLFWwindow* inWindow)
+	{
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		ensure(monitor);
+		const GLFWvidmode* vidMode = glfwGetVideoMode(monitor);
+		ensure(vidMode);
+
+		int windowWidth, windowHeight;
+		glfwGetWindowSize(inWindow, &windowWidth, &windowHeight);
+
+		const int windowPosX = (vidMode->width / 2) - (windowWidth / 2);
+		const int windowPosY = (vidMode->height / 2) - (windowHeight / 2);
+		glfwSetWindowPos(g_GLFWWindow, windowPosX, windowPosY);
+	}
+}
+
 //
 bool platform::initialize()
 {
@@ -515,6 +533,8 @@ bool platform::initialize()
 	{
 		return false;
 	}
+
+	centerWindow(g_GLFWWindow);
 
 	g_GLFWInputManager = new GLFWInputManager();
 	bool bSuccess = g_GLFWInputManager->initialize();
