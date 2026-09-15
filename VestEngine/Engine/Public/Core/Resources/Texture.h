@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "glad/glad.h"
+#include "Render/GraphicResourceHandle.h"
 
 class Texture
 {
@@ -17,14 +17,14 @@ public:
 	Texture(Texture&& inOther) noexcept;
 	Texture& operator=(Texture&& inOther) noexcept;
 
-	GLuint getTextureID() const { return textureID; }
+	GraphicResourceHandle getTextureID() const { return textureID; }
 	const std::string& getType() const { return type; }
 	const std::string& getPath() const { return path; }
 
 private:
 	void loadTexture();
 
-	GLuint textureID;
+	GraphicResourceHandle textureID;
 	std::string type;
 	std::string path;
 };

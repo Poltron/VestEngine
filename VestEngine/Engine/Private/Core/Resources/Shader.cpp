@@ -3,11 +3,12 @@
 #include <fstream>
 #include <iostream>
 
+#include "glad/glad.h"
 #include "glm/detail/type_vec3.hpp"
 
 #include "Render/ShaderParameterCollection.h"
 
-namespace ShaderPrivate
+namespace
 {
 	std::string readFile(const char* inFileName)
 	{
@@ -84,26 +85,26 @@ Shader& Shader::operator=(Shader&& inOther) noexcept
 
 void Shader::load()
 {
-	std::string vertexShaderContent = ShaderPrivate::readFile(vertexPath.c_str());
+	std::string vertexShaderContent = readFile(vertexPath.c_str());
 	if (vertexShaderContent.size() == 0)
 	{
 		std::cout << "ERROR: VertexShader " << vertexPath << " is empty." << std::endl;
 		return;
 	}
-	GLuint vertexShader = ShaderPrivate::createAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
-	if (vertexShader == 0)
+	GLuint vertexShader = createAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
+	if (!graphicResourceHandle::isValid(vertexShader))
 	{
 		return;
 	}
 
-	std::string fragmentShaderContent = ShaderPrivate::readFile(fragmentPath.c_str());
+	std::string fragmentShaderContent = readFile(fragmentPath.c_str());
 	if (fragmentShaderContent.size() == 0)
 	{
 		std::cout << "ERROR: FragmentShader " << fragmentPath << " is empty." << std::endl;
 		return;
 	}
-	GLuint fragmentShader = ShaderPrivate::createAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
-	if (fragmentShader == 0)
+	GLuint fragmentShader = createAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
+	if (!graphicResourceHandle::isValid(fragmentShader))
 	{
 		return;
 	}
@@ -164,7 +165,7 @@ void Shader::setMat4(const std::string& name, glm::f32* value) const
 	glUniformMatrix4fv(location, 1, GL_FALSE, value);
 }
 
-void Shader::setTexture(const std::string& name, GLuint value) const
+void Shader::setTexture(const std::string& name, GraphicResourceHandle value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
 	glUniform1i(location, value);

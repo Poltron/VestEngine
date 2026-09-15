@@ -1,5 +1,7 @@
 #include "Render/ShaderParameterCollection.h"
 
+#include "glad/glad.h"
+
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Shader.h"
 
@@ -44,7 +46,7 @@ void ShaderParameterCollection::applyToShader(const Shader& inShader, const Reso
 	}
 }
 
-void ShaderParameterCollection::addTexture(const std::string& inName, GLuint inValue)
+void ShaderParameterCollection::addTexture(const std::string& inName, GraphicResourceHandle inValue)
 {
 	textureParameters.push_back({ inName, inValue });
 }

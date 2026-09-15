@@ -3,12 +3,12 @@
 #include <vector>
 #include <string>
 
-#include "glad/glad.h"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
 #include "Core/ResourceHandle.h"
 #include "Core/Resources/Texture.h"
+#include "Render/GraphicResourceHandle.h"
 
 class ResourcesManager;
 
@@ -51,18 +51,18 @@ public:
 	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
 	void draw() const;
 
-	GLuint getVAO() const { return VAO; }
-	GLuint getVBO() const { return VBO; }
-	GLuint getEBO() const { return EBO; }
+	GraphicResourceHandle getVAO() const { return VAO; }
+	GraphicResourceHandle getVBO() const { return VBO; }
+	GraphicResourceHandle getEBO() const { return EBO; }
 
 private:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<ResourceHandle> textures;
 
-	GLuint VAO;
-	GLuint VBO;
-	GLuint EBO;
+	GraphicResourceHandle VAO;
+	GraphicResourceHandle VBO;
+	GraphicResourceHandle EBO;
 
 	void setupMesh();
 };

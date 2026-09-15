@@ -1,5 +1,6 @@
 #include "Core/Resources/Mesh.h"
 
+#include "glad/glad.h"
 #include "glm/detail/type_vec3.hpp"
 
 #include "Core/Resources/Shader.h"

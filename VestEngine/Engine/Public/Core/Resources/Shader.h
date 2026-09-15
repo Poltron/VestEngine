@@ -2,8 +2,9 @@
 
 #include <string>
 
-#include "glad/glad.h"
 #include "glm/fwd.hpp"
+
+#include "Render/GraphicResourceHandle.h"
 
 struct ShaderParameterCollection;
 
@@ -28,7 +29,7 @@ public:
 	void setVec3(const std::string& name, const glm::vec3& inValue) const;
 	void setVec4(const std::string& name, float x, float y, float z, float w) const;
 	void setMat4(const std::string& name, glm::f32* value) const;
-	void setTexture(const std::string& name, GLuint value) const;
+	void setTexture(const std::string& name, GraphicResourceHandle value) const;
 
 	const std::string& getVertexPath() const;
 	const std::string& getFragmentPath() const;
@@ -38,7 +39,7 @@ public:
 private:
 	void load();
 
-	GLuint ID;
+	GraphicResourceHandle ID;
 	std::string vertexPath;
 	std::string fragmentPath;
 };
