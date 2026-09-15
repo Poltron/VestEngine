@@ -27,28 +27,36 @@ void Scene::shutdown()
 void Scene::loadPlaceholderScene()
 {
 	// resources
-	const std::string WorkDirTMP = WORKDIR;
-	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
-	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit_fragment.glsl";
-	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
-	ResourceHandle litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
-	ResourceHandle unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
+	ResourceHandle cubeModel, bagModel;
+	ResourceHandle litShader, unlitShader;
 
-	const std::string containerPath = WorkDirTMP + "/Resources/Textures/container2.png";
-	const std::string containerSpecularPath = WorkDirTMP + "/Resources/Textures/container2_specular.png";
-	ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
-	ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
+	{
+		const std::string WorkDirTMP = WORKDIR;
+		const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
+		const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit_fragment.glsl";
+		const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
+		litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
+		unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
 
-	std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
-	std::vector<unsigned int> indices;
-	std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
-	Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
+		const std::string containerPath = WorkDirTMP + "/Resources/Textures/container2.png";
+		const std::string containerSpecularPath = WorkDirTMP + "/Resources/Textures/container2_specular.png";
+		ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
+		ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
 
-	std::vector<Mesh> meshes;
-	meshes.push_back(std::move(mesh));
+		std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
+		std::vector<unsigned int> indices;
+		std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
+		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
 
-	ResourceHandle cubeModel = engine::getResources()->createModel(std::move(meshes), "cube");
-	//ResourceHandle bagModel = resourcesManager.loadModel("../Resources/Models/backpack/backpack.obj");
+		std::vector<Mesh> meshes;
+		meshes.push_back(std::move(mesh));
+
+		cubeModel = engine::getResources()->createModel(std::move(meshes), "cube");
+
+		//const std::string bagModelPath = WorkDirTMP + "/Resources/Models/backpack/backpack.obj";
+		//bagModel = engine::getResources()->loadModel(bagModelPath);
+	}
+
 	EntityManager& entityManager = engine::getScene()->entities;
 
 	// placeholder scene

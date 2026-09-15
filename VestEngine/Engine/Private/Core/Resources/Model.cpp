@@ -45,7 +45,6 @@ Model& Model::operator=(Model&& inOther) noexcept
 	return *this;
 }
 
-// note : how should I access the resources manager ? what should i have access to globally ?
 void Model::load(std::string inPath)
 {
 	Assimp::Importer importer;
@@ -57,7 +56,7 @@ void Model::load(std::string inPath)
 	}
 
 	path = std::move(inPath);
-	directory = inPath.substr(0, inPath.find_last_of('/'));
+	directory = path.substr(0, path.find_last_of('/'));
 	processNode(scene->mRootNode, scene);
 }
 
