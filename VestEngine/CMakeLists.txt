@@ -22,7 +22,8 @@ add_subdirectory("ThirdParty/assimp-6.0.5")
 
 file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Private/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public/*.h")
+    "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public/*.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public/*.inl")
 	
 add_library(Engine STATIC ${ENGINE_FILES})
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
