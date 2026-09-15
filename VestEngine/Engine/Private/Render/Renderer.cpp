@@ -42,7 +42,7 @@ bool VestRenderer::initialize()
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilMask(0xFF);
+	glStencilMask(0x00);
 
 	return true;
 }
@@ -52,8 +52,10 @@ void VestRenderer::shutdown()
 
 void Renderer::clear()
 {
+	glStencilMask(0xFF);
 	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glStencilMask(0x00);
 }
 
 void Renderer::render(ResourcesManager& inResourcesManager
@@ -106,10 +108,18 @@ void Renderer::render(ResourcesManager& inResourcesManager
 
 		shader->setFloat("material.shininess", 32.0f);
 
+		if (meshRenderer->bOutline)
+		{
+			glStencilMask(0xFF); // allow full writing to stencil
+		}
+
 		model->draw();
 
 		if (meshRenderer->bOutline)
 		{
+			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // every fragment where stencil is not equal to 1 passes
+			glStencilMask(0x00); // don't write to stencil
+
 			ensure(outlineShaderHandle.IsValid());
 			Shader* shader = engine::getResources()->getShader(outlineShaderHandle);
 			ensure(shader);
@@ -118,18 +128,12 @@ void Renderer::render(ResourcesManager& inResourcesManager
 			glm::mat4 outlineMat = worldTransform->model;
 			outlineMat = glm::scale(outlineMat, glm::vec3(1.1f, 1.1f, 1.1f));
 
-			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-			glStencilMask(0x00);
-			glDisable(GL_DEPTH_TEST);
-
 			shader->setMat4("model", glm::value_ptr(outlineMat));
 			shader->setVec3("objectColor", glm::vec3(1.0f, 1.0f, 0.0f));
 
 			model->draw();
 
-			glStencilFunc(GL_ALWAYS, 1, 0xFF);
-			glStencilMask(0xFF);
-			glEnable(GL_DEPTH_TEST);
+			glStencilFunc(GL_ALWAYS, 1, 0xFF); // every fragment passes stencil
 		}
 	}
 }
