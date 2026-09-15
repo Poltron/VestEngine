@@ -18,7 +18,7 @@ namespace EntityFactory
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<HierarchyComponent>& inHierarchies
 		, const glm::vec3& inPosition
-		, const glm::vec3& inRotation
+		, const glm::quat& inRotation
 		, const glm::vec3& inScale
 		, HierarchyComponent* inParentHierarchy)
 	{
@@ -99,7 +99,7 @@ namespace EntityFactory
 		, ResourceHandle inModel
 		, ResourceHandle inShader
 		, const glm::vec3& inPosition
-		, const glm::vec3& inRotation
+		, const glm::quat& inRotation
 		, const glm::vec3& inScale
 		, HierarchyComponent* inParentHierarchy)
 	{
@@ -127,13 +127,13 @@ namespace EntityFactory
 			, inModel
 			, inShader
 			, glm::vec3(0.0f, 0.0f, -1.0f)
-			, glm::vec3(0.0f, 0.0f, 0.0f)
+			, glm::quat(glm::radians(glm::vec3(45,45,45)))
 			, glm::vec3(0.4f, 0.4f, 0.4f));
 
 		addRigidbodyTo(entity
 			, inRigidbodies
 			, glm::vec3(0.0f, 0.0f, 0.0f)
-			, glm::vec3(0.0f, 0.5f, 0.0f));
+			, glm::vec3(15.0f, 15.0f, 15.0f));
 
 		return entity;
 	}
@@ -207,6 +207,8 @@ namespace EntityFactory
 
 		for (size_t i = 0; i < N; ++i)
 		{
+			glm::quat rotation = glm::quat(glm::radians(cubeRotations[i]));
+
 			Entity cube = EntityFactory::createRenderedModel(inEntityManager
 				, inLocalTransforms
 				, inWorldTransforms
@@ -215,7 +217,7 @@ namespace EntityFactory
 				, inModel
 				, inShader
 				, cubePositions[i]
-				, cubeRotations[i]
+				, rotation
 				, cubeScales[i]
 				, parentHierarchy);
 
@@ -239,6 +241,7 @@ namespace EntityFactory
 		, ResourceHandle inShader)
 	{
 		glm::vec3 lightScale(0.2f);
+		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(180, 0, 0)));
 
 		Entity directionalLightID = EntityFactory::createRenderedModel(inEntityManager
 			, inLocalTransforms
@@ -248,7 +251,7 @@ namespace EntityFactory
 			, inModel
 			, inShader
 			, glm::vec3(0,0,0)
-			, glm::vec3(180, 0, 0)
+			, lightRotation
 			, lightScale);
 
 		glm::vec3 directionalLightColor(glm::vec3(1, 1, 1));
@@ -287,7 +290,7 @@ namespace EntityFactory
 				, inModel
 				, inShader
 				, pointLightPositions[i]
-				, glm::vec3(0, 0, 0)
+				, glm::quat()
 				, lightScale);
 
 			MeshRendererComponent* pointLightMeshRenderer = inMeshRenderers.get(pointLightID);

@@ -22,7 +22,7 @@ namespace EntityFactory
 		, ComponentManager<WorldTransformComponent>& inWorldTransforms
 		, ComponentManager<HierarchyComponent>& inHierarchies
 		, const glm::vec3& inPosition
-		, const glm::vec3& inRotation
+		, const glm::quat& inRotation
 		, const glm::vec3& inScale
 		, HierarchyComponent* inParentHierarchy);
 
@@ -57,7 +57,7 @@ namespace EntityFactory
 		, ResourceHandle inModel
 		, ResourceHandle inShader
 		, const glm::vec3& inPosition
-		, const glm::vec3& inRotation
+		, const glm::quat& inRotation
 		, const glm::vec3& inScale
 		, HierarchyComponent* inParentHierarchy = nullptr);
 

@@ -21,7 +21,7 @@ void LocalTransformComponentInspector::update()
 	}
 
 	position = localTransform->getPosition();
-	rotation = localTransform->getRotation();
+	rotation = glm::degrees(glm::eulerAngles(localTransform->getRotation()));
 	scale = localTransform->getScale();
 
 	if (ImGui::InputFloat3("Position", &position.x))
@@ -31,7 +31,7 @@ void LocalTransformComponentInspector::update()
 
 	if (ImGui::InputFloat3("Rotation", &rotation.x))
 	{
-		localTransform->setLocalRotation(rotation);
+		localTransform->setLocalRotation(glm::quat(glm::radians(rotation)));
 	}
 
 	if (ImGui::InputFloat3("Scale", &scale.x))

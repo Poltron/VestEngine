@@ -51,8 +51,8 @@ namespace hierarchyHelper
 				GetWorldInLocal(*worldTransform, *parentLocalTransform, newLocalTransform);
 
 				glm::vec3 scale = glm::vec3(1);
-				glm::quat rotation = glm::quat({ 0,0,0 });
-				glm::vec3 translation = glm::vec3(0);
+				glm::quat rotation = glm::quat();
+				glm::vec3 translation = glm::vec3();
 				GetPosRotScaleFromMatrix(newLocalTransform, scale, rotation, translation);
 
 				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
@@ -69,13 +69,14 @@ namespace hierarchyHelper
 			{
 				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
 				localTransform->setLocalPosition(glm::vec3(0, 0, 0));
-				localTransform->setLocalRotation(glm::vec3(0, 0, 0));
+				localTransform->setLocalRotation(glm::quat());
 				localTransform->setLocalScale(glm::vec3(1, 1, 1));
 				break;
 			}
 		}
 
 		inElement->parent = inParent->entity;
+		inElement->bDirty = true;
 
 		inElement->nextSibling = inParent->firstChild;
 		inParent->firstChild = inElement->entity;
@@ -100,10 +101,10 @@ namespace hierarchyHelper
 				ensure(worldTransform);
 
 				glm::vec3 scale = glm::vec3(1);
-				glm::quat rotation = glm::quat({ 0,0,0 });
-				glm::vec3 translation = glm::vec3(0);
+				glm::quat rotation = glm::quat();
+				glm::vec3 translation = glm::vec3();
 				GetPosRotScaleFromMatrix(worldTransform->model, scale, rotation, translation);
-
+				
 				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
 				localTransform->setLocalPosition(translation);
 				localTransform->setLocalRotation(rotation);
@@ -120,7 +121,7 @@ namespace hierarchyHelper
 				ensure(localTransform);
 
 				localTransform->setLocalPosition(glm::vec3(0, 0, 0));
-				localTransform->setLocalRotation(glm::vec3(0, 0, 0));
+				localTransform->setLocalRotation(glm::quat());
 				localTransform->setLocalScale(glm::vec3(1, 1, 1));
 				break;
 			}
@@ -138,6 +139,7 @@ namespace hierarchyHelper
 
 			inElement->parent = 0;
 			inElement->nextSibling = 0;
+			inElement->bDirty = true;
 			return;
 		}
 
@@ -155,5 +157,6 @@ namespace hierarchyHelper
 		previousSiblingComponent->nextSibling = inElement->nextSibling;
 		inElement->parent = 0;
 		inElement->nextSibling = 0;
+		inElement->bDirty = true;
 	}
 }

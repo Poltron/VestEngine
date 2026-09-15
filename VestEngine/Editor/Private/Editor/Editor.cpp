@@ -93,6 +93,20 @@ bool VestEditor::initialize()
 			}
 		});
 
+	platform::getInputManager().registerKeyCallback(input::EKey::KP_1
+		, [this](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
+		{
+			if (inState != input::EInputState::PRESS)
+			{
+				return;
+			}
+
+			if (EntityFuncs::isEntityValid(1))
+			{
+				getInspector().show(1);
+			}
+		});
+
 	engine::getEngine()->registerUIUpdateCallback(
 		[this]()
 		{
