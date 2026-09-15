@@ -8,7 +8,7 @@ class Texture
 {
 public:
 	Texture() = delete;
-	Texture(const char* inPath, const char* inType);
+	Texture(std::string inPath, std::string inType);
 	~Texture();
 
 	Texture(const Texture& inOther) = delete;

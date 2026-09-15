@@ -1,6 +1,6 @@
 #include "Core/ResourcesManager.h"
 
-ResourceHandle ResourcesManager::loadModel(const char* inPath)
+ResourceHandle ResourcesManager::loadModel(std::string inPath)
 {
 	// note: what's the o() of iterating through an unordered_map ?
 	for (const auto& loadedModel : modelsLookup)
@@ -18,19 +18,19 @@ ResourceHandle ResourcesManager::loadModel(const char* inPath)
 		return ResourceHandle();
 	}
 
-	Model model = Model(inPath, *this);
+	Model model = Model(std::move(inPath));
 	models.push_back(std::move(model));
 
 	ResourceHandle handle(modelHandleCounter);
 	modelsLookup.insert({ handle, &models.back() });
 	modelHandleCounter++;
 
-	std::cout << "INFO : Loaded model " << handle.handle << " ( " << inPath << " )" << std::endl;
+	std::cout << "INFO : Loaded model " << handle.handle << " ( " << models.back().getPath() << " )" << std::endl;
 
 	return handle;
 }
 
-ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, const char* inName)
+ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, std::string inName)
 {
 	// note: what's the o() of iterating through an unordered_map ?
 	for (const auto& loadedModel : modelsLookup)
@@ -48,19 +48,19 @@ ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, const
 		return ResourceHandle();
 	}
 
-	Model model(std::move(inMeshes), inName);
+	Model model(std::move(inMeshes), std::move(inName));
 	models.push_back(std::move(model));
 	
 	ResourceHandle handle(modelHandleCounter);
 	modelsLookup.insert({ handle, &models.back() });
 	modelHandleCounter++;
 
-	std::cout << "INFO : Created model " << handle.handle << " ( " << inName << " )" << std::endl;
+	std::cout << "INFO : Created model " << handle.handle << " ( " << models.back().getPath() << " )" << std::endl;
 
 	return handle;
 }
 
-ResourceHandle ResourcesManager::loadTexture(const char* inPath, const char* inType)
+ResourceHandle ResourcesManager::loadTexture(std::string inPath, std::string inType)
 {
 	// note: what's the o() of iterating through an unordered_map ?
 	for (const auto& loadedTexture : texturesLookup)
@@ -77,20 +77,20 @@ ResourceHandle ResourcesManager::loadTexture(const char* inPath, const char* inT
 		std::cout << "ERROR : Max texture resources reached" << std::endl;
 		return ResourceHandle();
 	}
-
-	Texture texture(inPath, inType);
+	
+	Texture texture(std::move(inPath), std::move(inType));
 	textures.push_back(std::move(texture));
 
 	ResourceHandle handle(textureHandleCounter);
 	texturesLookup.insert({ handle, &textures.back() });
 	textureHandleCounter++;
 
-	std::cout << "INFO : Loaded texture " << handle.handle << " ( " << inPath << " )" << std::endl;
+	std::cout << "INFO : Loaded texture " << handle.handle << " ( " << textures.back().getPath() << " )" << std::endl;
 
 	return handle;
 }
 
-ResourceHandle ResourcesManager::loadShader(const char* inVertexPath, const char* inFragmentPath)
+ResourceHandle ResourcesManager::loadShader(std::string inVertexPath, std::string inFragmentPath)
 {
 	if (shaderHandleCounter > MAX_RESOURCES)
 	{
@@ -99,14 +99,14 @@ ResourceHandle ResourcesManager::loadShader(const char* inVertexPath, const char
 	}
 
 
-	Shader shader = Shader(inVertexPath, inFragmentPath);
+	Shader shader = Shader(std::move(inVertexPath), std::move(inFragmentPath));
 	shaders.push_back(std::move(shader));
 
 	ResourceHandle handle(shaderHandleCounter);
 	shadersLookup.insert({ handle, &shaders.back() });
 	shaderHandleCounter++;
 
-	std::cout << "INFO : Loaded shader " << handle.handle << " ( " << inVertexPath << " + " << inFragmentPath << " )" << std::endl;
+	std::cout << "INFO : Loaded shader " << handle.handle << " ( " << shaders.back().getVertexPath() << " + " << shaders.back().getFragmentPath() << " )" << std::endl;
 
 	return handle;
 }

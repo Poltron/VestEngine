@@ -5,24 +5,25 @@
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 
+#include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Mesh.h"
 
 
-Model::Model(const char* inPath, ResourcesManager& inResourcesManager)
+Model::Model(std::string inPath)
 {
-	load(inPath, inResourcesManager);
+	load(std::move(inPath));
 }
 
-Model::Model(std::vector<Mesh>&& inMeshes, const char* inName)
+Model::Model(std::vector<Mesh>&& inMeshes, std::string inName)
 {
 	meshes = std::move(inMeshes);
-	path = inName;
+	path = std::move(inName);
 	directory = "";
 }
 
 Model::Model(Model&& inOther) noexcept
-	: meshes(std::move(inOther.meshes)), directory(inOther.directory), path(inOther.path)
+	: meshes(std::move(inOther.meshes)), directory(std::move(inOther.directory)), path(std::move(inOther.path))
 {
 	inOther.meshes.clear();
 	inOther.directory.clear();
@@ -45,7 +46,7 @@ Model& Model::operator=(Model&& inOther) noexcept
 }
 
 // note : how should I access the resources manager ? what should i have access to globally ?
-void Model::load(const std::string& inPath, ResourcesManager& inResourcesManager)
+void Model::load(std::string inPath)
 {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(inPath, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -55,9 +56,9 @@ void Model::load(const std::string& inPath, ResourcesManager& inResourcesManager
 		return;
 	}
 
-	path = inPath;
+	path = std::move(inPath);
 	directory = inPath.substr(0, inPath.find_last_of('/'));
-	processNode(scene->mRootNode, scene, inResourcesManager);
+	processNode(scene->mRootNode, scene);
 }
 
 void Model::bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const
@@ -76,22 +77,22 @@ void Model::draw() const
 	}
 }
 
-void Model::processNode(aiNode* node, const aiScene* scene, ResourcesManager& inResourcesManager)
+void Model::processNode(aiNode* node, const aiScene* scene)
 {
 	for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		Mesh meshResource = processMesh(mesh, scene, inResourcesManager);
+		Mesh meshResource = processMesh(mesh, scene);
 		meshes.push_back(std::move(meshResource));
 	}
 
 	for (unsigned int i = 0; i < node->mNumChildren; ++i)
 	{
-		processNode(node->mChildren[i], scene, inResourcesManager);
+		processNode(node->mChildren[i], scene);
 	}
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, ResourcesManager& inResourcesManager)
+Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
@@ -128,25 +129,22 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, ResourcesManager& in
 	if (mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		loadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuse", inResourcesManager, textures);
-		loadMaterialTextures(material, aiTextureType_SPECULAR, "specular", inResourcesManager, textures);
+		loadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuse", textures);
+		loadMaterialTextures(material, aiTextureType_SPECULAR, "specular", textures);
 	}
 
 	return Mesh(std::move(vertices), std::move(indices), std::move(textures));
 }
 
-void Model::loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, ResourcesManager& inResourcesManager, std::vector<ResourceHandle>& outTextures)
+void Model::loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, std::vector<ResourceHandle>& outTextures)
 {
 	for (unsigned int i = 0; i < inMat->GetTextureCount(inType); ++i)
 	{
 		aiString relativePath;
 		inMat->GetTexture(inType, i, &relativePath);
 
-		// note: what would be the best way to merge two strings ?
-		std::string absolutePath = directory.c_str();
-		absolutePath.append("/");
-		absolutePath.append(relativePath.C_Str());
-		ResourceHandle textureHandle = inResourcesManager.loadTexture(absolutePath.c_str(), inTypeName);
+		std::string absolutePath = directory + "/" + relativePath.C_Str();
+		ResourceHandle textureHandle = engine::getResources()->loadTexture(absolutePath, inTypeName);
 		outTextures.push_back(textureHandle);
 	}
 }
