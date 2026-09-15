@@ -26,7 +26,6 @@ file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
 	
 add_library(Engine STATIC ${ENGINE_FILES})
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
-
 target_link_libraries(Engine PUBLIC 	glfw)
 target_link_libraries(Engine PUBLIC 	glad) #todo: should be private but usage of GLuint makes this needed
 target_link_libraries(Engine PUBLIC 	glm)
@@ -41,6 +40,21 @@ add_custom_command(TARGET Engine POST_BUILD
 	VERBATIM)
 
 # =====
+# UNIT TEST TARGET - STATIC LIB
+# =====
+
+file(GLOB_RECURSE UNITTEST_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Private/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Private/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Public/*.h")
+	
+add_library(UnitTest STATIC ${UNITTEST_FILES})
+
+target_include_directories(UnitTest PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Public")
+target_include_directories(UnitTest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Private")
+target_link_libraries(UnitTest PRIVATE Engine)
+
+# =====
 # EDITOR TARGET - EXECUTABLE
 # =====
 
@@ -52,6 +66,7 @@ add_executable(Editor ${EDITOR_FILES})
 
 target_include_directories(Editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Editor/Public")
 target_link_libraries(Editor PRIVATE Engine)
+target_link_libraries(Editor PRIVATE UnitTest)
 
 # =====
 # DEFINES
@@ -65,6 +80,8 @@ target_compile_definitions(Engine PUBLIC WORKDIR="${CMAKE_SOURCE_DIR}")
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${ENGINE_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${EDITOR_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${UNITTEST_FILES})
 target_compile_options(Engine PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
 target_compile_options(Editor PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
+target_compile_options(UnitTest PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Editor)

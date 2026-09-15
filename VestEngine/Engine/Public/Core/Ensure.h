@@ -9,9 +9,15 @@
     #define DEBUG_BREAK() ((void)0)
 #endif
 
-#ifndef NDEBUG
+// note: need this for unit_tests to run at editor start, kind of don't like it but eh
+namespace ensure_behavior
+{
+    extern bool bShouldThrow;
+}
+
+#ifndef RELEASE
     #include <iostream>
-#if defined(UNIT_TESTING)
+
     #include <stdexcept>
     #include <string> 
 
@@ -24,17 +30,17 @@
             error.append(":"); \
             error.append(std::to_string(__LINE__)); \
             error.append(")\n"); \
-            throw std::runtime_error(error); \
+            if (ensure_behavior::bShouldThrow) \
+            { \
+                throw std::runtime_error(error); \
+            } \
+            else \
+            { \
+                std::cerr << "Ensure triggered: " << #condition \
+                    << " (" << __FILE__ << ":" << __LINE__ << ")\n"; \
+                DEBUG_BREAK(); \
+            } \
         }
-#else
-    // Production build: fast crash/abort or zero-overhead assert
-    #define ensure(condition) \
-        if (!(condition)) { \
-            std::cerr   << "Ensure triggered: " << #condition \
-                        << " (" << __FILE__ << ":" << __LINE__ << ")\n"; \
-            DEBUG_BREAK(); \
-        }
-#endif
 #else
     #define ensure(condition) ((void)0)
 #endif

@@ -26,7 +26,16 @@ namespace ui
 
 	bool initialize()
 	{
-		return g_UIManager->initialize();
+		bool bSuccess =  g_UIManager->initialize();
+		if (bSuccess)
+		{
+			std::cout << "UI initialization success." << std::endl;
+		}
+		else
+		{
+			std::cout << "UI initialization failed." << std::endl;
+		}
+		return bSuccess;
 	}
 
 	void startFrame()

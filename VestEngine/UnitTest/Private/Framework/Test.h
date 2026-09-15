@@ -14,7 +14,6 @@ public:
 };
 
 #define DECLARE_TEST(inGroup, inName) \
-\
 class inGroup##_##inName##_Test : public Test \
 { \
 public: \
@@ -26,11 +25,11 @@ virtual void run() override; \
 \
 namespace \
 { \
-	struct AutoRegister_##inGroup##_##inName##  \
+	struct AutoRegister_##inGroup##_##inName  \
 	{ \
-		AutoRegister_##inGroup##_##inName##() \
+		AutoRegister_##inGroup##_##inName() \
 		{ \
-			TestRegistrar::get().registerFactory(#inGroup, new TestFactory<##inGroup##_##inName##_Test>()); \
+			TestRegistrar::get().registerFactory(#inGroup, new TestFactory<inGroup##_##inName##_Test>()); \
 		} \
 	}; \
 	static AutoRegister_##inGroup##_##inName AutoRegister_##inGroup##_##inName##_instance; \

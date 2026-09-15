@@ -517,7 +517,16 @@ bool platform::initialize()
 	}
 
 	g_GLFWInputManager = new GLFWInputManager();
-	return g_GLFWInputManager->initialize();
+	bool bSuccess = g_GLFWInputManager->initialize();
+	if (bSuccess)
+	{
+		std::cout << "Platform initialization success." << std::endl;
+	}
+	else
+	{
+		std::cout << "Platform initialization failed." << std::endl;
+	}
+	return bSuccess;
 }
 
 void platform::shutdown()

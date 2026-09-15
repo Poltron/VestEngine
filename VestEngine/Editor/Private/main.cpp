@@ -3,18 +3,24 @@
 #include "Platform/Platform.h"
 #include "Render/Renderer.h"
 #include "UI/UIManager.h"
+#include "UnitTest.h"
 
 int main()
 {
 	if (platform::initialize()
 		&& render::initialize()
 		&& engine::initialize()
-		&& ui::initialize()
-		&& editor::initialize())
+		&& ui::initialize())
 	{
-		editor::loadDemoScene();
-		editor::launch();
+		test::run();
+
+		if (editor::initialize())
+		{
+			editor::loadDemoScene();
+			editor::launch();
+		}
 	}
+
 
 	editor::shutdown();
 	ui::shutdown();
