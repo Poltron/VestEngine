@@ -5,11 +5,10 @@
 
 #include "Core/Ensure.h"
 
-Texture::Texture(const char* inPath, const char* inType)
-	: path(inPath), type(inType)
+Texture::Texture(std::string inPath, std::string inType)
 {
-	path = inPath;
-	type = inType;
+	path = std::move(inPath);
+	type = std::move(inType);
 
 	loadTexture();
 }

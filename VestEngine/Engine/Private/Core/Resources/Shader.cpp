@@ -42,13 +42,14 @@ namespace ShaderPrivate
 		{
 			glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
 			std::cout << "ERROR: Shader " << type << " compilation failed\n" << infoLog << std::endl;
+			return 0;
 		}
 		return shaderID;
 	}
 }
 
-Shader::Shader(const char* inVertexPath, const char* inFragmentPath)
-	: ID(0), vertexPath(inVertexPath), fragmentPath(inFragmentPath)
+Shader::Shader(std::string inVertexPath, std::string inFragmentPath)
+	: ID(0), vertexPath(std::move(inVertexPath)), fragmentPath(std::move(inFragmentPath))
 {
 	load();
 }
@@ -90,14 +91,22 @@ void Shader::load()
 		return;
 	}
 	GLuint vertexShader = ShaderPrivate::createAndCompileShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
+	if (vertexShader == 0)
+	{
+		return;
+	}
 
 	std::string fragmentShaderContent = ShaderPrivate::readFile(fragmentPath.c_str());
 	if (fragmentShaderContent.size() == 0)
 	{
-		std::cout << "ERROR: VertexShader " << fragmentPath << " is empty." << std::endl;
+		std::cout << "ERROR: FragmentShader " << fragmentPath << " is empty." << std::endl;
 		return;
 	}
 	GLuint fragmentShader = ShaderPrivate::createAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
+	if (fragmentShader == 0)
+	{
+		return;
+	}
 
 	ID = glCreateProgram();
 	glAttachShader(ID, vertexShader);
@@ -161,6 +170,15 @@ void Shader::setTexture(const std::string& name, GLuint value) const
 	glUniform1i(location, value);
 }
 
-void Shader::applyShaderParameterCollection(const ShaderParameterCollection& inParameters) const
+const std::string& Shader::getVertexPath() const
 {
+	return vertexPath;
 }
+
+const std::string& Shader::getFragmentPath() const
+{
+	return fragmentPath;
+}
+
+void Shader::applyShaderParameterCollection(const ShaderParameterCollection& inParameters) const
+{}

@@ -27,11 +27,17 @@ void Scene::shutdown()
 void Scene::loadPlaceholderScene()
 {
 	// resources
-	ResourceHandle litShader = engine::getResources()->loadShader("../Resources/Shaders/vertex.glsl", "../Resources/Shaders/lit_fragment.glsl");
-	ResourceHandle unlitShader = engine::getResources()->loadShader("../Resources/Shaders/vertex.glsl", "../Resources/Shaders/unlit_fragment.glsl");
+	const std::string WorkDirTMP = WORKDIR;
+	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
+	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit_fragment.glsl";
+	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
+	ResourceHandle litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
+	ResourceHandle unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
 
-	ResourceHandle containerTexture = engine::getResources()->loadTexture("../Resources/Textures/container2.png", "diffuse");
-	ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture("../Resources/Textures/container2_specular.png", "specular");
+	const std::string containerPath = WorkDirTMP + "/Resources/Textures/container2.png";
+	const std::string containerSpecularPath = WorkDirTMP + "/Resources/Textures/container2_specular.png";
+	ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
+	ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
 
 	std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
 	std::vector<unsigned int> indices;

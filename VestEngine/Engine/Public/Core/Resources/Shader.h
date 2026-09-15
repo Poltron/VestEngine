@@ -11,7 +11,7 @@ class Shader
 {
 public:
 	Shader() = delete;
-	Shader(const char* vertexPath, const char* fragmentPath);
+	Shader(std::string vertexPath, std::string fragmentPath);
 	~Shader();
 
 	Shader(const Shader& inOther) = delete;
@@ -29,6 +29,9 @@ public:
 	void setVec4(const std::string& name, float x, float y, float z, float w) const;
 	void setMat4(const std::string& name, glm::f32* value) const;
 	void setTexture(const std::string& name, GLuint value) const;
+
+	const std::string& getVertexPath() const;
+	const std::string& getFragmentPath() const;
 
 	void applyShaderParameterCollection(const ShaderParameterCollection& inParameters) const;
 

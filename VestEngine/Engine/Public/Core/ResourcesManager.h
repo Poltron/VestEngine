@@ -20,10 +20,10 @@ public:
 		textures.reserve(MAX_RESOURCES);
 	}
 
-	ResourceHandle loadTexture(const char* inPath, const char* inType);
-	ResourceHandle loadShader(const char* inVertexPath, const char* inFragmentPath);
-	ResourceHandle loadModel(const char* inPath);
-	ResourceHandle createModel(std::vector<Mesh>&& inMeshes, const char* inName);
+	ResourceHandle loadTexture(std::string inPath, std::string inType);
+	ResourceHandle loadShader(std::string inVertexPath, std::string inFragmentPath);
+	ResourceHandle loadModel(std::string inPath);
+	ResourceHandle createModel(std::vector<Mesh>&& inMeshes, std::string inName);
 
 	Texture* getTexture(ResourceHandle handle);
 	const Texture* getTexture(ResourceHandle handle) const;

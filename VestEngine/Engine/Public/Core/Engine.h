@@ -9,6 +9,10 @@ class Scene;
 class ResourcesManager;
 
 
+#ifndef WORKDIR
+#define WORKDIR "D:/VestEngine/VestEngine/"
+#endif
+
 
 class Engine
 {

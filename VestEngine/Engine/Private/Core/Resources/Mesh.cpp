@@ -56,6 +56,10 @@ std::vector<Vertex> Mesh::getNormalTextureCubeVertices()
 Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
 	: vertices(inVertices), indices(inIndices), textures(inTextures)
 {
+	VAO = 0;
+	VBO = 0;
+	EBO = 0;
+
 	setupMesh();
 }
 
@@ -156,7 +160,7 @@ void Mesh::bindTextures(const ResourcesManager& inResourcesManager, const Shader
 
 void Mesh::draw() const
 {
-	// note : temporary for container, to remove when only working with proper models
+	// note : temporary for container, to remove when only working with proper models ?
 	if (EBO == 0)
 	{
 		glBindVertexArray(getVAO());

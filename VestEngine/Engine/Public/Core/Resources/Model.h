@@ -15,8 +15,8 @@ class Model
 {
 public:
 	Model() = delete;
-	Model(const char* inPath, ResourcesManager& inResourcesManager);
-	Model(std::vector<Mesh>&& inMeshes, const char* inName);
+	Model(std::string inPath);
+	Model(std::vector<Mesh>&& inMeshes, std::string inName);
 	~Model() = default;
 
 	Model(const Model& inOther) = delete;
@@ -35,10 +35,10 @@ private:
 	std::string directory;
 	std::string path;
 
-	void load(const std::string& inPath, ResourcesManager& inResourcesManager);
+	void load(std::string inPath);
 
-	void processNode(aiNode* inNode, const aiScene* inScene, ResourcesManager& inResourcesManager);
-	Mesh processMesh(aiMesh* inMesh, const aiScene* inScene, ResourcesManager& inResourcesManager);
-	void loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, ResourcesManager& inResourcesManager, std::vector<ResourceHandle>& outTextures);
+	void processNode(aiNode* inNode, const aiScene* inScene);
+	Mesh processMesh(aiMesh* inMesh, const aiScene* inScene);
+	void loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, std::vector<ResourceHandle>& outTextures);
 };
 
