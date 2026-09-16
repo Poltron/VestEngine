@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <queue>
 
 #include "ECS/Entity.h"
@@ -14,6 +13,7 @@ public:
 
 	Entity createEntity();
 	void destroyEntity(Entity inEntity);
+	bool exists(Entity inEntity);
 
 private:
 	std::queue<Entity> availableIds;

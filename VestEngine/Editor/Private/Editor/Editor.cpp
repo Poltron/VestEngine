@@ -61,6 +61,7 @@ namespace editor
 bool VestEditor::initialize()
 {
 	getInspector().initialize();
+	getEntitySelector().initialize();
 
 	platform::getWindowManager().registerWindowCloseRequestCallback(
 		[]()
@@ -93,20 +94,6 @@ bool VestEditor::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(input::EKey::KP_1
-		, [this](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
-
-			if (EntityFuncs::isEntityValid(1))
-			{
-				getInspector().show(1);
-			}
-		});
-
 	engine::getEngine()->registerUIUpdateCallback(
 		[this]()
 		{
@@ -124,6 +111,7 @@ void VestEditor::launch()
 void VestEditor::update()
 {
 	getInspector().update();
+	getEntitySelector().update();
 }
 
 void VestEditor::shutdown()

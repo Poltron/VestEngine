@@ -2,7 +2,9 @@
 
 #include "imgui.h"
 
+#include "Core/Engine.h"
 #include "Core/Ensure.h"
+#include "Core/Scene.h"
 #include "Toolkits/Components/LocalTransformComponentToolkit.h"
 #include "Toolkits/Components/WorldTransformComponentToolkit.h"
 #include "Toolkits/Components/HierarchyComponentToolkit.h"
@@ -26,7 +28,26 @@ void Inspector::initialize()
 
 void Inspector::show(Entity inEntity)
 {
+	if (!engine::getScene()->entities.exists(inEntity))
+		return;
+
+	if (EntityFuncs::isEntityValid(watchedEntity))
+	{
+		MeshRendererComponent* meshRenderer = engine::getScene()->meshRendererComponents.get(watchedEntity);
+		if (meshRenderer)
+		{
+			meshRenderer->bOutline = false;
+		}
+	}
+
 	watchedEntity = inEntity;
+
+	MeshRendererComponent* meshRenderer = engine::getScene()->meshRendererComponents.get(watchedEntity);
+	if (meshRenderer)
+	{
+		meshRenderer->bOutline = true;
+	}
+
 	inspectorElements.clear();
 
 	for (IToolkit* toolkit : toolkits)

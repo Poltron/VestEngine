@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Widgets/EntitySelector.h"
 #include "Widgets/Inspector.h"
 
 class Editor;
-class Inspector;
 
 namespace editor
 {
@@ -19,7 +19,9 @@ namespace editor
 class Editor
 {
 	Inspector inspector;
+	EntitySelector entitySelector;
 
 public:
 	Inspector& getInspector() { return inspector; }
+	EntitySelector& getEntitySelector() { return entitySelector; }
 };
