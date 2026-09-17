@@ -6,7 +6,7 @@ EntityManager::EntityManager()
 {
 	entities[0] = 0;
 
-	for (Entity id = 1; id < MAX_ENTITIES; ++id)
+	for (Entity id = 1; id < ENTITY_MAX; ++id)
 	{
 		availableIds.push(id);
 		entities[id] = 0;

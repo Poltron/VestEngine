@@ -1,23 +1,26 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
 
+#define DEBUG_UI 1
+#if DEBUG_UI
 #include "imgui.h"
+#endif
 
 #include "ECS/EntityManager.h"
 #include "Core/Containers/DenseArray.h"
 
-#define COMPONENT_MAX 100
+#define INVALID_COMPONENT_INDEX UINT64_MAX
 
 template<typename T>
 class ComponentManager
 {
 public:
 	ComponentManager()
+		: label(" ")
 	{
-		components.initialize(COMPONENT_MAX);
-		label = " ";
+		components.initialize(ENTITY_MAX);
+		memset(lookupTable, UCHAR_MAX, ENTITY_MAX * sizeof(size_t));
 	}
 
 	void setLabel(const std::string& inLabel)
@@ -30,7 +33,8 @@ public:
 		size_t elementIdx = components.add();
 		T& element = components.at(elementIdx);
 		element.entity = inID;
-		lookupTable.emplace(inID, elementIdx);
+		
+		lookupTable[inID] = elementIdx;
 		return &element;
 	}
 
@@ -46,25 +50,24 @@ public:
 
 	bool contains(Entity inID) const
 	{
-		auto pair = lookupTable.find(inID);
-		return pair != lookupTable.end();
+		return lookupTable[inID] != INVALID_COMPONENT_INDEX;
 	}
 
 	T* get(Entity inID)
 	{
-		size_t idx = lookupTable.at(inID);
+		size_t idx = lookupTable[inID];
 		return components.data() + idx;
 	}
 
 	const T* get(Entity inID) const
 	{
-		size_t idx = lookupTable.at(inID);
+		size_t idx = lookupTable[inID];
 		return components.data() + idx;
 	}
 
 	size_t getIndex(Entity inID) const
 	{
-		return lookupTable.at(inID);
+		return lookupTable[inID];
 	}
 
 	T* getData()
@@ -79,9 +82,9 @@ public:
 
 	void destroy(Entity inID)
 	{
-		size_t elementIdx = lookupTable.at(inID);
+		size_t elementIdx = lookupTable[inID];
 		components.remove(elementIdx);
-		lookupTable.erase(inID);
+		lookupTable[inID] = INVALID_COMPONENT_INDEX;
 	}
 
 	void moveData(DenseArray<T>&& inData)
@@ -91,14 +94,14 @@ public:
 
 	void rebuildLookupTable()
 	{
-		lookupTable.clear();
 		for (size_t i = 0; i < components.size() ; ++i)
 		{
 			const T& component = components.at(i);
-			lookupTable.insert({ component.entity, i});
+			lookupTable[component.entity] = i;
 		}
 	}
 
+#if DEBUG_UI
 	void drawDebug(float inPositionX, float inPositionY)
 	{
 		if (ImGui::Begin(label.c_str()))
@@ -114,15 +117,15 @@ public:
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("Index");
 
-				for (const auto& element : lookupTable)
+				for (size_t i = 0; i < ENTITY_MAX; ++i)
 				{
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
-					std::string first = std::to_string(element.first);
+					std::string first = std::to_string(i);
 					ImGuiTextCentered(first.c_str());
 
 					ImGui::TableNextColumn();
-					std::string second = std::to_string(element.second);
+					std::string second = std::to_string(lookupTable[i]);
 					ImGuiTextCentered(second.c_str());
 				}
 				ImGui::EndTable();
@@ -131,13 +134,14 @@ public:
 			ImGui::End();
 		}
 	}
+#endif // DEBUG_UI
 
 private:
 	DenseArray<T> components;
-	// change to a sparse array of entityID to component index
-	std::unordered_map<Entity, size_t> lookupTable;
+	size_t lookupTable[ENTITY_MAX];
 	std::string label;
 
+#if DEBUG_UI
 	void ImGuiTextCentered(const char* text)
 	{
 		float windowWidth = ImGui::GetContentRegionAvail().x;
@@ -147,5 +151,6 @@ private:
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (windowWidth - textWidth) * 0.5f);
 		ImGui::TextUnformatted(text);
 	}
+#endif // DEBUG_UI
 };
 
