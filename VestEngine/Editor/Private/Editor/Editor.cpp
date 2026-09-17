@@ -85,6 +85,10 @@ bool VestEditor::initialize()
 
 			Scene* scene = engine::getScene();
 			ensure(scene);
+			if (scene->worldTransformComponents.size() == 0)
+			{
+				return;
+			}
 
 			size_t index = std::rand() % scene->worldTransformComponents.size();
 			Entity selectedEntity = scene->worldTransformComponents.at(index)->entity;
