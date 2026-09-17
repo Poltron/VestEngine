@@ -66,13 +66,13 @@ bool VestEditor::initialize()
 	platform::getWindowManager().registerWindowCloseRequestCallback(
 		[]()
 		{
-			engine::getEngine()->setState(Engine::State::SHUTTING_DOWN);
+			engine::getEngine()->setState(Engine::EState::SHUTTING_DOWN);
 		});
 
 	platform::getInputManager().registerKeyCallback(input::EKey::ESCAPE
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
-			engine::getEngine()->setState(Engine::State::SHUTTING_DOWN);
+			engine::getEngine()->setState(Engine::EState::SHUTTING_DOWN);
 		});
 
 	platform::getInputManager().registerKeyCallback(input::EKey::SPACE

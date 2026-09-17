@@ -17,7 +17,7 @@ class ResourcesManager;
 class Engine
 {
 public:
-	enum class State
+	enum class EState
 	{
 		INITIALIZING,
 		RUNNING,
@@ -25,8 +25,8 @@ public:
 		SHUTDOWN
 	};
 
-	State getState() { return state; }
-	void setState(State inState) { state = inState; }
+	inline EState getState() { return state; }
+	inline void setState(EState inState) { state = inState; }
 
 	// todo: clarify tick groups
 	using UIUpdateCallback = std::function<void()>;
@@ -39,7 +39,7 @@ protected:
 	UIUpdateCallback uiUpdateCallback;
 
 private:
-	State state;
+	EState state;
 
 // todo: probably move all this 
 protected:

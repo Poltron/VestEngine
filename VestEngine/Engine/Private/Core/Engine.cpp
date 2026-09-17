@@ -28,7 +28,7 @@ namespace engine
 //
 bool VestEngine::initialize()
 {
-	setState(State::INITIALIZING);
+	setState(EState::INITIALIZING);
 
 	// could probably go to editor ?
 	camera.initialize();
@@ -39,11 +39,11 @@ bool VestEngine::initialize()
 
 void VestEngine::launch()
 {
-	setState(State::RUNNING);
+	setState(EState::RUNNING);
 
 	double lastFrame = platform::getTime();
 
-	while (getState() == State::RUNNING)
+	while (getState() == EState::RUNNING)
 	{
 		double currentFrame = platform::getTime();
 		double deltaTime = currentFrame - lastFrame;
@@ -79,7 +79,7 @@ void VestEngine::launch()
 
 void VestEngine::shutdown()
 {
-	setState(State::SHUTDOWN);
+	setState(EState::SHUTDOWN);
 }
 
 //
