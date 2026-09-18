@@ -2,7 +2,6 @@
 
 #include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
-#include "ECS/EntityFactory.h"
 #include "ECS/HierarchyHelper.h"
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"

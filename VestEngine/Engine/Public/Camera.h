@@ -69,6 +69,8 @@ private:
 	glm::mat4 projection;
 	glm::mat4 view;
 
+	bool bDirty = false;
+
 // inputs
 private:
 	void onMouseMoved(double inX, double inY, double inDeltaTime);

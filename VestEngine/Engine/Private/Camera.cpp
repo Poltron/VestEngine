@@ -106,8 +106,16 @@ void Camera::update(double inDeltaTime)
 	consumeKeyboardInputs(horizontalAxis, verticalAxis, inDeltaTime);
 
 	// note : should not be necessary but weird inputs ??
-	consumeMouseScrollInputs(0, scrollOffset, inDeltaTime);
-	scrollOffset = 0;
+	//consumeMouseScrollInputs(0, scrollOffset, inDeltaTime);
+	//scrollOffset = 0;
+
+	if (bDirty)
+	{
+		updateProjectionMatrix();
+		updateViewMatrix();
+
+		bDirty = false;
+	}
 }
 
 const glm::vec3& Camera::getRotation() const
@@ -118,6 +126,7 @@ const glm::vec3& Camera::getRotation() const
 void Camera::setRotation(float inYaw, float inPitch)
 {
 	rotation = glm::vec3(inYaw, inPitch, rotation.z);
+	bDirty = true;
 }
 
 const glm::vec3& Camera::getPosition() const
@@ -128,6 +137,7 @@ const glm::vec3& Camera::getPosition() const
 void Camera::setPosition(const glm::vec3& inPosition)
 {
 	position = inPosition;
+	bDirty = true;
 }
 
 glm::mat4& Camera::getProjectionMatrix()
@@ -148,7 +158,7 @@ const Frustum& Camera::getFrustum() const
 void Camera::setFOV(float inFov)
 {
 	fov = inFov;
-	projection = glm::perspective(glm::radians(fov), aspectRatio, near, far);
+	bDirty = true;
 }
 
 void Camera::consumeMouseMovementInputs(float inXOffset, float inYOffset, double inDeltaTime)
@@ -160,16 +170,7 @@ void Camera::consumeMouseMovementInputs(float inXOffset, float inYOffset, double
 
 	float yaw = rotation.x + (inXOffset * (float)inDeltaTime);
 	float pitch = glm::clamp(rotation.y + (inYOffset * (float)inDeltaTime), -89.0f, 89.0f);
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	forward = glm::normalize(direction);
-
-	rotation = glm::vec3(yaw, pitch, rotation.z);
-
-	updateViewMatrix();
+	setRotation(yaw, pitch);
 }
 
 void Camera::consumeMouseScrollInputs(float inXOffset, float inYOffset, double inDeltaTime)
@@ -179,32 +180,26 @@ void Camera::consumeMouseScrollInputs(float inXOffset, float inYOffset, double i
 		return;
 	}
 
-	fov -= inYOffset * (float)inDeltaTime;
-	fov = glm::clamp(fov, minFov, maxFov);
-
-	updateProjectionMatrix();
+	float newFOV = fov;
+	newFOV -= inYOffset * (float)inDeltaTime;
+	newFOV = glm::clamp(fov, minFov, maxFov);
+	setFOV(newFOV);
 }
 
 void Camera::consumeKeyboardInputs(float inHorizontalAxis, float inVerticalAxis, double inDeltaTime)
 {
-	bool bDirty = false;
 	float speed = moveSpeed * (float)inDeltaTime;
 
 	if (!floatEquals(inHorizontalAxis, 0))
 	{
-		position += glm::normalize(glm::cross(forward, up)) * inHorizontalAxis * speed;
-		bDirty = true;
+		glm::vec3 velocity = glm::normalize(glm::cross(forward, up)) * inHorizontalAxis * speed;
+		setPosition(position + velocity);
 	}
 
 	if (!floatEquals(inVerticalAxis, 0))
 	{
-		position += forward * inVerticalAxis * speed;
-		bDirty = true;
-	}
-
-	if (bDirty)
-	{
-		updateViewMatrix();
+		glm::vec3 velocity = forward * inVerticalAxis * speed;
+		setPosition(position + velocity);
 	}
 }
 
@@ -288,6 +283,15 @@ void Camera::updateProjectionMatrix()
 
 void Camera::updateViewMatrix()
 {
+	float yaw = rotation.x;
+	float pitch = rotation.y;
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	forward = glm::normalize(direction);
+
 	view = glm::lookAt(position, position + forward, up);
 }
 

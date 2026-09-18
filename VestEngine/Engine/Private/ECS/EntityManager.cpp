@@ -1,5 +1,7 @@
 #include "ECS/EntityManager.h"
 
+#include "Core/Ensure.h"
+
 #include <iostream>
 
 EntityManager::EntityManager()
@@ -15,6 +17,8 @@ EntityManager::EntityManager()
 
 Entity EntityManager::createEntity()
 {
+	ensure(availableIds.size() > 0);
+
 	Entity entity = availableIds.front();
 	availableIds.pop();
 

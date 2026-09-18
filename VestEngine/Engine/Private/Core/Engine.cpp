@@ -2,7 +2,6 @@
 
 #include "Core/ResourcesManager.h"
 #include "Core/Scene.h"
-#include "ECS/EntityFactory.h"
 #include "ECS/HierarchyHelper.h"
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
