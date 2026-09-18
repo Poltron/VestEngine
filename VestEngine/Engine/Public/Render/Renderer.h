@@ -43,13 +43,13 @@ public:
 	void setLitShader(ResourceHandle inResourceHandle) { litShaderHandle = inResourceHandle; }
 	ResourceHandle getUnlitShader() { return unlitShaderHandle; }
 	void setUnlitShader(ResourceHandle inResourceHandle) { unlitShaderHandle = inResourceHandle; }
-	ResourceHandle getOutlineShader() { return outlineShaderHandle; }
-	void setOutlineShader(ResourceHandle inResourceHandle) { outlineShaderHandle = inResourceHandle; }
+	ResourceHandle getSolidColorShader() { return solidColorShaderHandle; }
+	void setSolidColorShader(ResourceHandle inResourceHandle) { solidColorShaderHandle = inResourceHandle; }
 
 private:
 	ShaderParameterCollection globalShaderParameters;
 
-	ResourceHandle outlineShaderHandle;
+	ResourceHandle solidColorShaderHandle;
 	ResourceHandle litShaderHandle;
 	ResourceHandle unlitShaderHandle;
 };

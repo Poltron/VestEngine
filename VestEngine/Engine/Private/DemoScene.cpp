@@ -105,7 +105,7 @@ namespace
 				, parentHierarchy);
 
 			MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(cube);
-			meshRenderer->shaderParameters.addVec3("objectColor", cubeColors[i]);
+			meshRenderer->shaderParameters.addVec3("material.objectColor", cubeColors[i]);
 
 			entities.push_back(cube);
 		}
@@ -118,7 +118,7 @@ namespace
 		, ResourceHandle inShader)
 	{
 		glm::vec3 lightScale(0.2f);
-		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(180, 0, 0)));
+		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));
 
 		Entity directionalLightID = inScene.createRenderedModel(inModel
 			, inShader
@@ -131,7 +131,7 @@ namespace
 		MeshRendererComponent* directionalLightMeshRenderer = inScene.getMeshRendererComponents().get(directionalLightID);
 		directionalLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
 		directionalLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
-		directionalLightMeshRenderer->shaderParameters.addVec3("objectColor", directionalLightColor);
+		directionalLightMeshRenderer->shaderParameters.addVec3("material.objectColor", directionalLightColor);
 
 		DirectionalLightComponent* directionalLightComponent = inScene.addDirectionalLightTo(directionalLightID
 			, directionalLightColor
@@ -162,7 +162,7 @@ namespace
 			MeshRendererComponent* pointLightMeshRenderer = inScene.getMeshRendererComponents().get(pointLightID);
 			pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
 			pointLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
-			pointLightMeshRenderer->shaderParameters.addVec3("objectColor", pointLightColors[i]);
+			pointLightMeshRenderer->shaderParameters.addVec3("material.objectColor", pointLightColors[i]);
 
 			PointLightComponent* pointLight = inScene.addPointLightTo(pointLightID
 				, pointLightColors[i]
@@ -201,7 +201,7 @@ namespace demoScene
 
 		Entity parentEntity = createScenePivot(inScene, cubeModel, renderer->getLitShader());
 		std::vector<Entity> childEntities = createSceneCubes(inScene, cubeModel, renderer->getLitShader(), parentEntity);
-		createSceneLights(inScene, cubeModel, renderer->getUnlitShader());
+		createSceneLights(inScene, cubeModel, renderer->getSolidColorShader());
 
 		// tmp inputs
 		platform::getInputManager().registerKeyCallback(input::EKey::P

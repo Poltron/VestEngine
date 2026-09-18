@@ -118,8 +118,8 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // every fragment where stencil is not equal to 1 passes
 			glStencilMask(0x00); // don't write to stencil
 
-			ensure(outlineShaderHandle.IsValid());
-			Shader* shader = engine::getResources()->getShader(outlineShaderHandle);
+			ensure(getSolidColorShader().IsValid());
+			Shader* shader = engine::getResources()->getShader(getSolidColorShader());
 			ensure(shader);
 			shader->use();
 
@@ -158,45 +158,54 @@ void Renderer::loadDefaultShaders()
 	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
 	ResourceHandle unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
 	g_Renderer->setUnlitShader(unlitShader);
-	g_Renderer->setOutlineShader(unlitShader);
+
+	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color_fragment.glsl";
+	ResourceHandle solidColorShader = engine::getResources()->loadShader(vertexPath, solidColorFragmentPath);
+	g_Renderer->setSolidColorShader(solidColorShader);
 }
 
 void Renderer::updateLightParameters(Scene& inScene)
 {
-	globalShaderParameters.addVec3("ambientLight.color", { 0.1f, 0.1f, 0.2f });
-	globalShaderParameters.addFloat("ambientLight.intensity", 1.0f);
+	globalShaderParameters.addVec3("ambientLight.color", { 1.0f, 1.0f, 1.0f });
+	globalShaderParameters.addFloat("ambientLight.intensity", 0.3f);
 
-	const DirectionalLightComponent* directionalLightComp = inScene.getDirectionalLightComponents().at(0);
-	const WorldTransformComponent* directionalLightTransform = inScene.getWorldTransformComponents().get(directionalLightComp->entity);
-
-	//
-	globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
-	globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
-	globalShaderParameters.addVec3("directionalLight.direction", directionalLightTransform->getModelForward());
-
-	assert(inScene.getPointLightComponents().size() <= MAX_POINT_LIGHTS);
-
-	globalShaderParameters.addInt("pointLightAmount", (int)inScene.getPointLightComponents().size());
-
-	//
-	for (size_t i = 0; i < inScene.getPointLightComponents().size(); ++i)
+	if (inScene.getDirectionalLightComponents().size() > 0)
 	{
-		const PointLightComponent* pointLight = inScene.getPointLightComponents().at(i);
-		assert(pointLight != nullptr);
-		std::string pointLightName = "pointLights[";
-		pointLightName.append(std::to_string(i));
-		pointLightName.append("]");
+		const DirectionalLightComponent* directionalLightComp = inScene.getDirectionalLightComponents().at(0);
+		const WorldTransformComponent* directionalLightTransform = inScene.getWorldTransformComponents().get(directionalLightComp->entity);
 
-		globalShaderParameters.addVec3(pointLightName + ".color", pointLight->color);
-		globalShaderParameters.addFloat(pointLightName + ".intensity", pointLight->intensity);
-		globalShaderParameters.addFloat(pointLightName + ".constant", pointLight->constant);
-		globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
-		globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
+		//
+		globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
+		globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
+		globalShaderParameters.addVec3("directionalLight.direction", directionalLightTransform->getModelForward());
+	}
 
-		const WorldTransformComponent* pointLightTransform = inScene.getWorldTransformComponents().get(pointLight->entity);
-		assert(pointLightTransform != nullptr);
+	if (inScene.getPointLightComponents().size() > 0)
+	{
+		assert(inScene.getPointLightComponents().size() <= MAX_POINT_LIGHTS);
 
-		globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());
+		globalShaderParameters.addInt("pointLightAmount", (int)inScene.getPointLightComponents().size());
+
+		//
+		for (size_t i = 0; i < inScene.getPointLightComponents().size(); ++i)
+		{
+			const PointLightComponent* pointLight = inScene.getPointLightComponents().at(i);
+			assert(pointLight != nullptr);
+			std::string pointLightName = "pointLights[";
+			pointLightName.append(std::to_string(i));
+			pointLightName.append("]");
+
+			globalShaderParameters.addVec3(pointLightName + ".color", pointLight->color);
+			globalShaderParameters.addFloat(pointLightName + ".intensity", pointLight->intensity);
+			globalShaderParameters.addFloat(pointLightName + ".constant", pointLight->constant);
+			globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
+			globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
+
+			const WorldTransformComponent* pointLightTransform = inScene.getWorldTransformComponents().get(pointLight->entity);
+			assert(pointLightTransform != nullptr);
+
+			globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());
+		}
 	}
 }
 

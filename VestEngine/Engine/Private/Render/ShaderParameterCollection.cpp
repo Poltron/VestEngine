@@ -48,20 +48,52 @@ void ShaderParameterCollection::applyToShader(const Shader& inShader, const Reso
 
 void ShaderParameterCollection::addTexture(const std::string& inName, GraphicResourceHandle inValue)
 {
+	for (auto it = textureParameters.begin(); it != textureParameters.end(); ++it)
+	{
+		if (it->first == inName)
+		{
+			it->second = inValue;
+		}
+	}
+
 	textureParameters.push_back({ inName, inValue });
 }
 
 void ShaderParameterCollection::addInt(const std::string& inName, int inValue)
 {
+	for (auto it = intParameters.begin(); it != intParameters.end(); ++it)
+	{
+		if (it->first == inName)
+		{
+			it->second = inValue;
+		}
+	}
+
 	intParameters.push_back({ inName, inValue });
 }
 
 void ShaderParameterCollection::addFloat(const std::string& inName, float inValue)
 {
+	for (auto it = floatParameters.begin(); it != floatParameters.end(); ++it)
+	{
+		if (it->first == inName)
+		{
+			it->second = inValue;
+		}
+	}
+
 	floatParameters.push_back({ inName, inValue });
 }
 
 void ShaderParameterCollection::addVec3(const std::string& inName, const glm::vec3& inValue)
 {
+	for (auto it = vec3Parameters.begin(); it != vec3Parameters.end(); ++it)
+	{
+		if (it->first == inName)
+		{
+			it->second = inValue;
+		}
+	}
+
 	vec3Parameters.push_back({ inName, inValue });
 }

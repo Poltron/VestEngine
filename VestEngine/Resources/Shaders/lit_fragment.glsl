@@ -13,6 +13,7 @@ struct Material
 	sampler2D diffuse;
 	sampler2D specular;
 	float shininess;
+	vec3 objectColor;
 };
 
 struct AmbientLight
@@ -84,8 +85,9 @@ void main()
 	vec3 normal = normalize(Normal);
 	vec3 viewDirection = normalize(viewPosition - FragPos);
 
-	vec3 result = ambientLight.color * vec3(texture(material.diffuse, TexCoords));
-	result += ambientLight.color * vec3(texture(material.specular, TexCoords));
+	vec3 ambient = ambientLight.color * ambientLight.intensity;
+	vec3 result = ambient * vec3(texture(material.diffuse, TexCoords));
+	result += ambient * vec3(texture(material.specular, TexCoords));
 
 	result += computeDirectionalLight(directionalLight, normal, viewDirection);
 
@@ -94,5 +96,5 @@ void main()
 		result += computePointLight(pointLights[i], normal, viewDirection, FragPos);
 	}
 
-	FragColor = vec4(result, 1.0);
+	FragColor = vec4(result, 1.0) * vec4(material.objectColor, 1.0);
 }

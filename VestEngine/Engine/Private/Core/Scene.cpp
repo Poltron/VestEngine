@@ -56,6 +56,7 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	MeshRendererComponent* meshRendererComponent = meshRendererComponents.create(inEntity);
 	meshRendererComponent->model = inModel;
 	meshRendererComponent->shader = inShader;
+	meshRendererComponent->shaderParameters.addVec3("material.objectColor", glm::vec3(1, 1, 1));
 	return meshRendererComponent;
 }
 
