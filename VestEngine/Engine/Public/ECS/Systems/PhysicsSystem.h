@@ -4,22 +4,18 @@
 
 #include "ECS/Entity.h"
 
-template<typename T>
-class ComponentManager;
-
 struct HierarchyComponent;
 struct LocalTransformComponent;
-struct RigidbodyComponent;
 struct WorldTransformComponent;
+
+template<typename T>
+class ComponentManager;
+class Scene;
 
 class PhysicsSystem
 {
 public:
-	void update(ComponentManager<LocalTransformComponent>& inLocalTransforms
-		, ComponentManager<WorldTransformComponent>& inWorldTransforms
-		, ComponentManager<HierarchyComponent>& inHierarchies
-		, ComponentManager<RigidbodyComponent>& inRigidbodies
-		, double inDeltaTime);
+	void update(Scene& inScene, double inDeltaTime);
 
 private:
 	void setWorldPosition(const glm::vec3& inPosition

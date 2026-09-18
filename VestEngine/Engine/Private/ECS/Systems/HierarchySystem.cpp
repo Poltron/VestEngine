@@ -3,21 +3,22 @@
 #include <algorithm>
 #include <numeric>
 
+#include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/HierarchyComponent.h"
 #include "ECS/Components/TransformComponent.h"
 
-void HierarchySystem::update(ComponentManager<LocalTransformComponent>& inLocalTransforms
-	, ComponentManager<WorldTransformComponent>& inWorldTransforms
-	, ComponentManager<HierarchyComponent>& inHierarchies)
+void HierarchySystem::update(Scene& inScene)
 {
+	ComponentManager<HierarchyComponent>& hierarchyComponents = inScene.getHierarchyComponents();
+
 	// 1. Collect roots and group children
 	std::vector<size_t> roots;
 	// index = hierarchycomponent index
-	std::vector<std::vector<Entity>> children(inHierarchies.size());
-	for (size_t i = 0; i < inHierarchies.size(); ++i)
+	std::vector<std::vector<Entity>> children(hierarchyComponents.size());
+	for (size_t i = 0; i < hierarchyComponents.size(); ++i)
 	{
-		HierarchyComponent* hierarchy = inHierarchies.at(i);
+		HierarchyComponent* hierarchy = hierarchyComponents.at(i);
 		ensure(hierarchy);
 
 		if (!EntityFuncs::isEntityValid(hierarchy->parent))
@@ -26,13 +27,13 @@ void HierarchySystem::update(ComponentManager<LocalTransformComponent>& inLocalT
 			continue;
 		}
 
-		size_t elementIndex = inHierarchies.getIndex(hierarchy->parent);
+		size_t elementIndex = hierarchyComponents.getIndex(hierarchy->parent);
 		children[elementIndex].push_back(hierarchy->entity);
 	}
 
 	// 2. initialize depth for roots
 	unsigned int currentDepth = 0;
-	std::vector<unsigned int> depths(inHierarchies.size(), 0);
+	std::vector<unsigned int> depths(hierarchyComponents.size(), 0);
 	std::queue<size_t> hierarchyIndexesToCheck;
 	for (auto& root : roots)
 	{
@@ -46,7 +47,7 @@ void HierarchySystem::update(ComponentManager<LocalTransformComponent>& inLocalT
 		size_t parentIndex = hierarchyIndexesToCheck.front();
 		hierarchyIndexesToCheck.pop();
 
-		const HierarchyComponent* parentHierarchyComponent = inHierarchies.at(parentIndex);
+		const HierarchyComponent* parentHierarchyComponent = hierarchyComponents.at(parentIndex);
 		if (!parentHierarchyComponent)
 		{
 			continue;
@@ -55,32 +56,32 @@ void HierarchySystem::update(ComponentManager<LocalTransformComponent>& inLocalT
 		Entity childEntity = parentHierarchyComponent->firstChild;
 		while (EntityFuncs::isEntityValid(childEntity))
 		{
-			size_t childIndex = inHierarchies.getIndex(childEntity);
+			size_t childIndex = hierarchyComponents.getIndex(childEntity);
 			depths[childIndex] = depths[parentIndex] + 1;
 			hierarchyIndexesToCheck.push(childIndex);
 
-			const HierarchyComponent* childHierarchyComponent = inHierarchies.at(childIndex);
+			const HierarchyComponent* childHierarchyComponent = hierarchyComponents.at(childIndex);
 			childEntity = childHierarchyComponent->nextSibling;
 		}
 	}
 
 
 	// 4. sort indexes, order by depth then by parent
-	std::vector<unsigned int> sortedIndexes(inHierarchies.size());
+	std::vector<unsigned int> sortedIndexes(hierarchyComponents.size());
 	std::iota(sortedIndexes.begin(), sortedIndexes.end(), 0);
 	std::stable_sort(sortedIndexes.begin(), sortedIndexes.end()
-		, ([&depths, &inHierarchies](unsigned int a, unsigned int b)
+		, ([&depths, &hierarchyComponents](unsigned int a, unsigned int b)
 			{
 				if (depths[a] < depths[b])
 				{
 					return true;
 				}
 
-				return inHierarchies.at(a)->parent < inHierarchies.at(b)->parent;
+				return hierarchyComponents.at(a)->parent < hierarchyComponents.at(b)->parent;
 			}));
 
 	// 5. create an index lookup table
-	std::vector<size_t> old_to_new_index(inHierarchies.size());
+	std::vector<size_t> old_to_new_index(hierarchyComponents.size());
 	for (size_t i = 0; i < sortedIndexes.size(); ++i)
 	{
 		size_t oldIndex = sortedIndexes[i];
@@ -89,40 +90,44 @@ void HierarchySystem::update(ComponentManager<LocalTransformComponent>& inLocalT
 
 	// 6. create an ordered hierarchies array and replace the old one
 	DenseArray<HierarchyComponent> newHierarchies;
-	newHierarchies.initialize(inHierarchies.size());
-	newHierarchies.setSize(inHierarchies.size());
+	newHierarchies.initialize(hierarchyComponents.size());
+	newHierarchies.setSize(hierarchyComponents.size());
 	for (size_t i = 0; i < old_to_new_index.size(); ++i)
 	{
 		size_t elementNewIndex = old_to_new_index[i];
-		newHierarchies.at(elementNewIndex) = *inHierarchies.at(i);
+		newHierarchies.at(elementNewIndex) = *hierarchyComponents.at(i);
 	}
 
-	inHierarchies.moveData(std::move(newHierarchies));
-	inHierarchies.rebuildLookupTable();
+	hierarchyComponents.moveData(std::move(newHierarchies));
+	hierarchyComponents.rebuildLookupTable();
+
+	ComponentManager<LocalTransformComponent>& localTransforms = inScene.getLocalTransformComponents();
 
 	// 7. local transforms is a parallel array, apply the same order
 	DenseArray<LocalTransformComponent> newLocalTransforms;
-	newLocalTransforms.initialize(inHierarchies.size());
-	newLocalTransforms.setSize(inHierarchies.size());
+	newLocalTransforms.initialize(hierarchyComponents.size());
+	newLocalTransforms.setSize(hierarchyComponents.size());
 	for (size_t i = 0; i < old_to_new_index.size(); ++i)
 	{
 		size_t elementNewIndex = old_to_new_index[i];
-		newLocalTransforms.at(elementNewIndex) = *inLocalTransforms.at(i);
+		newLocalTransforms.at(elementNewIndex) = *localTransforms.at(i);
 	}
 
-	inLocalTransforms.moveData(std::move(newLocalTransforms));
-	inLocalTransforms.rebuildLookupTable();
+	localTransforms.moveData(std::move(newLocalTransforms));
+	localTransforms.rebuildLookupTable();
+
+	ComponentManager<WorldTransformComponent>& worldTransforms = inScene.getWorldTransformComponents();
 
 	// 8. same for world transforms
 	DenseArray<WorldTransformComponent> newWorldTransforms;
-	newWorldTransforms.initialize(inHierarchies.size());
-	newWorldTransforms.setSize(inHierarchies.size());
+	newWorldTransforms.initialize(hierarchyComponents.size());
+	newWorldTransforms.setSize(hierarchyComponents.size());
 	for (size_t i = 0; i < old_to_new_index.size(); ++i)
 	{
 		size_t elementNewIndex = old_to_new_index[i];
-		newWorldTransforms.at(elementNewIndex) = *inWorldTransforms.at(i);
+		newWorldTransforms.at(elementNewIndex) = *worldTransforms.at(i);
 	}
 
-	inWorldTransforms.moveData(std::move(newWorldTransforms));
-	inWorldTransforms.rebuildLookupTable();
+	worldTransforms.moveData(std::move(newWorldTransforms));
+	worldTransforms.rebuildLookupTable();
 }

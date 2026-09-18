@@ -1,16 +1,21 @@
 #include "ECS/Systems/TransformSystem.h"
 
+#include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/HierarchyComponent.h"
 #include "ECS/Components/TransformComponent.h"
 
-void TransformSystem::update(ComponentManager<LocalTransformComponent>& inLocalTransforms, ComponentManager<WorldTransformComponent>& inWorldTransforms, ComponentManager<HierarchyComponent>& inHierarchies)
+void TransformSystem::update(Scene& inScene)
 {
+	ComponentManager<LocalTransformComponent>& localTransforms = inScene.getLocalTransformComponents();
+	ComponentManager<WorldTransformComponent>& worldTransforms = inScene.getWorldTransformComponents();
+	ComponentManager<HierarchyComponent>& hierarchies = inScene.getHierarchyComponents();
+
 	// local / world / hierarchy = parallel arrays
 
-	for (size_t i = 0; i < inLocalTransforms.size(); ++i)
+	for (size_t i = 0; i < localTransforms.size(); ++i)
 	{
-		LocalTransformComponent* localTransform = inLocalTransforms.at(i);
+		LocalTransformComponent* localTransform = localTransforms.at(i);
 		assert(localTransform);
 
 		if (!localTransform->isDirty())
@@ -18,16 +23,16 @@ void TransformSystem::update(ComponentManager<LocalTransformComponent>& inLocalT
 			continue;
 		}
 
-		WorldTransformComponent* worldTransform = inWorldTransforms.at(i);
+		WorldTransformComponent* worldTransform = worldTransforms.at(i);
 		ensure(worldTransform);
 
-		HierarchyComponent* hierarchy = inHierarchies.at(i);
+		HierarchyComponent* hierarchy = hierarchies.at(i);
 		ensure(hierarchy);
 
 		glm::mat4 parentWorldModel = glm::mat4(1.0f);
 		if (EntityFuncs::isEntityValid(hierarchy->parent))
 		{
-			WorldTransformComponent* parentWorldTransform = inWorldTransforms.get(hierarchy->parent);
+			WorldTransformComponent* parentWorldTransform = worldTransforms.get(hierarchy->parent);
 			assert(parentWorldTransform);
 
 			parentWorldModel = parentWorldTransform->model;

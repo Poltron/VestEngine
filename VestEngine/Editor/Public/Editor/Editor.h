@@ -12,8 +12,6 @@ namespace editor
 	bool initialize();
 	void launch();
 	void shutdown();
-
-	void loadDemoScene();
 }
 
 class Editor

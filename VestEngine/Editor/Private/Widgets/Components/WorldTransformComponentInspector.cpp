@@ -12,7 +12,7 @@ std::string WorldTransformComponentInspector::getLabel()
 
 void WorldTransformComponentInspector::update()
 {
-	WorldTransformComponent* worldTransform = engine::getScene()->worldTransformComponents.get(entity);
+	WorldTransformComponent* worldTransform = engine::getScene()->getWorldTransformComponents().get(entity);
 	if (!worldTransform)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

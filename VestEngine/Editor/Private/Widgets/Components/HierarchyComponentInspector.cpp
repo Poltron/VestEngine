@@ -12,7 +12,7 @@ std::string HierarchyComponentInspector::getLabel()
 
 void HierarchyComponentInspector::update()
 {
-	HierarchyComponent* hierarchy = engine::getScene()->hierarchyComponents.get(entity);
+	HierarchyComponent* hierarchy = engine::getScene()->getHierarchyComponents().get(entity);
 	if (!hierarchy)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

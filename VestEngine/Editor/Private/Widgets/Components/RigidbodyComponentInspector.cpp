@@ -12,7 +12,7 @@ std::string RigidbodyComponentInspector::getLabel()
 
 void RigidbodyComponentInspector::update()
 {
-	RigidbodyComponent* rigidbody = engine::getScene()->rigidbodyComponents.get(entity);
+	RigidbodyComponent* rigidbody = engine::getScene()->getRigidbodyComponents().get(entity);
 	if (!rigidbody)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

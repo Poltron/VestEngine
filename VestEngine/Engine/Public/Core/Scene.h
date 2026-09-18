@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Camera.h"
+
 #include "ECS/Components/DirectionalLightComponent.h"
 #include "ECS/Components/HierarchyComponent.h"
 #include "ECS/Components/MeshRendererComponent.h"
@@ -11,11 +13,7 @@
 
 class Scene
 {
-public:
-	bool initialize();
-	void shutdown();
-
-	void loadPlaceholderScene();
+	Camera camera; 
 
 	EntityManager entities;
 
@@ -26,4 +24,59 @@ public:
 	ComponentManager<MeshRendererComponent> meshRendererComponents;
 	ComponentManager<DirectionalLightComponent> directionalLightComponents;
 	ComponentManager<PointLightComponent> pointLightComponents;
+
+public:
+	bool initialize();
+	void shutdown();
+
+	Camera& getCamera() { return camera; }
+
+	const EntityManager& getEntityManager() { return entities; }
+
+	ComponentManager<LocalTransformComponent>& getLocalTransformComponents() { return localTransformComponents; }
+	const ComponentManager<LocalTransformComponent>& getLocalTransformComponents() const { return localTransformComponents; }
+	ComponentManager<WorldTransformComponent>& getWorldTransformComponents() { return worldTransformComponents; }
+	const ComponentManager<WorldTransformComponent>& getWorldTransformComponents() const { return worldTransformComponents; }
+	ComponentManager<HierarchyComponent>& getHierarchyComponents() { return hierarchyComponents; }
+	const ComponentManager<HierarchyComponent>& getHierarchyComponents() const { return hierarchyComponents; }
+	ComponentManager<RigidbodyComponent>& getRigidbodyComponents() { return rigidbodyComponents; }
+	const ComponentManager<RigidbodyComponent>& getRigidbodyComponents() const { return rigidbodyComponents; }
+	ComponentManager<MeshRendererComponent>& getMeshRendererComponents() { return meshRendererComponents; }
+	const ComponentManager<MeshRendererComponent>& getMeshRendererComponents() const { return meshRendererComponents; }
+	ComponentManager<DirectionalLightComponent>& getDirectionalLightComponents() { return directionalLightComponents; }
+	const ComponentManager<DirectionalLightComponent>& getDirectionalLightComponents() const { return directionalLightComponents; }
+	ComponentManager<PointLightComponent>& getPointLightComponents() { return pointLightComponents; }
+	const ComponentManager<PointLightComponent>& getPointLightComponents() const { return pointLightComponents; }
+
+	LocalTransformComponent* addTransformTo(Entity inEntity
+		, const glm::vec3& inPosition
+		, const glm::quat& inRotation
+		, const glm::vec3& inScale
+		, HierarchyComponent* inParentHierarchy);
+
+	MeshRendererComponent* addMeshRendererTo(Entity inEntity
+		, ResourceHandle inModel
+		, ResourceHandle inShader);
+
+	DirectionalLightComponent* addDirectionalLightTo(Entity inEntity
+		, const glm::vec3& inColor
+		, float inIntensity);
+
+	PointLightComponent* addPointLightTo(Entity inEntity
+		, const glm::vec3& inColor
+		, float inIntensity
+		, float inConstant
+		, float inLinear
+		, float inQuadratic);
+
+	RigidbodyComponent* addRigidbodyTo(Entity inEntity
+		, const glm::vec3& inLinearVelocity
+		, const glm::vec3& inAngularVelocity);
+
+	Entity createRenderedModel(ResourceHandle inModel
+		, ResourceHandle inShader
+		, const glm::vec3& inPosition
+		, const glm::quat& inRotation
+		, const glm::vec3& inScale
+		, HierarchyComponent* inParentHierarchy = nullptr);
 };

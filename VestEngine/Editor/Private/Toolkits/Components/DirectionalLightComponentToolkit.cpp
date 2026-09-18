@@ -6,7 +6,7 @@
 
 bool DirectionalLightComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->directionalLightComponents.contains(inEntity);
+	return engine::getScene()->getDirectionalLightComponents().contains(inEntity);
 }
 
 IInspectorElement* DirectionalLightComponentToolkit::createInspectorElement(Entity inEntity)

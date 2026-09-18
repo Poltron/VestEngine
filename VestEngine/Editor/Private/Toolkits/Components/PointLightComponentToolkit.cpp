@@ -6,7 +6,7 @@
 
 bool PointLightComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->pointLightComponents.contains(inEntity);
+	return engine::getScene()->getPointLightComponents().contains(inEntity);
 }
 
 IInspectorElement* PointLightComponentToolkit::createInspectorElement(Entity inEntity)

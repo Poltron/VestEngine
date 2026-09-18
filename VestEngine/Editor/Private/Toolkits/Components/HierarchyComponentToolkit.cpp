@@ -6,7 +6,7 @@
 
 bool HierarchyComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->hierarchyComponents.contains(inEntity);
+	return engine::getScene()->getHierarchyComponents().contains(inEntity);
 }
 
 IInspectorElement* HierarchyComponentToolkit::createInspectorElement(Entity inEntity)

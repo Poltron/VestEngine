@@ -4,6 +4,7 @@
 #include "glm/ext/matrix_common.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
+#include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/HierarchyComponent.h"
@@ -35,18 +36,17 @@ namespace
 
 namespace hierarchyHelper
 {
-	void attachTo(HierarchyComponent* inElement
+	void attachTo(Scene& inScene
+		, HierarchyComponent* inElement
 		, HierarchyComponent* inParent
-		, EAttachmentRules inAttachmentRules
-		, ComponentManager<LocalTransformComponent>& inLocalTransforms
-		, ComponentManager<WorldTransformComponent>& inWorldTransforms)
+		, EAttachmentRules inAttachmentRules)
 	{
 		switch (inAttachmentRules)
 		{
 			case EAttachmentRules::KeepWorld:
 			{
-				WorldTransformComponent* worldTransform = inWorldTransforms.get(inElement->entity);
-				LocalTransformComponent* parentLocalTransform = inLocalTransforms.get(inParent->entity);
+				WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(inElement->entity);
+				LocalTransformComponent* parentLocalTransform = inScene.getLocalTransformComponents().get(inParent->entity);
 				glm::mat4 newLocalTransform = glm::mat4(1.0f);
 				GetWorldInLocal(*worldTransform, *parentLocalTransform, newLocalTransform);
 
@@ -55,7 +55,7 @@ namespace hierarchyHelper
 				glm::vec3 translation = glm::vec3();
 				GetPosRotScaleFromMatrix(newLocalTransform, scale, rotation, translation);
 
-				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
+				LocalTransformComponent* localTransform = inScene.getLocalTransformComponents().get(inElement->entity);
 				localTransform->setLocalPosition(translation);
 				localTransform->setLocalRotation(rotation);
 				localTransform->setLocalScale(scale);
@@ -67,7 +67,7 @@ namespace hierarchyHelper
 			}
 			case EAttachmentRules::SnapToTarget:
 			{
-				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
+				LocalTransformComponent* localTransform = inScene.getLocalTransformComponents().get(inElement->entity);
 				localTransform->setLocalPosition(glm::vec3(0, 0, 0));
 				localTransform->setLocalRotation(glm::quat());
 				localTransform->setLocalScale(glm::vec3(1, 1, 1));
@@ -82,11 +82,9 @@ namespace hierarchyHelper
 		inParent->firstChild = inElement->entity;
 	}
 
-	void detach(HierarchyComponent* inElement
-		, EAttachmentRules inAttachmentRules
-		, ComponentManager<HierarchyComponent>& inHierarchies
-		, ComponentManager<LocalTransformComponent>& inLocalTransforms
-		, ComponentManager<WorldTransformComponent>& inWorldTransforms)
+	void detach(Scene& inScene
+		, HierarchyComponent* inElement
+		, EAttachmentRules inAttachmentRules)
 	{
 		if (!EntityFuncs::isEntityValid(inElement->parent))
 		{
@@ -97,7 +95,7 @@ namespace hierarchyHelper
 		{
 			case EAttachmentRules::KeepWorld:
 			{
-				WorldTransformComponent* worldTransform = inWorldTransforms.get(inElement->entity);
+				WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(inElement->entity);
 				ensure(worldTransform);
 
 				glm::vec3 scale = glm::vec3(1);
@@ -105,7 +103,7 @@ namespace hierarchyHelper
 				glm::vec3 translation = glm::vec3();
 				GetPosRotScaleFromMatrix(worldTransform->model, scale, rotation, translation);
 				
-				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
+				LocalTransformComponent* localTransform = inScene.getLocalTransformComponents().get(inElement->entity);
 				localTransform->setLocalPosition(translation);
 				localTransform->setLocalRotation(rotation);
 				localTransform->setLocalScale(scale);
@@ -117,7 +115,7 @@ namespace hierarchyHelper
 			}
 			case EAttachmentRules::SnapToTarget:
 			{
-				LocalTransformComponent* localTransform = inLocalTransforms.get(inElement->entity);
+				LocalTransformComponent* localTransform = inScene.getLocalTransformComponents().get(inElement->entity);
 				ensure(localTransform);
 
 				localTransform->setLocalPosition(glm::vec3(0, 0, 0));
@@ -127,7 +125,7 @@ namespace hierarchyHelper
 			}
 		}
 
-		HierarchyComponent* parentHierarchy = inHierarchies.get(inElement->parent);
+		HierarchyComponent* parentHierarchy = inScene.getHierarchyComponents().get(inElement->parent);
 		if (!parentHierarchy)
 		{
 			return;
@@ -143,12 +141,12 @@ namespace hierarchyHelper
 			return;
 		}
 
-		HierarchyComponent* previousSiblingComponent = inHierarchies.get(parentHierarchy->firstChild);
+		HierarchyComponent* previousSiblingComponent = inScene.getHierarchyComponents().get(parentHierarchy->firstChild);
 		ensure(previousSiblingComponent);
 
 		while (previousSiblingComponent->nextSibling != inElement->entity && EntityFuncs::isEntityValid(previousSiblingComponent->nextSibling))
 		{
-			previousSiblingComponent = inHierarchies.get(previousSiblingComponent->nextSibling);
+			previousSiblingComponent = inScene.getHierarchyComponents().get(previousSiblingComponent->nextSibling);
 		}
 
 		ensure(previousSiblingComponent);

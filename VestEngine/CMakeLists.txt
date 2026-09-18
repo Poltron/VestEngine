@@ -76,13 +76,18 @@ target_link_libraries(Editor PRIVATE UnitTest)
 target_compile_definitions(Engine PUBLIC WORKDIR="${CMAKE_SOURCE_DIR}")
 
 # =====
+# COMPILATION
+# =====
+
+target_compile_options(Engine PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
+target_compile_options(Editor PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
+target_compile_options(UnitTest PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
+
+# =====
 # VISUAL STUDIO
 # =====
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${ENGINE_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${EDITOR_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${UNITTEST_FILES})
-target_compile_options(Engine PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
-target_compile_options(Editor PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
-target_compile_options(UnitTest PRIVATE /W3 /permissive- /Zc:preprocessor /MP)
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Editor)

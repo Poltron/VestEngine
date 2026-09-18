@@ -43,8 +43,6 @@ private:
 
 // todo: probably move all this 
 protected:
-	Camera camera;
-
 	HierarchySystem hierarchySystem;
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
@@ -53,6 +51,7 @@ protected:
 namespace engine
 {
 	bool initialize();
+	Scene* createScene();
 	void launch();
 	void shutdown();
 

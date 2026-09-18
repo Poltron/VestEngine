@@ -6,7 +6,7 @@
 
 bool RigidbodyComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->rigidbodyComponents.contains(inEntity);
+	return engine::getScene()->getRigidbodyComponents().contains(inEntity);
 }
 
 IInspectorElement* RigidbodyComponentToolkit::createInspectorElement(Entity inEntity)

@@ -6,7 +6,7 @@
 
 bool LocalTransformComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->localTransformComponents.contains(inEntity);
+	return engine::getScene()->getLocalTransformComponents().contains(inEntity);
 }
 
 IInspectorElement* LocalTransformComponentToolkit::createInspectorElement(Entity inEntity)

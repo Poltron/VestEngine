@@ -33,7 +33,7 @@ void EntityManager::destroyEntity(Entity inEntity)
 	std::cout << "Release entity " << inEntity << std::endl;
 }
 
-bool EntityManager::exists(Entity inEntity)
+bool EntityManager::exists(Entity inEntity) const
 {
 	return (entities[inEntity] == 1);
 }

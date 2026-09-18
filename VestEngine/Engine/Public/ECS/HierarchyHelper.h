@@ -4,6 +4,7 @@
 
 template<typename T>
 class ComponentManager;
+class Scene;
 
 struct HierarchyComponent;
 struct LocalTransformComponent;
@@ -18,14 +19,11 @@ enum class EAttachmentRules : unsigned int
 
 namespace hierarchyHelper
 {
-	void attachTo(HierarchyComponent* inElement
+	void attachTo(Scene& inScene
+		, HierarchyComponent* inElement
 		, HierarchyComponent* inParent
-		, EAttachmentRules inAttachmentRules
-		, ComponentManager<LocalTransformComponent>& inLocalTransforms
-		, ComponentManager<WorldTransformComponent>& inWorldTransforms);
-	void detach(HierarchyComponent* inElement
-		, EAttachmentRules inAttachmentRules
-		, ComponentManager<HierarchyComponent>& inHierarchies
-		, ComponentManager<LocalTransformComponent>& inLocalTransforms
-		, ComponentManager<WorldTransformComponent>& inWorldTransforms);
+		, EAttachmentRules inAttachmentRules);
+	void detach(Scene& inScene
+		, HierarchyComponent* inElement
+		, EAttachmentRules inAttachmentRules);
 }

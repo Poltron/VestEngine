@@ -13,7 +13,7 @@ std::string DirectionalLightComponentInspector::getLabel()
 
 void DirectionalLightComponentInspector::update()
 {
-	DirectionalLightComponent* directionalLight = engine::getScene()->directionalLightComponents.get(entity);
+	DirectionalLightComponent* directionalLight = engine::getScene()->getDirectionalLightComponents().get(entity);
 	if (!directionalLight)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

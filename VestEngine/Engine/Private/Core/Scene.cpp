@@ -10,6 +10,9 @@
 
 bool Scene::initialize()
 {
+	camera.initialize();
+	render::getRenderer()->setActiveCamera(&camera);
+
 	localTransformComponents.setLabel("localTransforms");
 	worldTransformComponents.setLabel("worldTransforms");
 	hierarchyComponents.setLabel("hierarchies");
@@ -24,123 +27,86 @@ bool Scene::initialize()
 void Scene::shutdown()
 {}
 
-void Scene::loadPlaceholderScene()
+LocalTransformComponent* Scene::addTransformTo(Entity inEntity
+	, const glm::vec3& inPosition
+	, const glm::quat& inRotation
+	, const glm::vec3& inScale
+	, HierarchyComponent* inParentHierarchy)
 {
-	// resources
-	ResourceHandle cubeModel, bagModel;
-	ResourceHandle litShader, unlitShader;
+	LocalTransformComponent* localTransformComponent = localTransformComponents.create(inEntity);
+	localTransformComponent->setLocalPosition(inPosition);
+	localTransformComponent->setLocalRotation(inRotation);
+	localTransformComponent->setLocalScale(inScale);
 
+	WorldTransformComponent* worldTransformComponent = worldTransformComponents.create(inEntity);
+	worldTransformComponent->model = localTransformComponent->getLocalModelMatrix();
+
+	HierarchyComponent* hierarchyComponent = hierarchyComponents.create(inEntity);
+	if (inParentHierarchy)
 	{
-		const std::string WorkDirTMP = WORKDIR;
-		const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
-		const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit_fragment.glsl";
-		const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
-		litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
-		unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
-
-		const std::string containerPath = WorkDirTMP + "/Resources/Textures/container2.png";
-		const std::string containerSpecularPath = WorkDirTMP + "/Resources/Textures/container2_specular.png";
-		ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
-		ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
-
-		std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
-		std::vector<unsigned int> indices;
-		std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
-		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
-
-		std::vector<Mesh> meshes;
-		meshes.push_back(std::move(mesh));
-
-		cubeModel = engine::getResources()->createModel(std::move(meshes), "cube");
-
-		//const std::string bagModelPath = WorkDirTMP + "/Resources/Models/backpack/backpack.obj";
-		//bagModel = engine::getResources()->loadModel(bagModelPath);
+		hierarchyHelper::attachTo(*this, hierarchyComponent, inParentHierarchy, EAttachmentRules::KeepWorld);
 	}
 
-	EntityManager& entityManager = engine::getScene()->entities;
+	return localTransformComponent;
+}
 
-	// placeholder scene
-	Entity parentEntity = EntityFactory::createScenePivot(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, rigidbodyComponents, meshRendererComponents, cubeModel, litShader);
-	std::vector<Entity> childEntities = EntityFactory::createSceneCubes(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, cubeModel, litShader, parentEntity);
-	EntityFactory::createSceneLights(entityManager, localTransformComponents, worldTransformComponents, hierarchyComponents, meshRendererComponents, directionalLightComponents, pointLightComponents, cubeModel, unlitShader);
+MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
+	, ResourceHandle inModel
+	, ResourceHandle inShader)
+{
+	MeshRendererComponent* meshRendererComponent = meshRendererComponents.create(inEntity);
+	meshRendererComponent->model = inModel;
+	meshRendererComponent->shader = inShader;
+	return meshRendererComponent;
+}
 
-	platform::getInputManager().registerKeyCallback(input::EKey::P
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
+DirectionalLightComponent* Scene::addDirectionalLightTo(Entity inEntity
+	, const glm::vec3& inColor
+	, float inIntensity)
+{
+	DirectionalLightComponent* directionalLightComponent = directionalLightComponents.create(inEntity);
+	directionalLightComponent->color = inColor;
+	directionalLightComponent->intensity = inIntensity;
+	return directionalLightComponent;
+}
 
-			for (Entity childEntity : childEntities)
-			{
-				HierarchyComponent* hierarchy = hierarchies->get(childEntity);
-				if (!hierarchy)
-				{
-					continue;
-				}
+PointLightComponent* Scene::addPointLightTo(Entity inEntity
+	, const glm::vec3& inColor
+	, float inIntensity
+	, float inConstant
+	, float inLinear
+	, float inQuadratic)
+{
+	PointLightComponent* pointLightComponent = pointLightComponents.create(inEntity);
+	pointLightComponent->color = inColor;
+	pointLightComponent->intensity = inIntensity;
+	pointLightComponent->constant = inConstant;
+	pointLightComponent->linear = inLinear;
+	pointLightComponent->quadratic = inQuadratic;
 
-				if (EntityFuncs::isEntityValid(hierarchy->parent))
-				{
-					hierarchyHelper::detach(hierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
-				}
-				else
-				{
-					HierarchyComponent* parentHierarchy = hierarchies->get(parentEntity);
-					hierarchyHelper::attachTo(hierarchy, parentHierarchy, EAttachmentRules::KeepWorld, *localTransforms, *worldTransforms);
-				}
-			}
-		});
+	return pointLightComponent;
 
-	platform::getInputManager().registerKeyCallback(input::EKey::O
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
+}
 
-			HierarchyComponent* firstHierarchy = hierarchies->get(childEntities[0]);
-			if (EntityFuncs::isEntityValid(firstHierarchy->parent))
-			{
-				hierarchyHelper::detach(firstHierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
-			}
-			else
-			{
-				HierarchyComponent* parentHierarchy = hierarchies->get(parentEntity);
-				hierarchyHelper::attachTo(firstHierarchy, parentHierarchy, EAttachmentRules::KeepWorld, *localTransforms, *worldTransforms);
-			}
-		});
+RigidbodyComponent* Scene::addRigidbodyTo(Entity inEntity
+	, const glm::vec3& inLinearVelocity
+	, const glm::vec3& inAngularVelocity)
+{
+	RigidbodyComponent* rigidbodyComponent = rigidbodyComponents.create(inEntity);
+	rigidbodyComponent->linearVelocity = inLinearVelocity;
+	rigidbodyComponent->angularVelocity = inAngularVelocity;
+	return rigidbodyComponent;
+}
 
-	platform::getInputManager().registerKeyCallback(input::EKey::I
-		, [hierarchies = &hierarchyComponents, localTransforms = &localTransformComponents, worldTransforms = &worldTransformComponents, childEntities, parentEntity](input::EInputState inState, input::EKeyModifier inMods, double inDeltaTime)
-		{
-			if (inState != input::EInputState::PRESS)
-			{
-				return;
-			}
-
-			std::vector<Entity> parentedEntities;
-			for (size_t i = 0; i < hierarchies->size(); ++i)
-			{
-				HierarchyComponent* hierarchy = hierarchies->at(i);
-				if (hierarchy && hierarchy->parent)
-				{
-					parentedEntities.push_back(hierarchy->entity);
-				}
-			}
-
-			if (parentedEntities.size() == 0)
-			{
-				return;
-			}
-
-			Entity randomEntity = parentedEntities[std::rand() % parentedEntities.size()];
-			HierarchyComponent* hierarchy = hierarchies->get(randomEntity);
-			hierarchyHelper::detach(hierarchy, EAttachmentRules::KeepWorld, *hierarchies, *localTransforms, *worldTransforms);
-
-		});
-
-	render::getRenderer()->setOutlineShader(unlitShader);
-	render::getRenderer()->fillLightParameters(worldTransformComponents, pointLightComponents, directionalLightComponents);
+Entity Scene::createRenderedModel(ResourceHandle inModel
+	, ResourceHandle inShader
+	, const glm::vec3& inPosition
+	, const glm::quat& inRotation
+	, const glm::vec3& inScale
+	, HierarchyComponent* inParentHierarchy)
+{
+	Entity entity = entities.createEntity();
+	addTransformTo(entity, inPosition, inRotation, inScale, inParentHierarchy);
+	addMeshRendererTo(entity, inModel, inShader);
+	return entity;
 }

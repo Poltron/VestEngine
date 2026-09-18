@@ -12,7 +12,7 @@ std::string PointLightComponentInspector::getLabel()
 
 void PointLightComponentInspector::update()
 {
-	PointLightComponent* pointLight = engine::getScene()->pointLightComponents.get(entity);
+	PointLightComponent* pointLight = engine::getScene()->getPointLightComponents().get(entity);
 	if (!pointLight)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

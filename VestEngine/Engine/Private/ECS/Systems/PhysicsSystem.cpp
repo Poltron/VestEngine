@@ -1,33 +1,35 @@
 #include "ECS/Systems/PhysicsSystem.h"
 
+#include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/HierarchyComponent.h"
 #include "ECS/Components/RigidbodyComponent.h"
 #include "ECS/Components/TransformComponent.h"
 
-void PhysicsSystem::update(ComponentManager<LocalTransformComponent>& inLocalTransforms
-	, ComponentManager<WorldTransformComponent>& inWorldTransforms
-	, ComponentManager<HierarchyComponent>& inHierarchies
-	, ComponentManager<RigidbodyComponent>& inRigidbodies
-	, double inDeltaTime)
+void PhysicsSystem::update(Scene& inScene, double inDeltaTime)
 {
-	for (size_t i = 0; i < inRigidbodies.size(); ++i)
+	ComponentManager<RigidbodyComponent>& rigidbodies = inScene.getRigidbodyComponents();
+	ComponentManager<LocalTransformComponent>& localTransforms = inScene.getLocalTransformComponents();
+	ComponentManager<WorldTransformComponent>& worldTransforms = inScene.getWorldTransformComponents();
+	ComponentManager<HierarchyComponent>& hierarchies = inScene.getHierarchyComponents();
+
+	for (size_t i = 0; i < rigidbodies.size(); ++i)
 	{
-		RigidbodyComponent* rigidbody = inRigidbodies.at(i);
+		RigidbodyComponent* rigidbody = rigidbodies.at(i);
 		assert(rigidbody);
 
-		LocalTransformComponent* localTransform = inLocalTransforms.get(rigidbody->entity);
+		LocalTransformComponent* localTransform = localTransforms.get(rigidbody->entity);
 		const glm::vec3 rotationVelocity = rigidbody->angularVelocity * (float)inDeltaTime;
 		const glm::vec3 translationVelocity = rigidbody->linearVelocity * (float)inDeltaTime;
 
-		HierarchyComponent* hierarchy = inHierarchies.get(rigidbody->entity);
+		HierarchyComponent* hierarchy = hierarchies.get(rigidbody->entity);
 		if (hierarchy && hierarchy->parent)
 		{
-			WorldTransformComponent* parentWorldTransform = inWorldTransforms.get(hierarchy->parent);
+			WorldTransformComponent* parentWorldTransform = worldTransforms.get(hierarchy->parent);
 			addWorldRotation(rotationVelocity, localTransform, parentWorldTransform);
 			addWorldTranslation(translationVelocity, localTransform, parentWorldTransform);
 
-			setChildrenDirty(hierarchy->firstChild, inHierarchies, inLocalTransforms);
+			setChildrenDirty(hierarchy->firstChild, hierarchies, localTransforms);
 		}
 		else
 		{
@@ -39,7 +41,7 @@ void PhysicsSystem::update(ComponentManager<LocalTransformComponent>& inLocalTra
 
 		if (hierarchy)
 		{
-			setChildrenDirty(hierarchy->firstChild, inHierarchies, inLocalTransforms);
+			setChildrenDirty(hierarchy->firstChild, hierarchies, localTransforms);
 		}
 	}
 }

@@ -13,7 +13,7 @@ std::string LocalTransformComponentInspector::getLabel()
 
 void LocalTransformComponentInspector::update()
 {
-	LocalTransformComponent* localTransform = engine::getScene()->localTransformComponents.get(entity);
+	LocalTransformComponent* localTransform = engine::getScene()->getLocalTransformComponents().get(entity);
 	if (!localTransform)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

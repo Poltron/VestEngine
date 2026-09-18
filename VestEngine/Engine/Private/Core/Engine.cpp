@@ -29,11 +29,6 @@ namespace engine
 bool VestEngine::initialize()
 {
 	setState(EState::INITIALIZING);
-
-	// could probably go to editor ?
-	camera.initialize();
-	render::getRenderer()->setActiveCamera(&camera);
-
 	return true;
 }
 
@@ -50,24 +45,24 @@ void VestEngine::launch()
 		lastFrame = currentFrame;
 
 		platform::getInputManager().processInput(deltaTime);
-
 		ui::startFrame();
-
-		camera.update(deltaTime);
 
 		Scene* scene = engine::getScene();
 		ensure(scene);
 
-		scene->hierarchyComponents.drawDebug(50, 50);
-		scene->localTransformComponents.drawDebug(300, 50);
-		scene->worldTransformComponents.drawDebug(550, 50);
+		render::getRenderer()->updateLightParameters(*scene);
+		scene->getCamera().update(deltaTime);
 
-		hierarchySystem.update(scene->localTransformComponents, scene->worldTransformComponents, scene->hierarchyComponents);
-		physicsSystem.update(scene->localTransformComponents, scene->worldTransformComponents, scene->hierarchyComponents, scene->rigidbodyComponents, deltaTime);
-		transformSystem.update(scene->localTransformComponents, scene->worldTransformComponents, scene->hierarchyComponents);
+		scene->getHierarchyComponents().drawDebug(50, 50);
+		scene->getLocalTransformComponents().drawDebug(300, 50);
+		scene->getWorldTransformComponents().drawDebug(550, 50);
+
+		hierarchySystem.update(*scene);
+		physicsSystem.update(*scene, deltaTime);
+		transformSystem.update(*scene);
 
 		render::getRenderer()->clear();
-		render::getRenderer()->render(*engine::getResources(), scene->worldTransformComponents, scene->meshRendererComponents, currentFrame);
+		render::getRenderer()->render(*scene, currentFrame);
 		if (uiUpdateCallback)
 		{
 			uiUpdateCallback();
@@ -91,9 +86,8 @@ bool engine::initialize()
 {
 	g_Engine = new VestEngine();
 	g_Resources = new ResourcesManager();
-	g_Scene = new Scene();
 
-	bool bSuccess = g_Engine->initialize() && g_Scene->initialize();
+	bool bSuccess = g_Engine->initialize();
 	if (bSuccess)
 	{
 		std::cout << "Engine initialization success." << std::endl;
@@ -103,6 +97,19 @@ bool engine::initialize()
 		std::cout << "Engine initialization failed." << std::endl;
 	}
 	return bSuccess;
+}
+
+Scene* engine::createScene()
+{
+	g_Scene = new Scene();
+	
+	if (!g_Scene->initialize())
+	{
+		delete g_Scene;
+		g_Scene = nullptr;
+	}
+
+	return g_Scene;
 }
 
 void engine::launch()

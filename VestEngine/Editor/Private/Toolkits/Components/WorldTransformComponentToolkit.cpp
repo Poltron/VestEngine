@@ -6,7 +6,7 @@
 
 bool WorldTransformComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->worldTransformComponents.contains(inEntity);
+	return engine::getScene()->getWorldTransformComponents().contains(inEntity);
 }
 
 IInspectorElement* WorldTransformComponentToolkit::createInspectorElement(Entity inEntity)

@@ -6,7 +6,7 @@
 
 bool MeshRendererComponentToolkit::shouldCreateInspectorElement(Entity inEntity)
 {
-	return engine::getScene()->meshRendererComponents.contains(inEntity);
+	return engine::getScene()->getMeshRendererComponents().contains(inEntity);
 }
 
 IInspectorElement* MeshRendererComponentToolkit::createInspectorElement(Entity inEntity)

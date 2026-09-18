@@ -1,4 +1,5 @@
 #include "Editor/Editor.h"
+#include "DemoScene.h"
 #include "Core/Engine.h"
 #include "Platform/Platform.h"
 #include "Render/Renderer.h"
@@ -8,16 +9,20 @@
 int main()
 {
 	if (platform::initialize()
-		&& render::initialize()
 		&& engine::initialize()
+		&& render::initialize()
 		&& ui::initialize())
 	{
 		test::run();
 
 		if (editor::initialize())
 		{
-			editor::loadDemoScene();
-			editor::launch();
+			render::getRenderer()->loadDefaultShaders();
+
+			Scene* scene = engine::createScene();
+			demoScene::loadCubesDemo(*scene);
+
+			engine::launch();
 		}
 	}
 

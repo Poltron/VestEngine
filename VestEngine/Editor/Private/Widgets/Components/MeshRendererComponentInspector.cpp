@@ -12,7 +12,7 @@ std::string MeshRendererComponentInspector::getLabel()
 
 void MeshRendererComponentInspector::update()
 {
-	MeshRendererComponent* meshRenderer = engine::getScene()->meshRendererComponents.get(entity);
+	MeshRendererComponent* meshRenderer = engine::getScene()->getMeshRendererComponents().get(entity);
 	if (!meshRenderer)
 	{
 		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Can't retrieve data");

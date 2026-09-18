@@ -7,6 +7,7 @@
 
 #include "Camera.h"
 #include "Core/Engine.h"
+#include "Core/Scene.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Mesh.h"
 #include "Core/Resources/Shader.h"
@@ -58,10 +59,7 @@ void Renderer::clear()
 	glStencilMask(0x00);
 }
 
-void Renderer::render(ResourcesManager& inResourcesManager
-	, ComponentManager<WorldTransformComponent>& inWorldTransforms
-	, ComponentManager<MeshRendererComponent>& inMeshRenderers
-	, double inCurrentFrame)
+void Renderer::render(Scene& inScene, double inCurrentFrame)
 {
 	if (!activeCamera)
 	{
@@ -69,9 +67,9 @@ void Renderer::render(ResourcesManager& inResourcesManager
 		return;
 	}
 
-	for (size_t i = 0; i < inMeshRenderers.size(); ++i)
+	for (size_t i = 0; i < inScene.getMeshRendererComponents().size(); ++i)
 	{
-		MeshRendererComponent* meshRenderer = inMeshRenderers.at(i);
+		MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().at(i);
 		assert(meshRenderer != nullptr);
 		if (!meshRenderer->shader.IsValid())
 		{
@@ -79,12 +77,12 @@ void Renderer::render(ResourcesManager& inResourcesManager
 			continue;
 		}
 
-		Shader* shader = inResourcesManager.getShader(meshRenderer->shader);
+		Shader* shader = engine::getResources()->getShader(meshRenderer->shader);
 		assert(shader != nullptr);
 		shader->use();
 
 		//
-		globalShaderParameters.applyToShader(*shader, inResourcesManager);
+		globalShaderParameters.applyToShader(*shader, *engine::getResources());
 
 		// 
 		glm::mat4& viewMatrix = activeCamera->getViewMatrix();
@@ -93,18 +91,18 @@ void Renderer::render(ResourcesManager& inResourcesManager
 		glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
 		shader->setMat4("projection", glm::value_ptr(projectionMatrix));
 
-		WorldTransformComponent* worldTransform = inWorldTransforms.get(meshRenderer->entity);
+		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(meshRenderer->entity);
 		assert(worldTransform != nullptr);
 
 		shader->setMat4("model", glm::value_ptr(worldTransform->model));
 
 		// 
-		Model* model = inResourcesManager.getModel(meshRenderer->model);
+		Model* model = engine::getResources()->getModel(meshRenderer->model);
 		assert(model != nullptr);
 
-		model->bindTextures(inResourcesManager, *shader);
+		model->bindTextures(*engine::getResources(), *shader);
 
-		meshRenderer->shaderParameters.applyToShader(*shader, inResourcesManager);
+		meshRenderer->shaderParameters.applyToShader(*shader, *engine::getResources());
 
 		shader->setFloat("material.shininess", 32.0f);
 
@@ -148,34 +146,42 @@ void Renderer::setActiveCamera(Camera* inCamera)
 	activeCamera = inCamera;
 }
 
-void Renderer::setOutlineShader(ResourceHandle inResourceHandle)
+void Renderer::loadDefaultShaders()
 {
-	outlineShaderHandle = inResourceHandle;
+	const std::string WorkDirTMP = WORKDIR;
+
+	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
+	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit_fragment.glsl";
+	ResourceHandle litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
+	g_Renderer->setLitShader(litShader);
+
+	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
+	ResourceHandle unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
+	g_Renderer->setUnlitShader(unlitShader);
+	g_Renderer->setOutlineShader(unlitShader);
 }
 
-void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponent>& inWorldTransforms
-	, const ComponentManager<PointLightComponent>& inPointLights
-	, const ComponentManager<DirectionalLightComponent>& inDirectionalLights)
+void Renderer::updateLightParameters(Scene& inScene)
 {
 	globalShaderParameters.addVec3("ambientLight.color", { 0.1f, 0.1f, 0.2f });
 	globalShaderParameters.addFloat("ambientLight.intensity", 1.0f);
 
-	const DirectionalLightComponent* directionalLightComp = inDirectionalLights.at(0);
-	const WorldTransformComponent* directionalLightTransform = inWorldTransforms.get(directionalLightComp->entity);
+	const DirectionalLightComponent* directionalLightComp = inScene.getDirectionalLightComponents().at(0);
+	const WorldTransformComponent* directionalLightTransform = inScene.getWorldTransformComponents().get(directionalLightComp->entity);
 
 	//
 	globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
 	globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
 	globalShaderParameters.addVec3("directionalLight.direction", directionalLightTransform->getModelForward());
 
-	assert(inPointLights.size() <= MAX_POINT_LIGHTS);
+	assert(inScene.getPointLightComponents().size() <= MAX_POINT_LIGHTS);
 
-	globalShaderParameters.addInt("pointLightAmount", (int)inPointLights.size());
+	globalShaderParameters.addInt("pointLightAmount", (int)inScene.getPointLightComponents().size());
 
 	//
-	for (size_t i = 0; i < inPointLights.size(); ++i)
+	for (size_t i = 0; i < inScene.getPointLightComponents().size(); ++i)
 	{
-		const PointLightComponent* pointLight = inPointLights.at(i);
+		const PointLightComponent* pointLight = inScene.getPointLightComponents().at(i);
 		assert(pointLight != nullptr);
 		std::string pointLightName = "pointLights[";
 		pointLightName.append(std::to_string(i));
@@ -187,7 +193,7 @@ void Renderer::fillLightParameters(const ComponentManager<WorldTransformComponen
 		globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
 		globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
 
-		const WorldTransformComponent* pointLightTransform = inWorldTransforms.get(pointLight->entity);
+		const WorldTransformComponent* pointLightTransform = inScene.getWorldTransformComponents().get(pointLight->entity);
 		assert(pointLightTransform != nullptr);
 
 		globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());

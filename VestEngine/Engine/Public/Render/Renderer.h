@@ -13,6 +13,7 @@ class ResourcesManager;
 
 class Camera;
 class Mesh;
+class Scene;
 class Shader;
 
 struct DirectionalLightComponent;
@@ -25,23 +26,32 @@ class Renderer
 {
 public:
 	void clear();
-	void render(ResourcesManager& inResourcesManager
-		, ComponentManager<WorldTransformComponent>& inWorldTransforms
-		, ComponentManager<MeshRendererComponent>& inMeshRenderers
-		, double inCurrentFrame);
+	void render(Scene& inScene, double inCurrentFrame);
 	void swap();
-
-	//
-	void fillLightParameters(const ComponentManager<WorldTransformComponent>& inTransforms
-		, const ComponentManager<PointLightComponent>& inPointLights
-		, const ComponentManager<DirectionalLightComponent>& inDirectionalLights);
 	void setActiveCamera(Camera* inCamera);
-	void setOutlineShader(ResourceHandle inResourceHandle);
 	
 private:
-	ShaderParameterCollection globalShaderParameters;
 	Camera* activeCamera;
+
+//
+public:
+	void updateLightParameters(Scene& inScene);
+
+	void loadDefaultShaders();
+
+	ResourceHandle getLitShader() { return litShaderHandle; }
+	void setLitShader(ResourceHandle inResourceHandle) { litShaderHandle = inResourceHandle; }
+	ResourceHandle getUnlitShader() { return unlitShaderHandle; }
+	void setUnlitShader(ResourceHandle inResourceHandle) { unlitShaderHandle = inResourceHandle; }
+	ResourceHandle getOutlineShader() { return outlineShaderHandle; }
+	void setOutlineShader(ResourceHandle inResourceHandle) { outlineShaderHandle = inResourceHandle; }
+
+private:
+	ShaderParameterCollection globalShaderParameters;
+
 	ResourceHandle outlineShaderHandle;
+	ResourceHandle litShaderHandle;
+	ResourceHandle unlitShaderHandle;
 };
 
 namespace render

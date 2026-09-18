@@ -11,7 +11,6 @@ class VestEditor final : public Editor
 {
 public:
 	bool initialize();
-	void launch();
 	void update();
 	void shutdown();
 };
@@ -36,11 +35,6 @@ namespace editor
 		return bSuccess;
 	}
 
-	void launch()
-	{
-		g_Editor->launch();
-	}
-
 	void shutdown()
 	{
 		if (g_Editor)
@@ -50,11 +44,6 @@ namespace editor
 
 		delete g_Editor;
 		g_Editor = nullptr;
-	}
-
-	void loadDemoScene()
-	{
-		engine::getScene()->loadPlaceholderScene();
 	}
 }
 
@@ -85,13 +74,13 @@ bool VestEditor::initialize()
 
 			Scene* scene = engine::getScene();
 			ensure(scene);
-			if (scene->worldTransformComponents.size() == 0)
+			if (scene->getWorldTransformComponents().size() == 0)
 			{
 				return;
 			}
 
-			size_t index = std::rand() % scene->worldTransformComponents.size();
-			Entity selectedEntity = scene->worldTransformComponents.at(index)->entity;
+			size_t index = std::rand() % scene->getWorldTransformComponents().size();
+			Entity selectedEntity = scene->getWorldTransformComponents().at(index)->entity;
 			if (EntityFuncs::isEntityValid(selectedEntity))
 			{
 				getInspector().show(selectedEntity);
@@ -105,11 +94,6 @@ bool VestEditor::initialize()
 		});
 
 	return true;
-}
-
-void VestEditor::launch()
-{
-	engine::launch();
 }
 
 void VestEditor::update()
