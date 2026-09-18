@@ -280,4 +280,46 @@ namespace demoScene
 				hierarchyHelper::detach(*scene, hierarchy, EAttachmentRules::KeepWorld);
 			});
 	}
+
+	void load200animals(Scene& inScene)
+	{
+		inScene.getCamera().setPosition(glm::vec3(6.24083f, 2.63226f, 10.6785f));
+		inScene.getCamera().setRotation(-127.13f, -26.1418f);
+
+		const std::string WorkDirTMP = WORKDIR;
+
+		const std::string animals[] =
+		{
+			"/Resources/Models/kenney-cube-pets/animal-bee.obj",
+			"/Resources/Models/kenney-cube-pets/animal-caterpillar.obj",
+			"/Resources/Models/kenney-cube-pets/animal-crab.obj",
+			"/Resources/Models/kenney-cube-pets/animal-koala.obj",
+			"/Resources/Models/kenney-cube-pets/animal-pig.obj",
+			"/Resources/Models/kenney-cube-pets/animal-beaver.obj",
+			"/Resources/Models/kenney-cube-pets/animal-elephant.obj",
+			"/Resources/Models/kenney-cube-pets/animal-panda.obj",
+			"/Resources/Models/kenney-cube-pets/animal-polar.obj",
+			"/Resources/Models/kenney-cube-pets/animal-tiger.obj"
+		};
+
+		for (int i = 0; i < 10; ++i)
+		{
+			ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[i]);
+
+			for (int j = 0; j < 20; ++j)
+			{
+				const glm::vec3 pos = glm::vec3(j * 0.5f, 0, i * 1.0f);
+				const glm::quat rot = glm::quat(glm::radians(glm::vec3(0,0,0)));
+				const glm::vec3 scale = glm::vec3(0.2f);
+				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);
+
+				MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(entity);
+				meshRenderer->bOutline = false;
+			}
+		}
+
+		Renderer* renderer = render::getRenderer();
+		ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[0]);
+		createSceneLights(inScene, model, renderer->getSolidColorShader());
+	}
 }

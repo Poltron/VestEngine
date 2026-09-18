@@ -20,7 +20,7 @@ int main()
 			render::getRenderer()->loadDefaultShaders();
 
 			Scene* scene = engine::createScene();
-			demoScene::loadCubesDemo(*scene);
+			demoScene::load200animals(*scene);
 
 			engine::launch();
 		}

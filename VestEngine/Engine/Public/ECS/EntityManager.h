@@ -4,7 +4,7 @@
 
 #include "ECS/Entity.h"
 
-#define ENTITY_MAX 100
+#define ENTITY_MAX 1050
 
 class EntityManager
 {
