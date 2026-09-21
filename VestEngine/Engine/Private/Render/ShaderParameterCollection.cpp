@@ -53,6 +53,7 @@ void ShaderParameterCollection::addTexture(const std::string& inName, GraphicRes
 		if (it->first == inName)
 		{
 			it->second = inValue;
+			return;
 		}
 	}
 
@@ -66,6 +67,7 @@ void ShaderParameterCollection::addInt(const std::string& inName, int inValue)
 		if (it->first == inName)
 		{
 			it->second = inValue;
+			return;
 		}
 	}
 
@@ -79,6 +81,7 @@ void ShaderParameterCollection::addFloat(const std::string& inName, float inValu
 		if (it->first == inName)
 		{
 			it->second = inValue;
+			return;
 		}
 	}
 
@@ -92,6 +95,7 @@ void ShaderParameterCollection::addVec3(const std::string& inName, const glm::ve
 		if (it->first == inName)
 		{
 			it->second = inValue;
+			return;
 		}
 	}
 
