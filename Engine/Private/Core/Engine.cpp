@@ -108,6 +108,8 @@ Scene* engine::createScene()
 	
 	if (!g_Scene->initialize())
 	{
+		g_Scene->shutdown();
+
 		delete g_Scene;
 		g_Scene = nullptr;
 	}
@@ -122,15 +124,22 @@ void engine::launch()
 
 void engine::shutdown()
 {
+	if (g_Scene)
+	{
+		g_Scene->shutdown();
+	}
+
+	delete g_Scene;
+	g_Scene = nullptr;
+
+	delete g_Resources;
+	g_Resources = nullptr;
+
 	if (g_Engine)
 	{
 		g_Engine->shutdown();
 	}
 
-	delete g_Scene;
-	g_Scene = nullptr;
-	delete g_Resources;
-	g_Resources = nullptr;
 	delete g_Engine;
 	g_Engine = nullptr;
 }

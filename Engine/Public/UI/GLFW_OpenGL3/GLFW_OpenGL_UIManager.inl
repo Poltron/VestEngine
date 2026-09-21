@@ -50,7 +50,13 @@ namespace ui
 
 	void shutdown()
 	{
-		g_UIManager->shutdown();
+		if (g_UIManager)
+		{
+			g_UIManager->shutdown();
+		}
+
+		delete g_UIManager;
+		g_UIManager = nullptr;
 	}
 
 	UIManager* getUIManager()

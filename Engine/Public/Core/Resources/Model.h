@@ -17,7 +17,7 @@ public:
 	Model() = delete;
 	Model(std::string inPath);
 	Model(std::vector<Mesh>&& inMeshes, std::string inName);
-	~Model() = default;
+	~Model();
 
 	Model(const Model& inOther) = delete;
 	Model& operator=(const Model& inOther) = delete;

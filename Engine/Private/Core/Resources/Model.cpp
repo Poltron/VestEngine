@@ -22,6 +22,11 @@ Model::Model(std::vector<Mesh>&& inMeshes, std::string inName)
 	directory = "";
 }
 
+Model::~Model()
+{
+	meshes.clear();
+}
+
 Model::Model(Model&& inOther) noexcept
 	: meshes(std::move(inOther.meshes)), directory(std::move(inOther.directory)), path(std::move(inOther.path))
 {

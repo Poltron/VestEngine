@@ -1,5 +1,19 @@
 #include "Core/ResourcesManager.h"
 
+ResourcesManager::ResourcesManager()
+{
+	models.reserve(MAX_RESOURCES);
+	shaders.reserve(MAX_RESOURCES);
+	textures.reserve(MAX_RESOURCES);
+}
+
+ResourcesManager::~ResourcesManager()
+{
+	textures.clear();
+	shaders.clear();
+	models.clear();
+}
+
 ResourceHandle ResourcesManager::loadModel(std::string inPath)
 {
 	// note: what's the o() of iterating through an unordered_map ?

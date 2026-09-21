@@ -13,12 +13,8 @@
 class ResourcesManager
 {
 public:
-	ResourcesManager()
-	{
-		models.reserve(MAX_RESOURCES);
-		shaders.reserve(MAX_RESOURCES);
-		textures.reserve(MAX_RESOURCES);
-	}
+	ResourcesManager();
+	~ResourcesManager();
 
 	ResourceHandle loadTexture(std::string inPath, std::string inType);
 	ResourceHandle loadShader(std::string inVertexPath, std::string inFragmentPath);

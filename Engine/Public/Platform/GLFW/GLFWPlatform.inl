@@ -558,7 +558,14 @@ void platform::shutdown()
 	ZoneScoped;
 
 	g_GLFWInputManager->shutdown();
+	delete g_GLFWInputManager;
+	g_GLFWInputManager = nullptr;
+
 	g_GLFWWindowManager->destroyWindow();
+	delete g_GLFWWindowManager;
+	g_GLFWWindowManager = nullptr;
+
+	g_GLFWWindow = nullptr;
 }
 
 double platform::getTime()
