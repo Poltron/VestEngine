@@ -15,7 +15,9 @@ add_subdirectory("ThirdParty/glm")
 add_subdirectory("ThirdParty/stb")
 add_subdirectory("ThirdParty/imgui")
 add_subdirectory("ThirdParty/assimp-6.0.5")
-
+option(TRACY_ENABLE "" ON )
+option(TRACY_ON_DEMAND "" ON )
+add_subdirectory("ThirdParty/tracy")
 # =====
 # ENGINE TARGET - STATIC LIB
 # =====
@@ -33,6 +35,10 @@ target_link_libraries(Engine PRIVATE 	stb)
 target_link_libraries(Engine PRIVATE 	assimp)
 target_link_libraries(Engine PUBLIC 	glm)
 target_link_libraries(Engine PUBLIC 	imgui)
+target_link_libraries(Engine PUBLIC		Tracy::TracyClient)
+
+option(TRACY_ENABLE "" ON)
+option(TRACY_ON_DEMAND "" ON)
 
 add_custom_command(TARGET Engine POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different

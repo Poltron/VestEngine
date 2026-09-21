@@ -4,6 +4,8 @@
 
 #include "glad/glad.h"
 #include "glm/gtc/type_ptr.hpp"
+#include "tracy/Tracy.hpp"
+#include "tracy/TracyOpenGL.hpp"
 
 #include "Camera.h"
 #include "Core/Engine.h"
@@ -139,6 +141,7 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 void Renderer::swap()
 {
 	platform::getWindowManager().swapBuffers();
+	TracyGpuCollect;
 }
 
 void Renderer::setActiveCamera(Camera* inCamera)

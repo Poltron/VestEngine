@@ -4,6 +4,8 @@
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "tracy/Tracy.hpp"
+#include "tracy/TracyOpenGL.hpp"
 
 #include "Core/Ensure.h"
 #include "Platform/InputManager.h"
@@ -458,6 +460,8 @@ public:
 			std::cout << "Failed to initialize GLAD" << std::endl;
 			return nullptr;
 		}
+
+		TracyGpuContext;
 
 		glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
 		glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
