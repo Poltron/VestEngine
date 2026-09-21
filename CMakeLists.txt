@@ -29,7 +29,7 @@ file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
 	"${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public/*.inl")
 	
 add_library(Engine STATIC ${ENGINE_FILES})
-target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
+
 target_link_libraries(Engine PRIVATE 	glad)
 target_link_libraries(Engine PRIVATE 	glfw)
 target_link_libraries(Engine PRIVATE 	stb)
@@ -38,8 +38,7 @@ target_link_libraries(Engine PUBLIC 	glm)
 target_link_libraries(Engine PUBLIC 	imgui)
 target_link_libraries(Engine PUBLIC		Tracy::TracyClient)
 
-option(TRACY_ENABLE "" ON)
-option(TRACY_ON_DEMAND "" ON)
+target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
 
 # =====
 # UNIT TEST TARGET - STATIC LIB
@@ -52,9 +51,10 @@ file(GLOB_RECURSE UNITTEST_FILES CONFIGURE_DEPENDS
 	
 add_library(UnitTest STATIC ${UNITTEST_FILES})
 
+target_link_libraries(UnitTest PRIVATE Engine)
+
 target_include_directories(UnitTest PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Public")
 target_include_directories(UnitTest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UnitTest/Private")
-target_link_libraries(UnitTest PRIVATE Engine)
 
 # =====
 # EDITOR TARGET - EXECUTABLE
@@ -66,9 +66,10 @@ file(GLOB_RECURSE EDITOR_FILES CONFIGURE_DEPENDS
 
 add_executable(Editor ${EDITOR_FILES})
 
-target_include_directories(Editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Editor/Public")
 target_link_libraries(Editor PRIVATE Engine)
 target_link_libraries(Editor PRIVATE UnitTest)
+
+target_include_directories(Editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Editor/Public")
 
 # =====
 # DEFINES
