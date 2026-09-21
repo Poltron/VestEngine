@@ -6,3 +6,9 @@ FetchContent_Declare(
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE)
 FetchContent_MakeAvailable(assimp)
+
+set_target_properties(assimp 
+	zlibstatic 
+	unit 
+	UpdateAssimpLibsDebugSymbolsAndDLLs 
+	PROPERTIES FOLDER "ThirdParty/assimp")

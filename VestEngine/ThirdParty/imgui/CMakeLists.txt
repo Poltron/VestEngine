@@ -8,4 +8,7 @@ add_library(imgui
 	"${CMAKE_SOURCE_DIR}/ThirdParty/imgui/backends/imgui_impl_opengl3.cpp")
 target_include_directories(imgui PUBLIC "${CMAKE_SOURCE_DIR}/ThirdParty/imgui")
 
+target_link_libraries(imgui PRIVATE glad)
 target_link_libraries(imgui PRIVATE glfw)
+
+set_target_properties(imgui PROPERTIES FOLDER "ThirdParty")

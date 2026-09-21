@@ -6,3 +6,5 @@ FetchContent_Declare(
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE)
 FetchContent_MakeAvailable(tracy)
+
+set_target_properties(TracyClient PROPERTIES FOLDER "ThirdParty")

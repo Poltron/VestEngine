@@ -9,8 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # LIBRARIES
 # =====
 
-add_subdirectory("ThirdParty/glfw-3.4")
 add_subdirectory("ThirdParty/glad")
+add_subdirectory("ThirdParty/glfw")
 add_subdirectory("ThirdParty/glm")
 add_subdirectory("ThirdParty/stb")
 add_subdirectory("ThirdParty/imgui")
@@ -18,6 +18,7 @@ add_subdirectory("ThirdParty/assimp")
 option(TRACY_ENABLE "" ON )
 option(TRACY_ON_DEMAND "" ON )
 add_subdirectory("ThirdParty/tracy")
+
 # =====
 # ENGINE TARGET - STATIC LIB
 # =====
@@ -29,8 +30,8 @@ file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
 	
 add_library(Engine STATIC ${ENGINE_FILES})
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
-target_link_libraries(Engine PRIVATE 	glfw)
 target_link_libraries(Engine PRIVATE 	glad)
+target_link_libraries(Engine PRIVATE 	glfw)
 target_link_libraries(Engine PRIVATE 	stb)
 target_link_libraries(Engine PRIVATE 	assimp)
 target_link_libraries(Engine PUBLIC 	glm)
@@ -39,12 +40,6 @@ target_link_libraries(Engine PUBLIC		Tracy::TracyClient)
 
 option(TRACY_ENABLE "" ON)
 option(TRACY_ON_DEMAND "" ON)
-
-#add_custom_command(TARGET Engine POST_BUILD
-#	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#	"${CMAKE_SOURCE_DIR}/ThirdParty/assimp/bin/assimp-vc143-mtd.dll"
-#    	"$<TARGET_FILE_DIR:Engine>"
-#	VERBATIM)
 
 # =====
 # UNIT TEST TARGET - STATIC LIB
@@ -97,3 +92,4 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${ENGINE_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${EDITOR_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${UNITTEST_FILES})
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Editor)
+set_property(GLOBAL PROPERTY USE_FOLDERS true)
