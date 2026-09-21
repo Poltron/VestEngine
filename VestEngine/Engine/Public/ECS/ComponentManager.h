@@ -120,10 +120,29 @@ public:
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("Index");
 
-				for (size_t i = 0; i < ENTITY_MAX; ++i)
+				bool bGapRowAdded = false;
+				for (size_t i = ENTITY_FIRST; i < ENTITY_MAX; ++i)
 				{
+					if (lookupTable[i] == INVALID_COMPONENT_INDEX)
+					{
+						if (bGapRowAdded)
+						{
+							continue;
+						}
+
+						bGapRowAdded = true;
+						
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+						ImGuiTextCentered("...");
+						continue;
+					}
+					
+					bGapRowAdded = false;
+
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
+
 					std::string first = std::to_string(i);
 					ImGuiTextCentered(first.c_str());
 
