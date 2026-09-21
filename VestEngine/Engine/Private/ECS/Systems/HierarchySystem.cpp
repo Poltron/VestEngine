@@ -16,6 +16,18 @@ void HierarchySystem::update(Scene& inScene)
 
 	ComponentManager<HierarchyComponent>& hierarchyComponents = inScene.getHierarchyComponents();
 
+	// 0. Check if we can skip this system
+	bool bNeedsUpdate = false;
+	for (size_t i = 0; i < hierarchyComponents.size(); ++i)
+	{
+		bNeedsUpdate |= hierarchyComponents.at(i)->bDirty;
+	}
+
+	if (!bNeedsUpdate)
+	{
+		return;
+	}
+
 	// 1. Collect roots and group children
 	std::vector<size_t> roots;
 	// index = hierarchycomponent index
