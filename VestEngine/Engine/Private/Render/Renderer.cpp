@@ -100,14 +100,12 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 			ensure(shader != nullptr);
 			shader->use();
 
-			//
 			globalShaderParameters.applyToShader(*shader, *engine::getResources());
 		}
 
 		{
 			TracyGpuZone("bind matrix parameters");
 
-			// 
 			glm::mat4& viewMatrix = activeCamera->getViewMatrix();
 			shader->setMat4("view", glm::value_ptr(viewMatrix));
 			shader->setVec3("viewPosition", activeCamera->getPosition());
@@ -120,7 +118,6 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 			shader->setMat4("model", glm::value_ptr(worldTransform->model));
 		}
 
-		//
 		{
 			TracyGpuZone("bind textures");
 

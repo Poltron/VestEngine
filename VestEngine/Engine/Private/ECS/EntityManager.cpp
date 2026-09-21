@@ -4,14 +4,17 @@
 
 #include <iostream>
 
+#define ENTITY_ALIVE 1
+#define ENTITY_DEAD 0
+
 EntityManager::EntityManager()
 {
-	entities[0] = 0;
+	entities[0] = ENTITY_DEAD;
 
-	for (Entity id = 1; id < ENTITY_MAX; ++id)
+	for (Entity id = ENTITY_FIRST; id < ENTITY_MAX; ++id)
 	{
 		availableIds.push(id);
-		entities[id] = 0;
+		entities[id] = ENTITY_DEAD;
 	}
 }
 
@@ -22,7 +25,7 @@ Entity EntityManager::createEntity()
 	Entity entity = availableIds.front();
 	availableIds.pop();
 
-	entities[entity] = 1;
+	entities[entity] = ENTITY_ALIVE;
 
 	std::cout << "New entity " << entity << std::endl;
 
@@ -31,7 +34,7 @@ Entity EntityManager::createEntity()
 
 void EntityManager::destroyEntity(Entity inEntity)
 {
-	entities[inEntity] = 0;
+	entities[inEntity] = ENTITY_DEAD;
 	availableIds.push(inEntity);
 
 	std::cout << "Release entity " << inEntity << std::endl;
@@ -39,5 +42,5 @@ void EntityManager::destroyEntity(Entity inEntity)
 
 bool EntityManager::exists(Entity inEntity) const
 {
-	return (entities[inEntity] == 1);
+	return entities[inEntity] == ENTITY_ALIVE;
 }

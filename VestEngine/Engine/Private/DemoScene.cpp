@@ -306,7 +306,7 @@ namespace demoScene
 		{
 			ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[i]);
 
-			for (int j = 0; j < 20; ++j)
+			for (int j = 0; j < 200; ++j)
 			{
 				const glm::vec3 pos = glm::vec3(j * 0.5f, 0, i * 1.0f);
 				const glm::quat rot = glm::quat(glm::radians(glm::vec3(0,0,0)));
