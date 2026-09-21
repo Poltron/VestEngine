@@ -14,7 +14,7 @@ add_subdirectory("ThirdParty/glad")
 add_subdirectory("ThirdParty/glm")
 add_subdirectory("ThirdParty/stb")
 add_subdirectory("ThirdParty/imgui")
-add_subdirectory("ThirdParty/assimp-6.0.5")
+add_subdirectory("ThirdParty/assimp")
 option(TRACY_ENABLE "" ON )
 option(TRACY_ON_DEMAND "" ON )
 add_subdirectory("ThirdParty/tracy")
@@ -40,11 +40,11 @@ target_link_libraries(Engine PUBLIC		Tracy::TracyClient)
 option(TRACY_ENABLE "" ON)
 option(TRACY_ON_DEMAND "" ON)
 
-add_custom_command(TARGET Engine POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-	"${CMAKE_SOURCE_DIR}/ThirdParty/assimp-6.0.5/bin/assimp-vc143-mtd.dll"
-    	"$<TARGET_FILE_DIR:Engine>"
-	VERBATIM)
+#add_custom_command(TARGET Engine POST_BUILD
+#	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#	"${CMAKE_SOURCE_DIR}/ThirdParty/assimp/bin/assimp-vc143-mtd.dll"
+#    	"$<TARGET_FILE_DIR:Engine>"
+#	VERBATIM)
 
 # =====
 # UNIT TEST TARGET - STATIC LIB
