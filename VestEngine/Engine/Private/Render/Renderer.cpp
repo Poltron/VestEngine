@@ -55,6 +55,8 @@ void VestRenderer::shutdown()
 
 void Renderer::clear()
 {
+	ZoneScoped;
+
 	glStencilMask(0xFF);
 	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -63,6 +65,8 @@ void Renderer::clear()
 
 void Renderer::render(Scene& inScene, double inCurrentFrame)
 {
+	ZoneScopedN("render");
+
 	if (!activeCamera)
 	{
 		std::cout << "ERROR: no active camera" << std::endl;
@@ -71,52 +75,82 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 
 	for (size_t i = 0; i < inScene.getMeshRendererComponents().size(); ++i)
 	{
+		ZoneScoped;
+
 		MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().at(i);
-		assert(meshRenderer != nullptr);
+		ensure(meshRenderer != nullptr);
 		if (!meshRenderer->shader.IsValid())
 		{
 			std::cout << "WARNING: " << meshRenderer->entity << " has no shader" << std::endl;
 			continue;
 		}
 
-		Shader* shader = engine::getResources()->getShader(meshRenderer->shader);
-		assert(shader != nullptr);
-		shader->use();
-
-		//
-		globalShaderParameters.applyToShader(*shader, *engine::getResources());
-
-		// 
-		glm::mat4& viewMatrix = activeCamera->getViewMatrix();
-		shader->setMat4("view", glm::value_ptr(viewMatrix));
-		shader->setVec3("viewPosition", activeCamera->getPosition());
-		glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
-		shader->setMat4("projection", glm::value_ptr(projectionMatrix));
-
-		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(meshRenderer->entity);
-		assert(worldTransform != nullptr);
-
-		shader->setMat4("model", glm::value_ptr(worldTransform->model));
-
-		// 
 		Model* model = engine::getResources()->getModel(meshRenderer->model);
-		assert(model != nullptr);
+		ensure(model != nullptr);
+		
+		const std::string meshRendererName = "render " + model->getPath();
+		ZoneName(meshRendererName.c_str(), meshRendererName.size());
 
-		model->bindTextures(*engine::getResources(), *shader);
-
-		meshRenderer->shaderParameters.applyToShader(*shader, *engine::getResources());
-
-		shader->setFloat("material.shininess", 32.0f);
-
-		if (meshRenderer->bOutline)
+		Shader* shader = nullptr;
+		WorldTransformComponent* worldTransform = nullptr;
 		{
-			glStencilMask(0xFF); // allow full writing to stencil
+			TracyGpuZone("bind global parameters");
+
+			shader = engine::getResources()->getShader(meshRenderer->shader);
+			ensure(shader != nullptr);
+			shader->use();
+
+			//
+			globalShaderParameters.applyToShader(*shader, *engine::getResources());
 		}
 
-		model->draw();
+		{
+			TracyGpuZone("bind matrix parameters");
+
+			// 
+			glm::mat4& viewMatrix = activeCamera->getViewMatrix();
+			shader->setMat4("view", glm::value_ptr(viewMatrix));
+			shader->setVec3("viewPosition", activeCamera->getPosition());
+			glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
+			shader->setMat4("projection", glm::value_ptr(projectionMatrix));
+
+			worldTransform = inScene.getWorldTransformComponents().get(meshRenderer->entity);
+			ensure(worldTransform != nullptr);
+
+			shader->setMat4("model", glm::value_ptr(worldTransform->model));
+		}
+
+		//
+		{
+			TracyGpuZone("bind textures");
+
+			ensure(model != nullptr);
+			model->bindTextures(*engine::getResources(), *shader);
+		}
+
+		{
+			TracyGpuZone("bind shader parameters");
+
+			meshRenderer->shaderParameters.applyToShader(*shader, *engine::getResources());
+
+			shader->setFloat("material.shininess", 32.0f);
+		}
+
+		{
+			TracyGpuZone("draw");
+
+			if (meshRenderer->bOutline)
+			{
+				glStencilMask(0xFF); // allow full writing to stencil
+			}
+
+			model->draw();
+		}
 
 		if (meshRenderer->bOutline)
 		{
+			TracyGpuZone("draw outline");
+
 			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // every fragment where stencil is not equal to 1 passes
 			glStencilMask(0x00); // don't write to stencil
 
@@ -140,7 +174,11 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 
 void Renderer::swap()
 {
-	platform::getWindowManager().swapBuffers();
+	{
+		ZoneScoped;
+		platform::getWindowManager().swapBuffers();
+	}
+
 	TracyGpuCollect;
 }
 
@@ -169,6 +207,8 @@ void Renderer::loadDefaultShaders()
 
 void Renderer::updateLightParameters(Scene& inScene)
 {
+	ZoneScoped;
+
 	globalShaderParameters.addVec3("ambientLight.color", { 1.0f, 1.0f, 1.0f });
 	globalShaderParameters.addFloat("ambientLight.intensity", 0.3f);
 

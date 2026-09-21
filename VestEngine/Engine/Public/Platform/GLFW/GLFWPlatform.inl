@@ -555,6 +555,8 @@ bool platform::initialize()
 
 void platform::shutdown()
 {
+	ZoneScoped;
+
 	g_GLFWInputManager->shutdown();
 	g_GLFWWindowManager->destroyWindow();
 }

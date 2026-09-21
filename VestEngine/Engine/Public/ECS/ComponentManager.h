@@ -6,6 +6,7 @@
 #if DEBUG_UI
 #include "imgui.h"
 #endif
+#include "tracy/Tracy.hpp"
 
 #include "ECS/EntityManager.h"
 #include "Core/Containers/DenseArray.h"
@@ -104,6 +105,8 @@ public:
 #if DEBUG_UI
 	void drawDebug(float inPositionX, float inPositionY)
 	{
+		ZoneScoped;
+
 		if (ImGui::Begin(label.c_str()))
 		{
 			ImGui::SetWindowPos(ImVec2(inPositionX, inPositionY), ImGuiCond_FirstUseEver);

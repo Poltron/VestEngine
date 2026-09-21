@@ -6,6 +6,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "GLFW/glfw3.h"
+#include "tracy/Tracy.hpp"
 
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
@@ -19,7 +20,6 @@ public:
 	void shutdown();
 };
 
-// todo: need to isolate GLFW/OpenGL3 specifics
 namespace ui
 {
 	GLFWOpenGLUIManager* g_UIManager = nullptr;
@@ -61,6 +61,8 @@ namespace ui
 
 bool GLFWOpenGLUIManager::initialize()
 {
+	ZoneScoped;
+
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -89,6 +91,8 @@ bool GLFWOpenGLUIManager::initialize()
 
 void GLFWOpenGLUIManager::startFrame()
 {
+	ZoneScoped;
+
 	// (Your code calls glfwPollEvents())
 	// ...
 	// Start the Dear ImGui frame
@@ -99,6 +103,8 @@ void GLFWOpenGLUIManager::startFrame()
 
 void GLFWOpenGLUIManager::render()
 {
+	ZoneScoped;
+
 	// Rendering
 	// (Your code clears your framebuffer, renders your other stuff etc.)
 	ImGui::Render();
@@ -117,6 +123,8 @@ void GLFWOpenGLUIManager::render()
 
 void GLFWOpenGLUIManager::shutdown()
 {
+	ZoneScoped;
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();

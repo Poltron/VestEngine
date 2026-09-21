@@ -1,5 +1,7 @@
 #include "Editor/Editor.h"
 
+#include "tracy/Tracy.hpp"
+
 #include "Core/Engine.h"
 #include "Core/Scene.h"
 #include "ECS/Entity.h"
@@ -49,6 +51,8 @@ namespace editor
 
 bool VestEditor::initialize()
 {
+	ZoneScoped;
+
 	getInspector().initialize();
 	getEntitySelector().initialize();
 
@@ -98,6 +102,8 @@ bool VestEditor::initialize()
 
 void VestEditor::update()
 {
+	ZoneScoped;
+
 	getInspector().update();
 	getEntitySelector().update();
 }

@@ -1,5 +1,7 @@
 #include "Platform/InputManager.h"
 
+#include "tracy/Tracy.hpp"
+
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 
@@ -18,6 +20,8 @@ void InputManager::shutdown()
 
 void InputManager::processInput(double inDeltaTime)
 {
+	ZoneScoped;
+
 	pollEvents();
 
 	for (auto& keyInput : keyInputs)

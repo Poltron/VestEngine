@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "glm/gtc/matrix_transform.hpp"
+#include "tracy/Tracy.hpp"
 
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
@@ -103,6 +104,8 @@ void Camera::initialize()
 
 void Camera::update(double inDeltaTime)
 {
+	ZoneScoped;
+
 	consumeKeyboardInputs(horizontalAxis, verticalAxis, inDeltaTime);
 
 	// note : should not be necessary but weird inputs ??

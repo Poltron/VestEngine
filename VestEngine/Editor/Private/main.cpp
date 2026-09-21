@@ -26,7 +26,6 @@ int main()
 		}
 	}
 
-
 	editor::shutdown();
 	ui::shutdown();
 	engine::shutdown();

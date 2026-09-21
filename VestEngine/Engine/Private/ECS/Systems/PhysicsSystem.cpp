@@ -1,5 +1,7 @@
 #include "ECS/Systems/PhysicsSystem.h"
 
+#include "tracy/Tracy.hpp"
+
 #include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/HierarchyComponent.h"
@@ -8,6 +10,8 @@
 
 void PhysicsSystem::update(Scene& inScene, double inDeltaTime)
 {
+	ZoneScoped;
+
 	ComponentManager<RigidbodyComponent>& rigidbodies = inScene.getRigidbodyComponents();
 	ComponentManager<LocalTransformComponent>& localTransforms = inScene.getLocalTransformComponents();
 	ComponentManager<WorldTransformComponent>& worldTransforms = inScene.getWorldTransformComponents();

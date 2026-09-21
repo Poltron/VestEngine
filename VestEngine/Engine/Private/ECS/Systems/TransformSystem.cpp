@@ -1,5 +1,7 @@
 #include "ECS/Systems/TransformSystem.h"
 
+#include "tracy/Tracy.hpp"
+
 #include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/HierarchyComponent.h"
@@ -7,6 +9,8 @@
 
 void TransformSystem::update(Scene& inScene)
 {
+	ZoneScoped;
+
 	ComponentManager<LocalTransformComponent>& localTransforms = inScene.getLocalTransformComponents();
 	ComponentManager<WorldTransformComponent>& worldTransforms = inScene.getWorldTransformComponents();
 	ComponentManager<HierarchyComponent>& hierarchies = inScene.getHierarchyComponents();

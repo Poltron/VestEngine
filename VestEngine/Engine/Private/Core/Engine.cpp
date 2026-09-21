@@ -1,5 +1,7 @@
 #include "Core/Engine.h"
 
+#include "tracy/Tracy.hpp"
+
 #include "Core/ResourcesManager.h"
 #include "Core/Scene.h"
 #include "ECS/HierarchyHelper.h"
@@ -68,6 +70,8 @@ void VestEngine::launch()
 		}
 		ui::render();
 		render::getRenderer()->swap();
+
+		FrameMark;
 	}
 }
 

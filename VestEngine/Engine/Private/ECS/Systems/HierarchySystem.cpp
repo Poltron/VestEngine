@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <numeric>
 
+#include "tracy/Tracy.hpp"
+
 #include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/HierarchyComponent.h"
@@ -10,6 +12,8 @@
 
 void HierarchySystem::update(Scene& inScene)
 {
+	ZoneScoped;
+
 	ComponentManager<HierarchyComponent>& hierarchyComponents = inScene.getHierarchyComponents();
 
 	// 1. Collect roots and group children
