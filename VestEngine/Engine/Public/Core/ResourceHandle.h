@@ -2,13 +2,15 @@
 
 #include <type_traits>
 
+#define INVALID_RESOURCE_HANDLE UINT32_MAX
+
 // todo : introduce ref counting ?
 struct ResourceHandle
 {
 	uint32_t handle;
 
 	ResourceHandle()
-		: ResourceHandle(0)
+		: ResourceHandle(INVALID_RESOURCE_HANDLE)
 	{
 	}
 
@@ -19,7 +21,7 @@ struct ResourceHandle
 
 	bool IsValid() const
 	{
-		return handle != 0;
+		return handle != INVALID_RESOURCE_HANDLE;
 	}
 
 	bool operator==(const ResourceHandle& inOther) const

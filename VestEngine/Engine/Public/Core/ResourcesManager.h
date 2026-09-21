@@ -33,17 +33,16 @@ public:
 	const Shader* getShader(ResourceHandle handle) const;
 
 private:
-	// note : vector is temporary, currently unsafe if vector is reallocated
-
-	uint32_t textureHandleCounter = 1;
+	// note : vector is temporary, currently unsafe if vector is reallocated since lookup table is not updated
+	uint32_t textureHandleCounter = 0;
 	std::unordered_map<ResourceHandle, Texture*> texturesLookup;
 	std::vector<Texture> textures;
 
-	uint32_t modelHandleCounter = 1;
+	uint32_t modelHandleCounter = 0;
 	std::unordered_map<ResourceHandle, Model*> modelsLookup;
 	std::vector<Model> models;
 
-	uint32_t shaderHandleCounter = 1;
+	uint32_t shaderHandleCounter = 0;
 	std::unordered_map<ResourceHandle, Shader*> shadersLookup;
 	std::vector<Shader> shaders;
 };

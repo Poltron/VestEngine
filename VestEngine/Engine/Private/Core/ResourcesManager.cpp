@@ -50,7 +50,7 @@ ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, std::
 
 	Model model(std::move(inMeshes), std::move(inName));
 	models.push_back(std::move(model));
-	
+
 	ResourceHandle handle(modelHandleCounter);
 	modelsLookup.insert({ handle, &models.back() });
 	modelHandleCounter++;
