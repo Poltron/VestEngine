@@ -70,5 +70,5 @@ x64/
 .vs/
 
 # allowed folders - everything in there is voluntary
-!VestEngine/Resources/**
-!VestEngine/ThirdParty/**
+!Resources/**
+!ThirdParty/**
