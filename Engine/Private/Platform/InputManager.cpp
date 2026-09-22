@@ -30,6 +30,11 @@ void InputManager::processInput(double inDeltaTime)
 		{
 			for (auto& keyCallback : existingPair->second)
 			{
+				if (!keyCallback)
+				{
+					continue;
+				}
+
 				keyCallback(keyInput.state, keyInput.mods, inDeltaTime);
 			}
 		}
@@ -41,6 +46,11 @@ void InputManager::processInput(double inDeltaTime)
 		{
 			for (auto& mouseCallback : existingPair->second)
 			{
+				if (!mouseCallback)
+				{
+					continue;
+				}
+
 				mouseCallback(mouseInput.state, inDeltaTime);
 			}
 		}
@@ -50,6 +60,11 @@ void InputManager::processInput(double inDeltaTime)
 	{
 		for (auto& cursorPosCallback : cursorPosCallbacks)
 		{
+			if (!cursorPosCallback)
+			{
+				continue;
+			}
+
 			cursorPosCallback(cursorPosInput.x, cursorPosInput.y, inDeltaTime);
 		}
 	}
@@ -58,6 +73,11 @@ void InputManager::processInput(double inDeltaTime)
 	{
 		for (auto& scrollCallback : scrollCallbacks)
 		{
+			if (!scrollCallback)
+			{
+				continue;
+			}
+
 			scrollCallback(scrollInput.x, scrollInput.y, inDeltaTime);
 		}
 	}
@@ -68,38 +88,134 @@ void InputManager::processInput(double inDeltaTime)
 	scrollInputs.clear();
 }
 
-void InputManager::registerKeyCallback(input::EKey key, KeyCallback inCallback)
+input::InputCallbackHandle InputManager::registerKeyCallback(input::EKey inKey, KeyCallback inCallback)
 {
-	// note : syntaxe des enfers, contains() seulement en C++20 ???
-	if (auto existingPair = keyCallbacks.find(key); existingPair != keyCallbacks.end())
+	auto specifiedKeyIt = keyCallbacks.find(inKey);
+	if (specifiedKeyIt == keyCallbacks.end())
 	{
-		existingPair->second.push_back(inCallback);
+		keyCallbacks.insert({ inKey, { inCallback } });
+		return input::InputCallbackHandle(0);
 	}
-	else
+
+	std::vector<KeyCallback>& myKeyCallbacks = specifiedKeyIt->second;
+	for (size_t i = 0; i < myKeyCallbacks.size(); ++i)
 	{
-		keyCallbacks.insert({ key, { inCallback } });
+		if (!myKeyCallbacks[i])
+		{
+			myKeyCallbacks[i] = inCallback;
+			return input::InputCallbackHandle(i);
+		}
 	}
+
+	myKeyCallbacks.push_back(inCallback);
+	return input::InputCallbackHandle(myKeyCallbacks.size() - 1);
 }
 
-void InputManager::registerMouseCallback(input::EMouseButton button, MouseCallback inCallback)
+input::InputCallbackHandle InputManager::registerMouseCallback(input::EMouseButton inButton, MouseCallback inCallback)
 {
-	// note : syntaxe des enfers, contains() seulement en C++20 ???
-	if (auto existingPair = mouseCallbacks.find(button); existingPair != mouseCallbacks.end())
+	auto specifiedButtonIt = mouseCallbacks.find(inButton);
+	if (specifiedButtonIt == mouseCallbacks.end())
 	{
-		existingPair->second.push_back(inCallback);
+		mouseCallbacks.insert({ inButton, { inCallback } });
+		return input::InputCallbackHandle(0);
 	}
-	else
+
+	std::vector<MouseCallback>& myMouseCallbacks = specifiedButtonIt->second;
+	for (size_t i = 0; i < myMouseCallbacks.size(); ++i)
 	{
-		mouseCallbacks.insert({ button, { inCallback } });
+		if (!myMouseCallbacks[i])
+		{
+			myMouseCallbacks[i] = inCallback;
+			return input::InputCallbackHandle(i);
+		}
 	}
+
+	myMouseCallbacks.push_back(inCallback);
+	return input::InputCallbackHandle(myMouseCallbacks.size() - 1);
 }
 
-void InputManager::registerCursorPosCallback(CursorPosCallback inCallback)
+input::InputCallbackHandle InputManager::registerCursorPosCallback(CursorPosCallback inCallback)
 {
+	for (size_t i = 0; i < cursorPosCallbacks.size(); ++i)
+	{
+		if (!cursorPosCallbacks[i])
+		{
+			cursorPosCallbacks[i] = inCallback;
+			return input::InputCallbackHandle(i);
+		}
+	}
+
 	cursorPosCallbacks.push_back(inCallback);
+	return input::InputCallbackHandle(cursorPosCallbacks.size() - 1);
 }
 
-void InputManager::registerScrollCallback(ScrollCallback inScrollback)
+input::InputCallbackHandle InputManager::registerScrollCallback(ScrollCallback inCallback)
 {
-	scrollCallbacks.push_back(inScrollback);
+	for (size_t i = 0; i < scrollCallbacks.size(); ++i)
+	{
+		if (!scrollCallbacks[i])
+		{
+			scrollCallbacks[i] = inCallback;
+			return input::InputCallbackHandle(i);
+		}
+	}
+
+	scrollCallbacks.push_back(inCallback);
+	return input::InputCallbackHandle(scrollCallbacks.size() - 1);
+}
+
+void InputManager::unregisterKeyCallback(input::EKey inKey, input::InputCallbackHandle inHandle)
+{
+	if (!inHandle.isValid())
+	{
+		return;
+	}
+
+	auto keyIt = keyCallbacks.find(inKey);
+	if (keyIt == keyCallbacks.end()
+		|| keyIt->second.size() <= inHandle.id)
+	{
+		return;
+	}
+	
+	keyIt->second.at(inHandle.id) = {};
+}
+
+void InputManager::unregisterMouseCallback(input::EMouseButton inButton, input::InputCallbackHandle inHandle)
+{
+	if (!inHandle.isValid())
+	{
+		return;
+	}
+
+	auto keyIt = mouseCallbacks.find(inButton);
+	if (keyIt == mouseCallbacks.end()
+		|| keyIt->second.size() <= inHandle.id)
+	{
+		return;
+	}
+
+	keyIt->second.at(inHandle.id) = {};
+}
+
+void InputManager::unregisterCursorCallback(input::InputCallbackHandle inHandle)
+{
+	if (!inHandle.isValid()
+		|| cursorPosCallbacks.size() <= inHandle.id)
+	{
+		return;
+	}
+
+	cursorPosCallbacks[inHandle.id] = {};
+}
+
+void InputManager::unregisterScrollCallback(input::InputCallbackHandle inHandle)
+{
+	if (!inHandle.isValid()
+		|| scrollCallbacks.size() <= inHandle.id)
+	{
+		return;
+	}
+
+	scrollCallbacks[inHandle.id] = {};
 }

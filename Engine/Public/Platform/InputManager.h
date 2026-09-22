@@ -67,10 +67,15 @@ public:
 	using CursorPosCallback = std::function<void(double/* xPos */, double/* yPos */, double/* deltaTime */)>;
 	using ScrollCallback = std::function<void(double/* x */, double/* y */, double/* deltaTime */)>;
 
-	void registerKeyCallback(input::EKey key, KeyCallback inCallback);
-	void registerMouseCallback(input::EMouseButton button, MouseCallback inCallback);
-	void registerCursorPosCallback(CursorPosCallback inCallback);
-	void registerScrollCallback(ScrollCallback inScrollback);
+	input::InputCallbackHandle registerKeyCallback(input::EKey inKey, KeyCallback inCallback);
+	input::InputCallbackHandle registerMouseCallback(input::EMouseButton inButton, MouseCallback inCallback);
+	input::InputCallbackHandle registerCursorPosCallback(CursorPosCallback inCallback);
+	input::InputCallbackHandle registerScrollCallback(ScrollCallback inScrollback);
+
+	void unregisterKeyCallback(input::EKey inKey, input::InputCallbackHandle inHandle);
+	void unregisterMouseCallback(input::EMouseButton inButton, input::InputCallbackHandle inHandle);
+	void unregisterCursorCallback(input::InputCallbackHandle inHandle);
+	void unregisterScrollCallback(input::InputCallbackHandle inHandle);
 
 protected:
 	std::unordered_map<input::EKey, std::vector<KeyCallback>> keyCallbacks;

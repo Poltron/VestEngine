@@ -28,6 +28,8 @@ public:
 
 public:
 	void initialize();
+	void onCameraSelected(bool bInSelected);
+
 	void update(double inDeltaTime);
 
 	const glm::vec3& getRotation() const;
@@ -73,6 +75,9 @@ private:
 
 // inputs
 private:
+	void bindInputs();
+	void unbindInputs();
+
 	void onMouseMoved(double inX, double inY, double inDeltaTime);
 
 	// bug : weird inputs sometime when scrolling just one step ???
@@ -91,6 +96,14 @@ private:
 	void consumeKeyboardInputs(float inHorizontalAxis, float inVerticalAxis, double inDeltaTime);
 
 private:
+	input::InputCallbackHandle mouseMoveHandle;
+	input::InputCallbackHandle mouseScrollHandle;
+	input::InputCallbackHandle mouseClickHandle;
+	input::InputCallbackHandle keyUpHandle;
+	input::InputCallbackHandle keyDownHandle;
+	input::InputCallbackHandle keyLeftHandle;
+	input::InputCallbackHandle keyRightHandle;
+
 	float verticalAxis = 0.0f;
 	float horizontalAxis = 0.0f;
 

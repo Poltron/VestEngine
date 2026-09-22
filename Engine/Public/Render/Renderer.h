@@ -29,7 +29,8 @@ public:
 	void render(Scene& inScene, double inCurrentFrame);
 	void swap();
 	void setActiveCamera(Camera* inCamera);
-	
+	Camera& getActiveCamera();
+
 private:
 	Camera* activeCamera;
 

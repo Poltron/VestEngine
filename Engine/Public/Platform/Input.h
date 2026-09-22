@@ -2,6 +2,31 @@
 
 namespace input
 {
+	struct InputCallbackHandle
+	{
+		size_t id;
+
+		InputCallbackHandle(size_t inID)
+			: id(inID)
+		{
+		}
+
+		InputCallbackHandle()
+			: InputCallbackHandle(UINT64_MAX)
+		{
+		}
+
+		bool isValid()
+		{
+			return id != UINT64_MAX;
+		}
+
+		void invalidate()
+		{
+			id = UINT64_MAX;
+		}
+	};
+
 	enum class EKey : int
 	{
 		UNKNOWN = -1, 

@@ -173,7 +173,23 @@ void Renderer::swap()
 
 void Renderer::setActiveCamera(Camera* inCamera)
 {
+	if (activeCamera)
+	{
+		activeCamera->onCameraSelected(false);
+	}
+
 	activeCamera = inCamera;
+
+	if (activeCamera)
+	{
+		activeCamera->onCameraSelected(true);
+	}
+}
+
+Camera& Renderer::getActiveCamera()
+{ 
+	ensure(activeCamera);
+	return *activeCamera; 
 }
 
 void Renderer::loadDefaultShaders()

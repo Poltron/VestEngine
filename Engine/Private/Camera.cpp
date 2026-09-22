@@ -29,8 +29,23 @@ Camera::Camera()
 }
 
 void Camera::initialize()
+{}
+
+void Camera::onCameraSelected(bool bInSelected)
 {
-	platform::getInputManager().registerCursorPosCallback(
+	if (bInSelected)
+	{
+		bindInputs();
+	}
+	else
+	{
+		unbindInputs();
+	}
+}
+
+void Camera::bindInputs()
+{
+	mouseMoveHandle = platform::getInputManager().registerCursorPosCallback(
 		[this](double inX, double inY, double inDeltaTime)
 		{
 			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
@@ -44,7 +59,7 @@ void Camera::initialize()
 			}
 		});
 
-	platform::getInputManager().registerScrollCallback(
+	mouseScrollHandle = platform::getInputManager().registerScrollCallback(
 		[this](double inX, double inY, double inDeltaTime)
 		{
 			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
@@ -53,7 +68,7 @@ void Camera::initialize()
 			}
 		});
 
-	platform::getInputManager().registerMouseCallback(input::EMouseButton::RIGHT
+	mouseClickHandle = platform::getInputManager().registerMouseCallback(input::EMouseButton::RIGHT
 		, [this](input::EInputState inState, double inDeltaTime)
 		{
 			if (inState == input::EInputState::PRESS)
@@ -66,7 +81,7 @@ void Camera::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(input::EKey::UP
+	keyUpHandle = platform::getInputManager().registerKeyCallback(input::EKey::UP
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
 			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
@@ -75,7 +90,7 @@ void Camera::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(input::EKey::DOWN
+	keyDownHandle = platform::getInputManager().registerKeyCallback(input::EKey::DOWN
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
 			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
@@ -84,7 +99,7 @@ void Camera::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(input::EKey::LEFT
+	keyLeftHandle = platform::getInputManager().registerKeyCallback(input::EKey::LEFT
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
 			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
@@ -93,7 +108,7 @@ void Camera::initialize()
 			}
 		});
 
-	platform::getInputManager().registerKeyCallback(input::EKey::RIGHT
+	keyRightHandle = platform::getInputManager().registerKeyCallback(input::EKey::RIGHT
 		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
 		{
 			if (platform::getInputManager().getCursorInputMode() == input::ECursorInputMode::DISABLED)
@@ -101,6 +116,23 @@ void Camera::initialize()
 				onKeyRightPressed(inState, inModifiers);
 			}
 		});
+}
+void Camera::unbindInputs()
+{
+	platform::getInputManager().unregisterCursorCallback(mouseMoveHandle);
+	mouseMoveHandle.invalidate();
+	platform::getInputManager().unregisterScrollCallback(mouseScrollHandle);
+	mouseScrollHandle.invalidate();
+	platform::getInputManager().unregisterMouseCallback(input::EMouseButton::RIGHT, mouseClickHandle);
+	mouseClickHandle.invalidate();
+	platform::getInputManager().unregisterKeyCallback(input::EKey::UP, keyUpHandle);
+	keyUpHandle.invalidate();
+	platform::getInputManager().unregisterKeyCallback(input::EKey::DOWN, keyDownHandle);
+	keyDownHandle.invalidate();
+	platform::getInputManager().unregisterKeyCallback(input::EKey::LEFT, keyLeftHandle);
+	keyLeftHandle.invalidate();
+	platform::getInputManager().unregisterKeyCallback(input::EKey::RIGHT, keyRightHandle);
+	keyRightHandle.invalidate();
 }
 
 void Camera::update(double inDeltaTime)
