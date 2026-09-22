@@ -5,8 +5,10 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include "tracy/Tracy.hpp"
+#include "tracy/TracyOpenGL.hpp"
 
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
@@ -110,6 +112,7 @@ void GLFWOpenGLUIManager::startFrame()
 void GLFWOpenGLUIManager::render()
 {
 	ZoneScoped;
+	TracyGpuZone("GLFWOpenGLUIManager::render");
 
 	// Rendering
 	// (Your code clears your framebuffer, renders your other stuff etc.)

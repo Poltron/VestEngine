@@ -56,6 +56,7 @@ void VestRenderer::shutdown()
 void Renderer::clear()
 {
 	ZoneScoped;
+	TracyGpuZone("Renderer::clear");
 
 	glStencilMask(0xFF);
 	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
@@ -65,7 +66,8 @@ void Renderer::clear()
 
 void Renderer::render(Scene& inScene, double inCurrentFrame)
 {
-	ZoneScopedN("render");
+	ZoneScopedN("Renderer::render");
+	TracyGpuZone("Renderer::render");
 
 	if (!activeCamera)
 	{
@@ -94,7 +96,6 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 		Shader* shader = nullptr;
 		WorldTransformComponent* worldTransform = nullptr;
 		{
-			TracyGpuZone("bind global parameters");
 
 			shader = engine::getResources()->getShader(meshRenderer->shader);
 			ensure(shader != nullptr);
@@ -104,8 +105,6 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 		}
 
 		{
-			TracyGpuZone("bind matrix parameters");
-
 			glm::mat4& viewMatrix = activeCamera->getViewMatrix();
 			shader->setMat4("view", glm::value_ptr(viewMatrix));
 			shader->setVec3("viewPosition", activeCamera->getPosition());
@@ -119,23 +118,17 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 		}
 
 		{
-			TracyGpuZone("bind textures");
-
 			ensure(model != nullptr);
 			model->bindTextures(*engine::getResources(), *shader);
 		}
 
 		{
-			TracyGpuZone("bind shader parameters");
-
 			meshRenderer->shaderParameters.applyToShader(*shader, *engine::getResources());
 
 			shader->setFloat("material.shininess", 32.0f);
 		}
 
 		{
-			TracyGpuZone("draw");
-
 			if (meshRenderer->bOutline)
 			{
 				glStencilMask(0xFF); // allow full writing to stencil
@@ -146,8 +139,6 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 
 		if (meshRenderer->bOutline)
 		{
-			TracyGpuZone("draw outline");
-
 			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // every fragment where stencil is not equal to 1 passes
 			glStencilMask(0x00); // don't write to stencil
 
@@ -173,6 +164,7 @@ void Renderer::swap()
 {
 	{
 		ZoneScoped;
+		TracyGpuZone("Renderer::swap");
 		platform::getWindowManager().swapBuffers();
 	}
 
