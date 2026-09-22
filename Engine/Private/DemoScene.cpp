@@ -281,10 +281,10 @@ namespace demoScene
 			});
 	}
 
-	void load200animals(Scene& inScene)
+	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize)
 	{
-		inScene.getCamera().setPosition(glm::vec3(6.24083f, 2.63226f, 10.6785f));
-		inScene.getCamera().setRotation(-127.13f, -26.1418f);
+		inScene.getCamera().setPosition(glm::vec3(6.508f, 5.24268f, 3.30692f));
+		inScene.getCamera().setRotation(-154.026f, -42.2807f);
 
 		const std::string WorkDirTMP = WORKDIR;
 
@@ -302,13 +302,25 @@ namespace demoScene
 			"/Resources/Models/kenney-cube-pets/animal-tiger.obj"
 		};
 
-		for (int i = 0; i < 10; ++i)
+		if (inTotal % 10 != 0 && inTotal <= 0 && inRowSize <= 0 )
+		{
+			std::cerr << "AnimalTotal must be a multiple of 10 and RowSize > 0" << std::endl;
+			return;
+		}
+
+		const float animalMeshes = 10;
+		const float totalPerMesh = inTotal / animalMeshes;
+
+		const float floorStart = animalMeshes / -2.0f;
+		const float rowStart = inRowSize / -2.0f;
+
+		for (size_t i = 0; i < animalMeshes; ++i)
 		{
 			ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[i]);
 
-			for (int j = 0; j < 200; ++j)
+			for (size_t j = 0; j < totalPerMesh; ++j)
 			{
-				const glm::vec3 pos = glm::vec3(j * 0.5f, 0, i * 1.0f);
+				const glm::vec3 pos = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
 				const glm::quat rot = glm::quat(glm::radians(glm::vec3(0,0,0)));
 				const glm::vec3 scale = glm::vec3(0.2f);
 				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);

@@ -1,6 +1,7 @@
 #include "Camera.h"
 
 #include <functional>
+#include <iostream>
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "tracy/Tracy.hpp"
@@ -105,6 +106,9 @@ void Camera::initialize()
 void Camera::update(double inDeltaTime)
 {
 	ZoneScoped;
+
+	//std::cout << "pos x: " << getPosition().x << " / y: " << getPosition().y << " / z: " << getPosition().z << std::endl;
+	//std::cout << "rot x: " << getRotation().x << " / y: " << getRotation().y << " / z: " << getRotation().z << std::endl;
 
 	consumeKeyboardInputs(horizontalAxis, verticalAxis, inDeltaTime);
 

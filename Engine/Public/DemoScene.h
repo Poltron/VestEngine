@@ -5,5 +5,5 @@ class Scene;
 namespace demoScene
 {
 	void loadCubesDemo(Scene& inScene);
-	void load200animals(Scene& inScene);
+	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize);
 };

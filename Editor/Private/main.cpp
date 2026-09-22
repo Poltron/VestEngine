@@ -6,7 +6,7 @@
 #include "UI/UIManager.h"
 #include "UnitTest.h"
 
-int main()
+int main(int argc, char* argv[])
 {
 	if (platform::initialize()
 		&& engine::initialize()
@@ -20,7 +20,18 @@ int main()
 			render::getRenderer()->loadDefaultShaders();
 
 			Scene* scene = engine::createScene();
-			demoScene::load200animals(*scene);
+
+			if (argc == 3)
+			{
+				int totalAnimal = atoi(argv[1]);
+				int rowSize = atoi(argv[2]);
+
+				demoScene::loadAnimals(*scene, totalAnimal, rowSize);
+			}
+			else
+			{
+				demoScene::loadCubesDemo(*scene);
+			}
 
 			engine::launch();
 		}
