@@ -8,6 +8,7 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
+#include "Render/Renderer.h"
 
 class VestEditor final : public Editor
 {
@@ -89,6 +90,26 @@ bool VestEditor::initialize()
 			{
 				getEntitySelector().selectEntity(selectedEntity);
 			}
+		});
+
+	platform::getInputManager().registerKeyCallback(input::EKey::C
+		, [this](input::EInputState inState, input::EKeyModifier inModifiers, double inDeltaTime)
+		{
+			if (inState != input::EInputState::PRESS)
+			{
+				return;
+			}
+
+			static bool bPingPong = false;
+			if (bPingPong)
+			{
+				render::getRenderer()->setActiveCamera(&engine::getScene()->getCamera());
+			}
+			else
+			{
+				render::getRenderer()->setActiveCamera(&engine::getScene()->getCameraDebug());
+			}
+			bPingPong = !bPingPong;
 		});
 
 	engine::getEngine()->registerUIUpdateCallback(

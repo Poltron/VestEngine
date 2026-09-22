@@ -52,7 +52,9 @@ void VestEngine::launch()
 		ensure(scene);
 
 		render::getRenderer()->updateLightParameters(*scene);
+
 		scene->getCamera().update(deltaTime);
+		scene->getCameraDebug().update(deltaTime);
 
 		scene->getHierarchyComponents().drawDebug(50, 50);
 		scene->getLocalTransformComponents().drawDebug(300, 50);
@@ -61,6 +63,7 @@ void VestEngine::launch()
 		hierarchySystem.update(*scene);
 		physicsSystem.update(*scene, deltaTime);
 		transformSystem.update(*scene);
+		frustumCullingSystem.update(*scene);
 
 		render::getRenderer()->clear();
 		render::getRenderer()->render(*scene, currentFrame);

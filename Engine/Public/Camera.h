@@ -5,18 +5,16 @@
 
 struct Plane
 {
+	glm::vec3 origin = { 0, 0, 0 };
 	glm::vec3 normal = { 0, 1, 0 };
-	float distance = 0.0f;
 };
 
 struct Frustum
 {
 	Plane top;
 	Plane bottom;
-
-	Plane right;
 	Plane left;
-
+	Plane right;
 	Plane far;
 	Plane near;
 };
@@ -65,8 +63,10 @@ private:
 
 	glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 rotation = glm::vec3(-90.0f, 0.0f, 0.0f);
-	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+	
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 forward = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
 
 	glm::mat4 projection;
 	glm::mat4 view;

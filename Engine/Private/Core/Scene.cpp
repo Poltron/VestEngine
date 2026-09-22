@@ -10,6 +10,8 @@
 bool Scene::initialize()
 {
 	camera.initialize();
+	cameraDebug.initialize();
+
 	render::getRenderer()->setActiveCamera(&camera);
 
 	localTransformComponents.setLabel("localTransforms");
@@ -60,6 +62,14 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	return meshRendererComponent;
 }
 
+SphereBoundingVolumeComponent* Scene::addSphereBoundingVolumeTo(Entity inEntity
+	, float inRadius)
+{
+	SphereBoundingVolumeComponent* sphereBoundingVolumeComponent = sphereBoundingVolumeComponents.create(inEntity);
+	sphereBoundingVolumeComponent->radius = inRadius;
+	return sphereBoundingVolumeComponent;
+}
+
 DirectionalLightComponent* Scene::addDirectionalLightTo(Entity inEntity
 	, const glm::vec3& inColor
 	, float inIntensity)
@@ -103,10 +113,12 @@ Entity Scene::createRenderedModel(ResourceHandle inModel
 	, const glm::vec3& inPosition
 	, const glm::quat& inRotation
 	, const glm::vec3& inScale
+	, float inSphereRadius
 	, HierarchyComponent* inParentHierarchy)
 {
 	Entity entity = entities.createEntity();
 	addTransformTo(entity, inPosition, inRotation, inScale, inParentHierarchy);
 	addMeshRendererTo(entity, inModel, inShader);
+	addSphereBoundingVolumeTo(entity, inSphereRadius);
 	return entity;
 }

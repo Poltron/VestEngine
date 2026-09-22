@@ -138,18 +138,15 @@ void Camera::unbindInputs()
 void Camera::update(double inDeltaTime)
 {
 	ZoneScoped;
-
+	//std::cout << "camera debug" << std::endl;
 	//std::cout << "pos x: " << getPosition().x << " / y: " << getPosition().y << " / z: " << getPosition().z << std::endl;
 	//std::cout << "rot x: " << getRotation().x << " / y: " << getRotation().y << " / z: " << getRotation().z << std::endl;
 
 	consumeKeyboardInputs(horizontalAxis, verticalAxis, inDeltaTime);
 
-	// note : should not be necessary but weird inputs ??
-	//consumeMouseScrollInputs(0, scrollOffset, inDeltaTime);
-	//scrollOffset = 0;
-
 	if (bDirty)
 	{
+		updateFrustum();
 		updateProjectionMatrix();
 		updateViewMatrix();
 
@@ -325,20 +322,30 @@ void Camera::updateViewMatrix()
 	float yaw = rotation.x;
 	float pitch = rotation.y;
 
+	const glm::vec3 worldUp = { 0, 1, 0 };
+
 	glm::vec3 direction;
 	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 	direction.y = sin(glm::radians(pitch));
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	forward = glm::normalize(direction);
+	right = glm::normalize(glm::cross(worldUp, forward));
+	up = glm::normalize(glm::cross(-right, forward));
 
-	view = glm::lookAt(position, position + forward, up);
+	view = glm::lookAt(position, position + forward, worldUp);
 }
 
 void Camera::updateFrustum()
 {
 	const float halfVSide = far * tanf(fov * 0.5f);
 	const float halfHSide = halfVSide * aspectRatio;
-	const glm::vec3 frontMultFar = far * forward;
+	const glm::vec3 camToFar = far * forward;
+	const glm::vec3 camToNear = near * forward;
 
-	//frustum.near = { position + near * forward, near};
+	frustum.near = { position + camToNear, forward};
+	frustum.far = { position + camToFar, -forward};
+	frustum.right = { position, glm::cross(camToFar + right * halfHSide, up) };
+	frustum.left = { position, glm::cross(up, camToFar - right * halfHSide) };
+	frustum.top = { position, glm::cross(camToFar + halfVSide * up, -right) };
+	frustum.bottom = { position, glm::cross(camToFar - halfVSide * up, right) };
 }

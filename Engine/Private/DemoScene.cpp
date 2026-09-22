@@ -17,11 +17,14 @@ namespace
 		, ResourceHandle inModel
 		, ResourceHandle inShader)
 	{
+		const float boundingSphereRadius = 1.0f;
+
 		Entity entity = inScene.createRenderedModel(inModel
 			, inShader
 			, glm::vec3(0.0f, 0.0f, -1.0f)
 			, glm::quat(glm::radians(glm::vec3(45, 45, 45)))
-			, glm::vec3(0.4f, 0.4f, 0.4f));
+			, glm::vec3(0.4f, 0.4f, 0.4f)
+			, boundingSphereRadius);
 
 		inScene.addRigidbodyTo(entity
 			, glm::vec3(0.0f, 0.0f, 0.0f)
@@ -90,6 +93,8 @@ namespace
 			glm::vec3(1.0f, 0.5f, 0.31f)
 		};
 
+		const float boundingSphereRadius = 1.0f;
+
 		HierarchyComponent* parentHierarchy = inScene.getHierarchyComponents().get(inParentEntity);
 		assert(parentHierarchy);
 
@@ -102,6 +107,7 @@ namespace
 				, cubePositions[i]
 				, rotation
 				, cubeScales[i]
+				, boundingSphereRadius
 				, parentHierarchy);
 
 			MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(cube);
@@ -119,12 +125,14 @@ namespace
 	{
 		glm::vec3 lightScale(0.2f);
 		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));
+		const float boundingSphereRadius = 1.0f;
 
 		Entity directionalLightID = inScene.createRenderedModel(inModel
 			, inShader
 			, glm::vec3(0, 0, 0)
 			, lightRotation
-			, lightScale);
+			, lightScale
+			, boundingSphereRadius);
 
 		glm::vec3 directionalLightColor(glm::vec3(1, 1, 1));
 
@@ -157,7 +165,8 @@ namespace
 				, inShader
 				, pointLightPositions[i]
 				, glm::quat()
-				, lightScale);
+				, lightScale
+				, boundingSphereRadius);
 
 			MeshRendererComponent* pointLightMeshRenderer = inScene.getMeshRendererComponents().get(pointLightID);
 			pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
@@ -323,7 +332,8 @@ namespace demoScene
 				const glm::vec3 pos = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
 				const glm::quat rot = glm::quat(glm::radians(glm::vec3(0,0,0)));
 				const glm::vec3 scale = glm::vec3(0.2f);
-				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);
+				const float boundingSphereRadius = 1.0f;
+				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale, boundingSphereRadius);
 
 				MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(entity);
 				meshRenderer->bOutline = false;

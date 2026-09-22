@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "ECS/Systems/FrustumCullingSystem.h"
 #include "ECS/Systems/HierarchySystem.h"
 #include "ECS/Systems/PhysicsSystem.h"
 #include "ECS/Systems/TransformSystem.h"
@@ -44,6 +45,7 @@ protected:
 	HierarchySystem hierarchySystem;
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
+	FrustumCullingSystem frustumCullingSystem;
 };
 
 namespace engine

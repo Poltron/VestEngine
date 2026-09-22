@@ -87,6 +87,13 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 			continue;
 		}
 
+		SphereBoundingVolumeComponent* sphere = inScene.getSphereBoundingVolumeComponents().get(meshRenderer->entity);
+		ensure(sphere != nullptr);
+		if (!sphere->bInFrustum)
+		{
+			continue;
+		}
+
 		Model* model = engine::getResources()->getModel(meshRenderer->model);
 		ensure(model != nullptr);
 		
