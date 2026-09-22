@@ -87,7 +87,7 @@ bool VestEditor::initialize()
 			Entity selectedEntity = scene->getWorldTransformComponents().at(index)->entity;
 			if (EntityFuncs::isEntityValid(selectedEntity))
 			{
-				getInspector().show(selectedEntity);
+				getEntitySelector().selectEntity(selectedEntity);
 			}
 		});
 

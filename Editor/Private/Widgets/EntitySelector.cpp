@@ -6,9 +6,7 @@
 #include "Widgets/Inspector.h"
 
 void EntitySelector::initialize()
-{
-	selectEntity(1);
-}
+{}
 
 void EntitySelector::update()
 {
@@ -27,4 +25,5 @@ void EntitySelector::update()
 void EntitySelector::selectEntity(Entity entity)
 {
 	selectedEntity = entity;
+	editor::getEditor()->getInspector().show(selectedEntity);
 }
