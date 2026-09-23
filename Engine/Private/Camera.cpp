@@ -146,9 +146,9 @@ void Camera::update(double inDeltaTime)
 
 	if (bDirty)
 	{
-		updateFrustum();
 		updateProjectionMatrix();
 		updateViewMatrix();
+		updateFrustum();
 
 		bDirty = false;
 	}
