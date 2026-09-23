@@ -90,6 +90,8 @@ ResourcesManager* engine::getResources() { return g_Resources; }
 
 bool engine::initialize()
 {
+	ZoneScoped;
+
 	g_Engine = new VestEngine();
 	g_Resources = new ResourcesManager();
 
@@ -107,6 +109,8 @@ bool engine::initialize()
 
 Scene* engine::createScene()
 {
+	ZoneScoped;
+
 	g_Scene = new Scene();
 	
 	if (!g_Scene->initialize())
@@ -127,6 +131,8 @@ void engine::launch()
 
 void engine::shutdown()
 {
+	ZoneScoped;
+
 	if (g_Scene)
 	{
 		g_Scene->shutdown();

@@ -18,6 +18,7 @@ public:
 	void initialize();
 	void show(Entity inEntity);
 	void update();
+	void shutdown();
 
 	template<typename T>
 	void registerToolkit();

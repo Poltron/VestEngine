@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tracy/Tracy.hpp"
 #include "Core/Ensure.h"
 
 template <typename T>
@@ -73,11 +74,22 @@ public:
 
 		capacity = inCapacity;
 		buffer = (T*)malloc(capacity * sizeof(T));
+		TracyAllocN(buffer, capacity * sizeof(T), "DenseArray");
 	}
 
 	void clear()
 	{
-		free(buffer);
+		if (buffer)
+		{
+			for (size_t i = 0; i < maxIndex; ++i)
+			{
+				remove(i);
+			}
+
+			TracyFreeN(buffer, "DenseArray");
+			free(buffer);
+		}
+
 		buffer = nullptr;
 		capacity = 0;
 		maxIndex = 0;
@@ -108,6 +120,7 @@ public:
 	{
 		ensure(inElementIndex < maxIndex);
 		T* element = buffer + inElementIndex;
+		element->~T();
 
 		ensure(buffer != nullptr);
 		ensure(element != nullptr);

@@ -1,8 +1,7 @@
 #include "Framework/TestRegistrar.h"
 
+#include "tracy/Tracy.hpp"
 #include "Framework/TestFactory.h"
-
-#include <stdexcept>
 
 void TestRegistrar::registerFactory(const std::string& inGroup, TestFactoryBase* inTestFactory)
 {
@@ -17,6 +16,8 @@ void TestRegistrar::registerFactory(const std::string& inGroup, TestFactoryBase*
 
 void TestRegistrar::runTests()
 {
+	ZoneScoped;
+
 	for (auto& factoryGroup : testGroups)
 	{
 		std::cout << "> " << factoryGroup.first << std::endl;
@@ -32,11 +33,11 @@ void TestRegistrar::unregisterFactories()
 {
 	for (auto& factoryGroup : testGroups)
 	{
-		std::cout << "\t\t" << factoryGroup.first << std::endl;
 		for (auto& factoryTest : factoryGroup.second)
 		{
 			delete factoryTest;
 		}
-		std::cout << std::endl;
+		factoryGroup.second.clear();
 	}
+	testGroups.clear();
 }

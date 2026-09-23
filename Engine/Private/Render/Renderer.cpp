@@ -201,6 +201,8 @@ Camera& Renderer::getActiveCamera()
 
 void Renderer::loadDefaultShaders()
 {
+	ZoneScoped;
+
 	const std::string WorkDirTMP = WORKDIR;
 
 	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
@@ -268,6 +270,8 @@ void Renderer::updateLightParameters(Scene& inScene)
 Renderer* render::getRenderer() { return g_Renderer; }
 bool render::initialize()
 {
+	ZoneScoped;
+
 	ensure(!g_Renderer);
 	g_Renderer = new VestRenderer();
 	bool bSuccess = g_Renderer->initialize();
@@ -284,6 +288,8 @@ bool render::initialize()
 
 void render::shutdown()
 {
+	ZoneScoped;
+
 	if (g_Renderer)
 	{
 		g_Renderer->shutdown();

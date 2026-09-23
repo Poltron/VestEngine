@@ -28,6 +28,8 @@ namespace ui
 
 	bool initialize()
 	{
+		ZoneScoped;
+
 		bool bSuccess =  g_UIManager->initialize();
 		if (bSuccess)
 		{
@@ -52,6 +54,8 @@ namespace ui
 
 	void shutdown()
 	{
+		ZoneScoped;
+
 		if (g_UIManager)
 		{
 			g_UIManager->shutdown();

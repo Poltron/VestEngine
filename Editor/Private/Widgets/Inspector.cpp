@@ -26,6 +26,12 @@ void Inspector::initialize()
 	registerToolkit<PointLightComponentToolkit>();
 }
 
+void Inspector::shutdown()
+{
+	inspectorElements.clear();
+	toolkits.clear();
+}
+
 void Inspector::show(Entity inEntity)
 {
 	if (!engine::getScene()->getEntityManager().exists(inEntity))

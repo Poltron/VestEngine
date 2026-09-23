@@ -44,6 +44,8 @@ class GLFWInputManager final : public InputManager
 public:
 	virtual bool initialize() override
 	{
+		ZoneScoped;
+
 		bool bSuccess = InputManager::initialize();
 
 		fillInputLookupTables();
@@ -447,7 +449,7 @@ public:
 		if (g_GLFWWindow == NULL)
 		{
 			std::cout << "Failed to create GLFW window" << std::endl;
-			glfwTerminate();
+			destroyWindow();
 			return nullptr;
 		}
 
@@ -528,6 +530,8 @@ namespace
 //
 bool platform::initialize()
 {
+	ZoneScoped;
+
 	g_GLFWWindowManager = new GLFWWindowManager();
 
 	const int width = 800;

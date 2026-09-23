@@ -189,6 +189,8 @@ namespace demoScene
 {
 	void loadCubesDemo(Scene& inScene)
 	{
+		ZoneScoped;
+
 		const std::string WorkDirTMP = WORKDIR;
 
 		const std::string containerPath = WorkDirTMP + "/Resources/Textures/container2.png";
@@ -292,6 +294,8 @@ namespace demoScene
 
 	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize)
 	{
+		ZoneScoped;
+
 		inScene.getCamera().setPosition(glm::vec3(6.508f, 5.24268f, 3.30692f));
 		inScene.getCamera().setRotation(-154.026f, -42.2807f);
 

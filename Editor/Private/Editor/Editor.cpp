@@ -26,6 +26,7 @@ namespace editor
 	bool initialize()
 	{
 		g_Editor = new VestEditor();
+
 		bool bSuccess = g_Editor->initialize();
 		if (bSuccess)
 		{
@@ -40,6 +41,8 @@ namespace editor
 
 	void shutdown()
 	{
+		ZoneScoped;
+
 		if (g_Editor)
 		{
 			g_Editor->shutdown();
@@ -130,4 +133,6 @@ void VestEditor::update()
 }
 
 void VestEditor::shutdown()
-{}
+{
+	getInspector().shutdown();
+}

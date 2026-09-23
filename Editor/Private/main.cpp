@@ -1,3 +1,5 @@
+#include "tracy/Tracy.hpp"
+
 #include "Editor/Editor.h"
 #include "DemoScene.h"
 #include "Core/Engine.h"
@@ -6,15 +8,26 @@
 #include "UI/UIManager.h"
 #include "UnitTest.h"
 
+void waitForTracy()
+{
+	int timeoutMs = 5000;
+	while (!TracyIsConnected && timeoutMs > 0) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		timeoutMs -= 100;
+	}
+}
+
 int main(int argc, char* argv[])
 {
+	waitForTracy();
+
+	test::run();
+
 	if (platform::initialize()
 		&& engine::initialize()
 		&& render::initialize()
 		&& ui::initialize())
 	{
-		test::run();
-
 		if (editor::initialize())
 		{
 			render::getRenderer()->loadDefaultShaders();
