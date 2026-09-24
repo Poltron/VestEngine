@@ -5,6 +5,7 @@
 #include "ECS/HierarchyHelper.h"
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
+#include "Render/Color.h"
 #include "Render/Renderer.h"
 
 bool Scene::initialize()
@@ -58,7 +59,7 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	MeshRendererComponent* meshRendererComponent = meshRendererComponents.create(inEntity);
 	meshRendererComponent->model = inModel;
 	meshRendererComponent->shader = inShader;
-	meshRendererComponent->shaderParameters.addVec3("material.objectColor", glm::vec3(1, 1, 1));
+	meshRendererComponent->shaderParameters.addVec3("material.objectColor", color::white);
 	return meshRendererComponent;
 }
 

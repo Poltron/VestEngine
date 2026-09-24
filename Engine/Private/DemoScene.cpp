@@ -9,6 +9,7 @@
 #include "Core/Scene.h"
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
+#include "Render/Color.h"
 #include "Render/Renderer.h"
 
 namespace
@@ -81,16 +82,16 @@ namespace
 		};
 
 		glm::vec3 cubeColors[] = {
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f),
-			glm::vec3(1.0f, 0.5f, 0.31f)
+			color::white,
+			color::white,
+			color::white,
+			color::white,
+			color::white,
+			color::white,
+			color::white,
+			color::white,
+			color::white,
+			color::white
 		};
 
 		const float boundingSphereRadius = 1.0f;
@@ -154,9 +155,9 @@ namespace
 		};
 
 		glm::vec3 pointLightColors[] = {
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f)
+			color::red,
+			color::green,
+			color::blue
 		};
 
 		for (size_t i = 0; i < MAX_POINT_LIGHTS; ++i)

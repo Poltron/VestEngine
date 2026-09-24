@@ -20,6 +20,7 @@
 #include "ECS/ComponentManager.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
+#include "Render/Color.h"
 
 class VestRenderer final : public Renderer
 {
@@ -164,7 +165,7 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 			outlineMat = glm::scale(outlineMat, glm::vec3(1.1f, 1.1f, 1.1f));
 
 			shader->setMat4("model", glm::value_ptr(outlineMat));
-			shader->setVec3("objectColor", glm::vec3(1.0f, 1.0f, 0.0f));
+			shader->setVec3("objectColor", color::yellow);
 
 			model->draw();
 
