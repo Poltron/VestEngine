@@ -62,6 +62,8 @@ void Renderer::clear()
 	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glStencilMask(0x00);
+
+	frameInfo.reset();
 }
 
 void Renderer::render(Scene& inScene, double inCurrentFrame)
@@ -91,7 +93,12 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 		ensure(sphere != nullptr);
 		if (!sphere->bInFrustum)
 		{
+			frameInfo.culledMeshTotal++;
 			continue;
+		}
+		else
+		{
+			frameInfo.renderedMeshTotal++;
 		}
 
 		Model* model = engine::getResources()->getModel(meshRenderer->model);
@@ -131,7 +138,6 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 
 		{
 			meshRenderer->shaderParameters.applyToShader(*shader, *engine::getResources());
-
 			shader->setFloat("material.shininess", 32.0f);
 		}
 

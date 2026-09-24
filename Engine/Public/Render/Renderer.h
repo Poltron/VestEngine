@@ -7,20 +7,20 @@
 
 #define MAX_POINT_LIGHTS 3
 
-template<typename T>
-class ComponentManager;
-class ResourcesManager;
-
 class Camera;
-class Mesh;
 class Scene;
-class Shader;
 
-struct DirectionalLightComponent;
-struct MeshRendererComponent;
-struct PointLightComponent;
-struct LocalTransformComponent;
-struct WorldTransformComponent;
+struct FrameInfo
+{
+	unsigned int renderedMeshTotal;
+	unsigned int culledMeshTotal;
+
+	void reset()
+	{
+		renderedMeshTotal = 0;
+		culledMeshTotal = 0;
+	}
+};
 
 class Renderer
 {
@@ -33,6 +33,12 @@ public:
 
 private:
 	Camera* activeCamera;
+//
+public:
+	const FrameInfo& getFrameInfo() const { return frameInfo; }
+
+private:
+	FrameInfo frameInfo;
 
 //
 public:

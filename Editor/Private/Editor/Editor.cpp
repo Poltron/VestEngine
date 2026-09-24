@@ -59,6 +59,7 @@ bool VestEditor::initialize()
 
 	getInspector().initialize();
 	getEntitySelector().initialize();
+	getRendererInfo().initialize();
 
 	platform::getWindowManager().registerWindowCloseRequestCallback(
 		[]()
@@ -130,6 +131,7 @@ void VestEditor::update()
 
 	getInspector().update();
 	getEntitySelector().update();
+	getRendererInfo().update();
 }
 
 void VestEditor::shutdown()
