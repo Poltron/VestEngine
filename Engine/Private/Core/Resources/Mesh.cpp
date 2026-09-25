@@ -72,8 +72,16 @@ Mesh::~Mesh()
 }
 
 Mesh::Mesh(Mesh&& inOther) noexcept
-	: vertices(inOther.vertices), indices(inOther.indices), textures(inOther.textures), VAO(inOther.VAO), VBO(inOther.VBO), EBO(inOther.EBO)
+	: VAO(inOther.VAO), VBO(inOther.VBO), EBO(inOther.EBO)
 {
+	vertices.clear();
+	indices.clear();
+	textures.clear();
+
+	vertices = inOther.vertices;
+	indices = inOther.indices;
+	textures = inOther.textures;
+
 	inOther.VAO = 0;
 	inOther.VBO = 0;
 	inOther.EBO = 0;
@@ -90,6 +98,7 @@ Mesh& Mesh::operator=(Mesh&& inOther) noexcept
 		vertices = inOther.vertices;
 		indices = inOther.indices;
 		textures = inOther.textures;
+
 		VAO = inOther.VAO;
 		VBO = inOther.VBO;
 		EBO = inOther.EBO;

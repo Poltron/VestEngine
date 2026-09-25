@@ -6,6 +6,7 @@
 #include "ECS/Components/HierarchyComponent.h"
 #include "ECS/Components/MeshRendererComponent.h"
 #include "ECS/Components/PointLightComponent.h"
+#include "ECS/Components/PrimitiveRendererComponent.h"
 #include "ECS/Components/RigidbodyComponent.h"
 #include "ECS/Components/SphereBoundingVolumeComponent.h"
 #include "ECS/Components/TransformComponent.h"
@@ -24,6 +25,11 @@ class Scene
 	ComponentManager<HierarchyComponent> hierarchyComponents;
 	
 	ComponentManager<MeshRendererComponent> meshRendererComponents;
+	ComponentManager<SphereRendererComponent> sphereRendererComponents;
+	ComponentManager<BoxRendererComponent> boxRendererComponents;
+	ComponentManager<LineRendererComponent> lineRendererComponents;
+	ComponentManager<PointRendererComponent> pointRendererComponents;
+
 	ComponentManager<SphereBoundingVolumeComponent> sphereBoundingVolumeComponents;
 
 	ComponentManager<RigidbodyComponent> rigidbodyComponents;
@@ -49,6 +55,15 @@ public:
 
 	ComponentManager<MeshRendererComponent>& getMeshRendererComponents() { return meshRendererComponents; }
 	const ComponentManager<MeshRendererComponent>& getMeshRendererComponents() const { return meshRendererComponents; }
+	ComponentManager<SphereRendererComponent>& getSphereRendererComponents() { return sphereRendererComponents; }
+	const ComponentManager<SphereRendererComponent>& getSphereRendererComponents() const { return sphereRendererComponents; }
+	ComponentManager<BoxRendererComponent>& getBoxRendererComponents() { return boxRendererComponents; }
+	const ComponentManager<BoxRendererComponent>& getBoxRendererComponents() const { return boxRendererComponents; }
+	ComponentManager<LineRendererComponent>& getLineRendererComponents() { return lineRendererComponents; }
+	const ComponentManager<LineRendererComponent>& getLineRendererComponents() const { return lineRendererComponents; }
+	ComponentManager<PointRendererComponent>& getPointRendererComponents() { return pointRendererComponents; }
+	const ComponentManager<PointRendererComponent>& getPointRendererComponents() const { return pointRendererComponents; }
+
 	ComponentManager<SphereBoundingVolumeComponent>& getSphereBoundingVolumeComponents() { return sphereBoundingVolumeComponents; }
 	const ComponentManager<SphereBoundingVolumeComponent>& getSphereBoundingVolumeComponents() const { return sphereBoundingVolumeComponents; }
 
@@ -69,6 +84,27 @@ public:
 	MeshRendererComponent* addMeshRendererTo(Entity inEntity
 		, ResourceHandle inModel
 		, ResourceHandle inShader);
+
+	PointRendererComponent* addPointRendererTo(Entity inEntity
+		, const glm::vec3& inPosition
+		, float inSize
+		, const glm::vec3& inColor);
+
+	LineRendererComponent* addLineRendererTo(Entity inEntity
+		, const glm::vec3& inStart
+		, const glm::vec3& inEnd
+		, const glm::vec3& inColor);
+
+	BoxRendererComponent* addBoxRendererTo(Entity inEntity
+		, const glm::vec3& inSize
+		, const glm::vec3& inColor);
+
+	SphereRendererComponent* addSphereRendererTo(Entity inEntity
+		, const glm::vec3& inRadius
+		, const glm::vec3& inColor);
+
+	/*
+	*/
 
 	SphereBoundingVolumeComponent* addSphereBoundingVolumeTo(Entity inEntity
 		, float radius);
@@ -93,6 +129,5 @@ public:
 		, const glm::vec3& inPosition
 		, const glm::quat& inRotation
 		, const glm::vec3& inScale
-		, float inSphereRadius
 		, HierarchyComponent* inParentHierarchy = nullptr);
 };

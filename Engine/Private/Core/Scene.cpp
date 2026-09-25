@@ -6,6 +6,7 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Render/Color.h"
+#include "Render/DrawPrimitivesHelper.h"
 #include "Render/Renderer.h"
 
 bool Scene::initialize()
@@ -63,6 +64,54 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	return meshRendererComponent;
 }
 
+PointRendererComponent* Scene::addPointRendererTo(Entity inEntity
+	, const glm::vec3& inPosition
+	, float inSize
+	, const glm::vec3& inColor)
+{
+	PointRendererComponent* pointRendererComponent = pointRendererComponents.create(inEntity);
+	pointRendererComponent->position = inPosition;
+	pointRendererComponent->size = inSize;
+	pointRendererComponent->color = inColor;
+
+	return pointRendererComponent;
+}
+
+LineRendererComponent* Scene::addLineRendererTo(Entity inEntity
+	, const glm::vec3& inStart
+	, const glm::vec3& inEnd
+	, const glm::vec3& inColor)
+{
+	LineRendererComponent* lineRendererComponent = lineRendererComponents.create(inEntity);
+	lineRendererComponent->start = inStart;
+	lineRendererComponent->end = inEnd;
+	lineRendererComponent->color = inColor;
+
+	return lineRendererComponent;
+}
+
+BoxRendererComponent* Scene::addBoxRendererTo(Entity inEntity
+	, const glm::vec3& inSize
+	, const glm::vec3& inColor)
+{
+	BoxRendererComponent* boxRendererComponent = boxRendererComponents.create(inEntity);
+	boxRendererComponent->size = inSize;
+	boxRendererComponent->color = inColor;
+
+	return boxRendererComponent;
+}
+
+SphereRendererComponent* Scene::addSphereRendererTo(Entity inEntity
+	, const glm::vec3& inRadius
+	, const glm::vec3& inColor)
+{
+	SphereRendererComponent* sphereRendererComponent = sphereRendererComponents.create(inEntity);
+	sphereRendererComponent->radius = inRadius;
+	sphereRendererComponent->color = inColor;
+
+	return sphereRendererComponent;
+}
+
 SphereBoundingVolumeComponent* Scene::addSphereBoundingVolumeTo(Entity inEntity
 	, float inRadius)
 {
@@ -114,12 +163,10 @@ Entity Scene::createRenderedModel(ResourceHandle inModel
 	, const glm::vec3& inPosition
 	, const glm::quat& inRotation
 	, const glm::vec3& inScale
-	, float inSphereRadius
 	, HierarchyComponent* inParentHierarchy)
 {
 	Entity entity = entities.createEntity();
 	addTransformTo(entity, inPosition, inRotation, inScale, inParentHierarchy);
 	addMeshRendererTo(entity, inModel, inShader);
-	addSphereBoundingVolumeTo(entity, inSphereRadius);
 	return entity;
 }

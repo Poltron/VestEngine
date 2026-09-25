@@ -9,6 +9,7 @@
 
 #include "Camera.h"
 #include "Core/Engine.h"
+#include "Core/Maths.h"
 #include "Core/Scene.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Mesh.h"
@@ -21,6 +22,8 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Color.h"
+#include "Render/DrawPrimitivesHelper.h"
+#include "Render/PrimitiveMesh.h"
 
 class VestRenderer final : public Renderer
 {
@@ -38,6 +41,8 @@ using namespace render;
 //
 bool VestRenderer::initialize()
 {
+	loadPrimitiveMeshes();
+
 	// depth test
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -54,6 +59,20 @@ bool VestRenderer::initialize()
 void VestRenderer::shutdown()
 {}
 
+//
+//
+namespace
+{
+	enum class EPrimitiveMesh : unsigned int
+	{
+		//POINT = 0,
+		//LINE,
+		BOX = 0,
+		SPHERE,
+		ENUM_SIZE
+	};
+}
+
 void Renderer::clear()
 {
 	ZoneScoped;
@@ -67,7 +86,7 @@ void Renderer::clear()
 	frameInfo.reset();
 }
 
-void Renderer::render(Scene& inScene, double inCurrentFrame)
+void Renderer::render(Scene& inScene)
 {
 	ZoneScopedN("Renderer::render");
 	TracyGpuZone("Renderer::render");
@@ -78,6 +97,12 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 		return;
 	}
 
+	renderMeshRenderersComponents(inScene);
+	renderPrimitives(inScene);
+}
+
+void Renderer::renderMeshRenderersComponents(Scene& inScene)
+{
 	for (size_t i = 0; i < inScene.getMeshRendererComponents().size(); ++i)
 	{
 		ZoneScoped;
@@ -104,14 +129,13 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 
 		Model* model = engine::getResources()->getModel(meshRenderer->model);
 		ensure(model != nullptr);
-		
+
 		const std::string meshRendererName = "render " + model->getPath();
 		ZoneName(meshRendererName.c_str(), meshRendererName.size());
 
 		Shader* shader = nullptr;
 		WorldTransformComponent* worldTransform = nullptr;
 		{
-
 			shader = engine::getResources()->getShader(meshRenderer->shader);
 			ensure(shader != nullptr);
 			shader->use();
@@ -174,6 +198,112 @@ void Renderer::render(Scene& inScene, double inCurrentFrame)
 	}
 }
 
+void Renderer::renderPrimitives(Scene& inScene)
+{
+	Shader* shader = engine::getResources()->getShader(primitiveShaderHandle);
+	ensure(shader != nullptr);
+	shader->use();
+
+	glm::mat4& viewMatrix = activeCamera->getViewMatrix();
+	shader->setMat4("view", glm::value_ptr(viewMatrix));
+	glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
+	shader->setMat4("projection", glm::value_ptr(projectionMatrix));
+
+	{
+		ZoneScopedN("render point primitives");
+
+	//	primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].bind();
+
+	//	for (size_t i = 0; i < inScene.getPointRendererComponents().size(); ++i)
+	//	{
+	//		PointRendererComponent* point = inScene.getPointRendererComponents().at(i);
+	//		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(point->entity);
+	//		glm::mat4 positionMat = glm::identity<glm::mat4>();
+	//		positionMat = glm::translate(positionMat, glm::vec3(point->position));
+	//		positionMat = worldTransform->model * positionMat;
+
+	//		shader->setMat4("model", glm::value_ptr(positionMat));
+	//		shader->setVec3("material.objectColor", point->color);
+	//		glPointSize(point->size);
+
+	//		primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].draw();
+	//	}
+
+	//	for (PointPrimitiveInstance& pointInstance : pointPrimitiveInstances)
+	//	{
+	//		glm::mat4 positionMat = glm::identity<glm::mat4>();
+	//		positionMat = glm::translate(positionMat, glm::vec3(pointInstance.position));
+	//		shader->setMat4("model", glm::value_ptr(positionMat));
+	//		shader->setVec3("material.objectColor", pointInstance.color);
+	//		glPointSize(pointInstance.size);
+
+	//		primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].draw();
+	//	}
+	//	primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].unbind();
+	}
+
+	{
+		ZoneScopedN("render line primitives");
+	}
+	
+	{
+		ZoneScopedN("render box primitives");
+
+		primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].bind();
+
+		for (size_t i = 0; i < inScene.getBoxRendererComponents().size(); ++i)
+		{
+			BoxRendererComponent* box = inScene.getBoxRendererComponents().at(i);
+			WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(box->entity);
+			glm::mat4 size = glm::identity<glm::mat4>();
+			size = glm::scale(size, glm::vec3(box->size));
+			size = worldTransform->model * size;
+
+			shader->setMat4("model", glm::value_ptr(size));
+			shader->setVec3("material.objectColor", box->color);
+
+			primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].draw();
+		}
+
+		for (BoxPrimitiveInstance& boxInstance : boxPrimitiveInstances)
+		{
+			shader->setMat4("model", glm::value_ptr(boxInstance.model));
+			shader->setVec3("material.objectColor", boxInstance.color);
+			primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].draw();
+		}
+		primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].unbind();
+	}
+
+	{
+		ZoneScopedN("render sphere primitives");
+		
+		primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].bind();
+
+		for (size_t i = 0; i < inScene.getSphereRendererComponents().size(); ++i)
+		{
+			SphereRendererComponent* sphere = inScene.getSphereRendererComponents().at(i);
+			WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);
+			glm::mat4 radius = glm::identity<glm::mat4>();
+			radius = glm::scale(radius, glm::vec3(sphere->radius));
+			radius = worldTransform->model * radius;
+			shader->setMat4("model", glm::value_ptr(radius));
+			shader->setVec3("material.objectColor", sphere->color);
+
+			primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].draw();
+		}
+
+		for (SpherePrimitiveInstance& sphereInstance : spherePrimitiveInstances)
+		{
+			shader->setMat4("model", glm::value_ptr(sphereInstance.model));
+			shader->setVec3("material.objectColor", sphereInstance.color);
+
+			primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].draw();
+		}
+
+		primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].unbind();
+	}
+}
+
 void Renderer::swap()
 {
 	{
@@ -201,9 +331,47 @@ void Renderer::setActiveCamera(Camera* inCamera)
 }
 
 Camera& Renderer::getActiveCamera()
-{ 
+{
 	ensure(activeCamera);
-	return *activeCamera; 
+	return *activeCamera;
+}
+
+void Renderer::addPoint(const glm::vec3& inPosition, unsigned int inSize, const glm::vec3& inColor)
+{
+	PointPrimitiveInstance pointInstance;
+	pointInstance.position = inPosition;
+	pointInstance.size = inSize;
+	pointInstance.color = inColor;
+
+	pointPrimitiveInstances.push_back(pointInstance);
+}
+
+void Renderer::addLine(const glm::vec3& inStart, const glm::vec3& inEnd, const glm::vec3& inColor)
+{
+	LinePrimitiveInstance lineInstance;
+	lineInstance.start = inStart;
+	lineInstance.end = inEnd;
+	lineInstance.color = inColor;
+
+	linePrimitiveInstances.push_back(lineInstance);
+}
+
+void Renderer::addSphere(const glm::vec3& inPosition, const glm::vec3& inRotation, float inRadius, const glm::vec3& inColor)
+{
+	SpherePrimitiveInstance sphereInstance;
+	sphereInstance.color = inColor;
+	maths::computeTransformMatrix(inPosition, inRotation, glm::vec3(inRadius), sphereInstance.model);
+
+	spherePrimitiveInstances.push_back(sphereInstance);
+}
+
+void Renderer::addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, const glm::vec3& inScale, const glm::vec3& inColor)
+{
+	BoxPrimitiveInstance boxInstance;
+	boxInstance.color = inColor;
+	maths::computeTransformMatrix(inPosition, inRotation, inScale, boxInstance.model);
+
+	boxPrimitiveInstances.push_back(boxInstance);
 }
 
 void Renderer::loadDefaultShaders()
@@ -224,6 +392,22 @@ void Renderer::loadDefaultShaders()
 	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color_fragment.glsl";
 	ResourceHandle solidColorShader = engine::getResources()->loadShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
+
+	const std::string posVertexPath = WorkDirTMP + "/Resources/Shaders/vertex_pos.glsl";
+	ResourceHandle primitiveShader = engine::getResources()->loadShader(posVertexPath, solidColorFragmentPath);
+	g_Renderer->setPrimitiveShader(primitiveShader);
+}
+
+void Renderer::loadPrimitiveMeshes()
+{
+	ZoneScoped;
+
+	// todo: not the cleanest ? right now its following enum order but i can't resize + assign
+	// with enum index since there's no default constructor on PrimitiveMesh
+	//primitiveMeshes.push_back(primitiveMeshGenerationHelper::createPoint());
+	//primitiveMeshes.push_back(primitiveMeshGenerationHelper::createLine());
+	primitiveMeshes.push_back(primitiveMeshGenerationHelper::createBox());
+	primitiveMeshes.push_back(primitiveMeshGenerationHelper::createSphere(6));
 }
 
 void Renderer::updateLightParameters(Scene& inScene)

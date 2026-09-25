@@ -10,6 +10,8 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Render/Color.h"
+#include "Render/DrawPrimitivesHelper.h"
+#include "Render/PrimitiveMesh.h"
 #include "Render/Renderer.h"
 
 namespace
@@ -24,8 +26,7 @@ namespace
 			, inShader
 			, glm::vec3(0.0f, 0.0f, -1.0f)
 			, glm::quat(glm::radians(glm::vec3(45, 45, 45)))
-			, glm::vec3(0.4f, 0.4f, 0.4f)
-			, boundingSphereRadius);
+			, glm::vec3(0.4f, 0.4f, 0.4f));
 
 		inScene.addRigidbodyTo(entity
 			, glm::vec3(0.0f, 0.0f, 0.0f)
@@ -108,7 +109,6 @@ namespace
 				, cubePositions[i]
 				, rotation
 				, cubeScales[i]
-				, boundingSphereRadius
 				, parentHierarchy);
 
 			MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(cube);
@@ -126,14 +126,12 @@ namespace
 	{
 		glm::vec3 lightScale(0.2f);
 		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));
-		const float boundingSphereRadius = 1.0f;
 
 		Entity directionalLightID = inScene.createRenderedModel(inModel
 			, inShader
 			, glm::vec3(0, 0, 0)
 			, lightRotation
-			, lightScale
-			, boundingSphereRadius);
+			, lightScale);
 
 		glm::vec3 directionalLightColor(glm::vec3(1, 1, 1));
 
@@ -166,8 +164,7 @@ namespace
 				, inShader
 				, pointLightPositions[i]
 				, glm::quat()
-				, lightScale
-				, boundingSphereRadius);
+				, lightScale);
 
 			MeshRendererComponent* pointLightMeshRenderer = inScene.getMeshRendererComponents().get(pointLightID);
 			pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
@@ -188,6 +185,46 @@ namespace
 
 namespace demoScene
 {
+	void loadAxis(Scene& inScene, float inLength)
+	{
+		render::getRenderer()->addLine({ 0, 0, 0 }, { inLength, 0, 0 }, color::red);
+		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, inLength, 0 }, color::green);
+		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, 0, inLength }, color::blue);
+	}
+
+	void loadPrimitivesDemo(Scene& inScene)
+	{
+		ZoneScoped;
+
+		render::getRenderer()->addPoint({ 0, 0, 0 }, 3, color::red);
+		render::getRenderer()->addPoint({ 0, 0, -1 }, 5, color::green);
+		render::getRenderer()->addPoint({ 0, 0, -2 }, 7, color::blue);
+		render::getRenderer()->addPoint({ 0, 0, -3 }, 9, color::white);
+
+		render::getRenderer()->addLine({ 1, 0, 0 }, { 1, 1, 0 }, color::red);
+		render::getRenderer()->addLine({ 1, 0, -1 }, { 1, 1, -1 }, color::green);
+		render::getRenderer()->addLine({ 1, 0, -2 }, { 1, 1, -2 }, color::blue);
+		render::getRenderer()->addLine({ 1, 0, -3 }, { 1, 1, -3 }, color::white);
+
+		render::getRenderer()->addPoint({ 3, 0.5f, 0 }, 1, color::red);
+		render::getRenderer()->addSphere({ 3, 0.5f, 0 }, { 0, 0, 0 }, 0.125f, color::red);
+		render::getRenderer()->addPoint({ 3, 0.5f, -1 }, 1, color::green);
+		render::getRenderer()->addSphere({ 3, 0.5f, -1 }, { 45, 0, 0 }, 0.25f, color::green);
+		render::getRenderer()->addPoint({ 3, 0.5f, -2 }, 1, color::blue);
+		render::getRenderer()->addSphere({ 3, 0.5f, -2 }, { 0, 45, 0 }, 0.375f, color::blue);
+		render::getRenderer()->addPoint({ 3, 0.5f, -3 }, 1, color::white);
+		render::getRenderer()->addSphere({ 3, 0.5f, -3 }, { 0, 0, 45 }, 0.5f, color::white);
+
+		render::getRenderer()->addPoint({ 5, 0.5f, 0 }, 1, color::red);
+		render::getRenderer()->addBox({ 5, 0.5f, 0 }, { 0, 0, 0 }, { 1, 1, 1 }, color::red);
+		render::getRenderer()->addPoint({ 5, 0.5f, -1 }, 1, color::green);
+		render::getRenderer()->addBox({ 5, 0.5f, -1 }, { 45, 0, 0 }, { 0.25, 0.5f, 0.25f }, color::green);
+		render::getRenderer()->addPoint({ 5, 0.5f, -2 }, 1, color::blue);
+		render::getRenderer()->addBox({ 5, 0.5f, -2 }, { 0, 45, 0 }, { 0.75f, 0.5f, 1.0f }, color::blue);
+		render::getRenderer()->addPoint({ 5, 0.5f, -3 }, 1, color::white);
+		render::getRenderer()->addBox({ 5, 0.5f, -3 }, { 0, 0, 45 }, { 0.5f, 1, 0.25f }, color::white);
+	}
+
 	void loadCubesDemo(Scene& inScene)
 	{
 		ZoneScoped;
@@ -337,11 +374,11 @@ namespace demoScene
 				const glm::vec3 pos = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
 				const glm::quat rot = glm::quat(glm::radians(glm::vec3(0,0,0)));
 				const glm::vec3 scale = glm::vec3(0.2f);
-				const float boundingSphereRadius = 1.0f;
-				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale, boundingSphereRadius);
+				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);
 
-				MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(entity);
-				meshRenderer->bOutline = false;
+				const float boundingSphereRadius = 1;
+				inScene.addSphereBoundingVolumeTo(entity, boundingSphereRadius);
+				inScene.addSphereRendererTo(entity, color::red, glm::vec3(boundingSphereRadius));
 			}
 		}
 

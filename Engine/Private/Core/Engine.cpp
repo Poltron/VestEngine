@@ -66,7 +66,7 @@ void VestEngine::launch()
 		frustumCullingSystem.update(*scene);
 
 		render::getRenderer()->clear();
-		render::getRenderer()->render(*scene, currentFrame);
+		render::getRenderer()->render(*scene);
 		if (uiUpdateCallback)
 		{
 			uiUpdateCallback();

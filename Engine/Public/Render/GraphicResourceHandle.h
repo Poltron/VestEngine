@@ -9,3 +9,13 @@ namespace graphicResourceHandle
 		return inHandle > 0;
 	}
 }
+
+namespace render
+{
+	enum class EPrimitiveType
+	{
+		POINTS,
+		LINES,
+		TRIANGLES
+	};
+}
