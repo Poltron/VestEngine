@@ -21,6 +21,14 @@ void RendererInfo::update()
 		culledMeshTotal += std::to_string(render::getRenderer()->getFrameInfo().culledMeshTotal);
 		ImGui::Text(culledMeshTotal.c_str());
 
+		std::string debugShapesTotal = "Debug shapes: ";
+		debugShapesTotal += std::to_string(render::getRenderer()->getFrameInfo().debugShapesTotal);
+		ImGui::Text(debugShapesTotal.c_str());
+
+		std::string drawCallsTotal = "Draw calls: ";
+		drawCallsTotal += std::to_string(render::getRenderer()->getFrameInfo().drawCalls);
+		ImGui::Text(drawCallsTotal.c_str());
+
 		ImGui::End();
 	}
 }

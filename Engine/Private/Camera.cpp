@@ -21,11 +21,8 @@ namespace
 Camera::Camera()
 {
 	aspectRatio = (float)width / (float)height;
-
 	position = glm::vec3(0, 0, 10);
-
-	updateProjectionMatrix();
-	updateViewMatrix();
+	bDirty = true;
 }
 
 void Camera::initialize()
@@ -148,6 +145,7 @@ void Camera::update(double inDeltaTime)
 	{
 		updateProjectionMatrix();
 		updateViewMatrix();
+		viewProjection = projection * view;
 		updateFrustum();
 
 		bDirty = false;
@@ -184,6 +182,11 @@ glm::mat4& Camera::getProjectionMatrix()
 glm::mat4& Camera::getViewMatrix()
 {
 	return view;
+}
+
+glm::mat4& Camera::getViewProjectionMatrix()
+{
+	return viewProjection;
 }
 
 const Frustum& Camera::getFrustum() const

@@ -10,8 +10,8 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Render/Color.h"
-#include "Render/DrawPrimitivesHelper.h"
-#include "Render/PrimitiveMesh.h"
+#include "Render/DebugShapes.h"
+#include "Render/DebugShapeMeshGenerationHelper.h"
 #include "Render/Renderer.h"
 
 namespace
@@ -187,9 +187,9 @@ namespace demoScene
 {
 	void loadAxis(Scene& inScene, float inLength)
 	{
-		render::getRenderer()->addLine({ 0, 0, 0 }, { inLength, 0, 0 }, color::red);
-		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, inLength, 0 }, color::green);
-		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, 0, inLength }, color::blue);
+		render::getRenderer()->addLine({ 0, 0, 0 }, { inLength, 0, 0 }, 5.0f, color::red);
+		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, inLength, 0 }, 5.0f, color::green);
+		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, 0, inLength }, 5.0f, color::blue);
 	}
 
 	void loadPrimitivesDemo(Scene& inScene)
@@ -201,27 +201,27 @@ namespace demoScene
 		render::getRenderer()->addPoint({ 0, 0, -2 }, 7, color::blue);
 		render::getRenderer()->addPoint({ 0, 0, -3 }, 9, color::white);
 
-		render::getRenderer()->addLine({ 1, 0, 0 }, { 1, 1, 0 }, color::red);
-		render::getRenderer()->addLine({ 1, 0, -1 }, { 1, 1, -1 }, color::green);
-		render::getRenderer()->addLine({ 1, 0, -2 }, { 1, 1, -2 }, color::blue);
-		render::getRenderer()->addLine({ 1, 0, -3 }, { 1, 1, -3 }, color::white);
+		render::getRenderer()->addLine({ 1, 0, 0 }, { 1, 1, 0 }, 1.0f, color::red);
+		render::getRenderer()->addLine({ 1, 0, -1 }, { 1, 1, -1 }, 1.0f, color::green);
+		render::getRenderer()->addLine({ 1, 0, -2 }, { 1, 1, -2 }, 1.0f, color::blue);
+		render::getRenderer()->addLine({ 1, 0, -3 }, { 1, 1, -3 }, 1.0f, color::white);
 
-		render::getRenderer()->addPoint({ 3, 0.5f, 0 }, 1, color::red);
+		render::getRenderer()->addPoint({ 3, 0.5f, 0 }, 3, color::red);
 		render::getRenderer()->addSphere({ 3, 0.5f, 0 }, { 0, 0, 0 }, 0.125f, color::red);
-		render::getRenderer()->addPoint({ 3, 0.5f, -1 }, 1, color::green);
+		render::getRenderer()->addPoint({ 3, 0.5f, -1 }, 3, color::green);
 		render::getRenderer()->addSphere({ 3, 0.5f, -1 }, { 45, 0, 0 }, 0.25f, color::green);
-		render::getRenderer()->addPoint({ 3, 0.5f, -2 }, 1, color::blue);
+		render::getRenderer()->addPoint({ 3, 0.5f, -2 }, 3, color::blue);
 		render::getRenderer()->addSphere({ 3, 0.5f, -2 }, { 0, 45, 0 }, 0.375f, color::blue);
-		render::getRenderer()->addPoint({ 3, 0.5f, -3 }, 1, color::white);
+		render::getRenderer()->addPoint({ 3, 0.5f, -3 }, 3, color::white);
 		render::getRenderer()->addSphere({ 3, 0.5f, -3 }, { 0, 0, 45 }, 0.5f, color::white);
 
-		render::getRenderer()->addPoint({ 5, 0.5f, 0 }, 1, color::red);
+		render::getRenderer()->addPoint({ 5, 0.5f, 0 }, 3, color::red);
 		render::getRenderer()->addBox({ 5, 0.5f, 0 }, { 0, 0, 0 }, { 1, 1, 1 }, color::red);
-		render::getRenderer()->addPoint({ 5, 0.5f, -1 }, 1, color::green);
+		render::getRenderer()->addPoint({ 5, 0.5f, -1 }, 3, color::green);
 		render::getRenderer()->addBox({ 5, 0.5f, -1 }, { 45, 0, 0 }, { 0.25, 0.5f, 0.25f }, color::green);
-		render::getRenderer()->addPoint({ 5, 0.5f, -2 }, 1, color::blue);
+		render::getRenderer()->addPoint({ 5, 0.5f, -2 }, 3, color::blue);
 		render::getRenderer()->addBox({ 5, 0.5f, -2 }, { 0, 45, 0 }, { 0.75f, 0.5f, 1.0f }, color::blue);
-		render::getRenderer()->addPoint({ 5, 0.5f, -3 }, 1, color::white);
+		render::getRenderer()->addPoint({ 5, 0.5f, -3 }, 3, color::white);
 		render::getRenderer()->addBox({ 5, 0.5f, -3 }, { 0, 0, 45 }, { 0.5f, 1, 0.25f }, color::white);
 	}
 
@@ -377,8 +377,7 @@ namespace demoScene
 				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);
 
 				const float boundingSphereRadius = 1;
-				inScene.addSphereBoundingVolumeTo(entity, boundingSphereRadius);
-				inScene.addSphereRendererTo(entity, color::red, glm::vec3(boundingSphereRadius));
+				inScene.addSphereColliderTo(entity, boundingSphereRadius);
 			}
 		}
 

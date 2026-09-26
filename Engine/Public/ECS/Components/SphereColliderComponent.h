@@ -2,7 +2,7 @@
 
 #include "ECS/Entity.h"
 
-struct SphereBoundingVolumeComponent
+struct SphereColliderComponent
 {
 	Entity entity;
 

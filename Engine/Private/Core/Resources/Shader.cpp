@@ -114,6 +114,14 @@ void Shader::load()
 	glAttachShader(ID, fragmentShader);
 	glLinkProgram(ID);
 
+	GLint success;
+	glGetProgramiv(ID, GL_LINK_STATUS, &success);
+	if (!success) {
+		char infoLog[512];
+		glGetProgramInfoLog(ID, 512, NULL, infoLog);
+		std::cout << "Shader Linking Failed: " << infoLog << std::endl;
+	}
+
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 }
@@ -121,6 +129,14 @@ void Shader::load()
 void Shader::use()
 {
 	glUseProgram(ID);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "glUseProgram failed: " << err << std::endl;
+		}
+	}
 }
 
 void Shader::setBool(const std::string& name, bool value) const
@@ -162,6 +178,11 @@ void Shader::setVec4(const std::string& name, float x, float y, float z, float w
 void Shader::setMat4(const std::string& name, glm::f32* value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (location == -1)
+	{
+		std::cerr << "GetUniformLocation failed " << name << std::endl;
+		return;
+	}
 	glUniformMatrix4fv(location, 1, GL_FALSE, value);
 }
 

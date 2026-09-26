@@ -17,13 +17,14 @@
 #include "ECS/Components/DirectionalLightComponent.h"
 #include "ECS/Components/MeshRendererComponent.h"
 #include "ECS/Components/PointLightComponent.h"
+#include "ECS/Components/SphereColliderComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/ComponentManager.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Color.h"
-#include "Render/DrawPrimitivesHelper.h"
-#include "Render/PrimitiveMesh.h"
+#include "Render/DebugShapes.h"
+#include "Render/DebugShapeMeshGenerationHelper.h"
 
 class VestRenderer final : public Renderer
 {
@@ -41,7 +42,8 @@ using namespace render;
 //
 bool VestRenderer::initialize()
 {
-	loadPrimitiveMeshes();
+	loadDebugShapes();
+	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	// depth test
 	glEnable(GL_DEPTH_TEST);
@@ -63,10 +65,15 @@ void VestRenderer::shutdown()
 //
 namespace
 {
-	enum class EPrimitiveMesh : unsigned int
+	enum class EDebugShapePrimitive : unsigned int
 	{
-		//POINT = 0,
-		//LINE,
+		POINT = 0,
+		LINE,
+		ENUM_SIZE
+	};
+
+	enum class EDebugShapeMesh : unsigned int
+	{
 		BOX = 0,
 		SPHERE,
 		ENUM_SIZE
@@ -97,11 +104,11 @@ void Renderer::render(Scene& inScene)
 		return;
 	}
 
-	renderMeshRenderersComponents(inScene);
-	renderPrimitives(inScene);
+	renderMainPass(inScene);
+	renderDebugPass(inScene);
 }
 
-void Renderer::renderMeshRenderersComponents(Scene& inScene)
+void Renderer::renderMainPass(Scene& inScene)
 {
 	for (size_t i = 0; i < inScene.getMeshRendererComponents().size(); ++i)
 	{
@@ -115,7 +122,7 @@ void Renderer::renderMeshRenderersComponents(Scene& inScene)
 			continue;
 		}
 
-		SphereBoundingVolumeComponent* sphere = inScene.getSphereBoundingVolumeComponents().get(meshRenderer->entity);
+		SphereColliderComponent* sphere = inScene.getSphereColliderComponents().get(meshRenderer->entity);
 		ensure(sphere != nullptr);
 		if (!sphere->bInFrustum)
 		{
@@ -139,16 +146,14 @@ void Renderer::renderMeshRenderersComponents(Scene& inScene)
 			shader = engine::getResources()->getShader(meshRenderer->shader);
 			ensure(shader != nullptr);
 			shader->use();
+			frameInfo.shaderPrograms++;
 
 			globalShaderParameters.applyToShader(*shader, *engine::getResources());
 		}
 
 		{
-			glm::mat4& viewMatrix = activeCamera->getViewMatrix();
-			shader->setMat4("view", glm::value_ptr(viewMatrix));
 			shader->setVec3("viewPosition", activeCamera->getPosition());
-			glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
-			shader->setMat4("projection", glm::value_ptr(projectionMatrix));
+			shader->setMat4("viewProjection", glm::value_ptr(activeCamera->getViewProjectionMatrix()));
 
 			worldTransform = inScene.getWorldTransformComponents().get(meshRenderer->entity);
 			ensure(worldTransform != nullptr);
@@ -172,6 +177,7 @@ void Renderer::renderMeshRenderersComponents(Scene& inScene)
 				glStencilMask(0xFF); // allow full writing to stencil
 			}
 
+			frameInfo.drawCalls++;
 			model->draw();
 		}
 
@@ -184,6 +190,7 @@ void Renderer::renderMeshRenderersComponents(Scene& inScene)
 			Shader* shader = engine::getResources()->getShader(getSolidColorShader());
 			ensure(shader);
 			shader->use();
+			frameInfo.shaderPrograms++;
 
 			glm::mat4 outlineMat = worldTransform->model;
 			outlineMat = glm::scale(outlineMat, glm::vec3(1.1f, 1.1f, 1.1f));
@@ -191,6 +198,7 @@ void Renderer::renderMeshRenderersComponents(Scene& inScene)
 			shader->setMat4("model", glm::value_ptr(outlineMat));
 			shader->setVec3("objectColor", color::yellow);
 
+			frameInfo.drawCalls++;
 			model->draw();
 
 			glStencilFunc(GL_ALWAYS, 1, 0xFF); // every fragment passes stencil
@@ -198,109 +206,82 @@ void Renderer::renderMeshRenderersComponents(Scene& inScene)
 	}
 }
 
-void Renderer::renderPrimitives(Scene& inScene)
+void Renderer::renderDebugPass(Scene& inScene)
 {
-	Shader* shader = engine::getResources()->getShader(primitiveShaderHandle);
+	Shader* shader = engine::getResources()->getShader(debugPrimitiveShaderHandle);
 	ensure(shader != nullptr);
 	shader->use();
+	frameInfo.shaderPrograms++;
 
-	glm::mat4& viewMatrix = activeCamera->getViewMatrix();
-	shader->setMat4("view", glm::value_ptr(viewMatrix));
-	glm::mat4& projectionMatrix = activeCamera->getProjectionMatrix();
-	shader->setMat4("projection", glm::value_ptr(projectionMatrix));
+	glm::mat4 viewProjection = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();
+	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection));
 
 	{
 		ZoneScopedN("render point primitives");
 
-	//	primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].bind();
+		DebugShapePrimitive& pointPrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::POINT];
+		glBindBuffer(GL_ARRAY_BUFFER, pointPrimitive.getVBO());
+		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(pointDebugShapeInstances.size() * sizeof(DebugShapePrimitiveInstance)), pointDebugShapeInstances.data());
 
-	//	for (size_t i = 0; i < inScene.getPointRendererComponents().size(); ++i)
-	//	{
-	//		PointRendererComponent* point = inScene.getPointRendererComponents().at(i);
-	//		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(point->entity);
-	//		glm::mat4 positionMat = glm::identity<glm::mat4>();
-	//		positionMat = glm::translate(positionMat, glm::vec3(point->position));
-	//		positionMat = worldTransform->model * positionMat;
+		glBindVertexArray(pointPrimitive.getVAO());
+		glDrawArrays(GL_POINTS, 0, (GLsizei)(pointDebugShapeInstances.size()));
+		glBindVertexArray(0);
 
-	//		shader->setMat4("model", glm::value_ptr(positionMat));
-	//		shader->setVec3("material.objectColor", point->color);
-	//		glPointSize(point->size);
-
-	//		primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].draw();
-	//	}
-
-	//	for (PointPrimitiveInstance& pointInstance : pointPrimitiveInstances)
-	//	{
-	//		glm::mat4 positionMat = glm::identity<glm::mat4>();
-	//		positionMat = glm::translate(positionMat, glm::vec3(pointInstance.position));
-	//		shader->setMat4("model", glm::value_ptr(positionMat));
-	//		shader->setVec3("material.objectColor", pointInstance.color);
-	//		glPointSize(pointInstance.size);
-
-	//		primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].draw();
-	//	}
-	//	primitiveMeshes[(unsigned int)EPrimitiveMesh::POINT].unbind();
+		frameInfo.drawCalls++;
+		frameInfo.debugShapesTotal += pointDebugShapeInstances.size();
 	}
 
 	{
 		ZoneScopedN("render line primitives");
-	}
-	
-	{
-		ZoneScopedN("render box primitives");
 
-		primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].bind();
+		DebugShapePrimitive& linePrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::LINE];
+		glBindBuffer(GL_ARRAY_BUFFER, linePrimitive.getVBO());
+		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(lineDebugShapeInstances.size() * sizeof(DebugShapePrimitiveInstance)), lineDebugShapeInstances.data());
 
-		for (size_t i = 0; i < inScene.getBoxRendererComponents().size(); ++i)
-		{
-			BoxRendererComponent* box = inScene.getBoxRendererComponents().at(i);
-			WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(box->entity);
-			glm::mat4 size = glm::identity<glm::mat4>();
-			size = glm::scale(size, glm::vec3(box->size));
-			size = worldTransform->model * size;
+		glBindVertexArray(linePrimitive.getVAO());
+		glDrawArrays(GL_LINES, 0, (GLsizei)(lineDebugShapeInstances.size()));
+		glBindVertexArray(0);
 
-			shader->setMat4("model", glm::value_ptr(size));
-			shader->setVec3("material.objectColor", box->color);
-
-			primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].draw();
-		}
-
-		for (BoxPrimitiveInstance& boxInstance : boxPrimitiveInstances)
-		{
-			shader->setMat4("model", glm::value_ptr(boxInstance.model));
-			shader->setVec3("material.objectColor", boxInstance.color);
-			primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].draw();
-		}
-		primitiveMeshes[(unsigned int)EPrimitiveMesh::BOX].unbind();
+		frameInfo.drawCalls++;
+		frameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
 	}
 
+	shader = engine::getResources()->getShader(debugMeshShaderHandle);
+	ensure(shader != nullptr);
+	shader->use();
+	frameInfo.shaderPrograms++;
+
+	glm::mat4 viewProjection2 = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();
+	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection2));
+
 	{
-		ZoneScopedN("render sphere primitives");
-		
-		primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].bind();
+		ZoneScopedN("render box meshes");
 
-		for (size_t i = 0; i < inScene.getSphereRendererComponents().size(); ++i)
-		{
-			SphereRendererComponent* sphere = inScene.getSphereRendererComponents().at(i);
-			WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);
-			glm::mat4 radius = glm::identity<glm::mat4>();
-			radius = glm::scale(radius, glm::vec3(sphere->radius));
-			radius = worldTransform->model * radius;
-			shader->setMat4("model", glm::value_ptr(radius));
-			shader->setVec3("material.objectColor", sphere->color);
+		DebugShapeMesh& boxMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::BOX];
+		glBindBuffer(GL_ARRAY_BUFFER, boxMesh.getVBOInstances());
+		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(boxDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), boxDebugShapeInstances.data());
 
-			primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].draw();
-		}
+		glBindVertexArray(boxMesh.getVAO());
+		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)(boxDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), (GLsizei)boxDebugShapeInstances.size());
+		glBindVertexArray(0);
 
-		for (SpherePrimitiveInstance& sphereInstance : spherePrimitiveInstances)
-		{
-			shader->setMat4("model", glm::value_ptr(sphereInstance.model));
-			shader->setVec3("material.objectColor", sphereInstance.color);
+		frameInfo.drawCalls++;
+		frameInfo.debugShapesTotal += boxDebugShapeInstances.size();
+	}
 
-			primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].draw();
-		}
+	{
+		ZoneScopedN("render sphere meshes");
 
-		primitiveMeshes[(unsigned int)EPrimitiveMesh::SPHERE].unbind();
+		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
+		glBindBuffer(GL_ARRAY_BUFFER, sphereMesh.getVBOInstances());
+		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(sphereDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), sphereDebugShapeInstances.data());
+
+		glBindVertexArray(sphereMesh.getVAO());
+		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)(sphereDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), (GLsizei)sphereDebugShapeInstances.size());
+		glBindVertexArray(0);
+
+		frameInfo.drawCalls++;
+		frameInfo.debugShapesTotal += sphereDebugShapeInstances.size();
 	}
 }
 
@@ -336,42 +317,44 @@ Camera& Renderer::getActiveCamera()
 	return *activeCamera;
 }
 
-void Renderer::addPoint(const glm::vec3& inPosition, unsigned int inSize, const glm::vec3& inColor)
+void Renderer::addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor)
 {
-	PointPrimitiveInstance pointInstance;
+	DebugShapePrimitiveInstance pointInstance;
+	pointInstance.color = inColor;
 	pointInstance.position = inPosition;
 	pointInstance.size = inSize;
-	pointInstance.color = inColor;
-
-	pointPrimitiveInstances.push_back(pointInstance);
+	pointDebugShapeInstances.push_back(pointInstance);
 }
 
-void Renderer::addLine(const glm::vec3& inStart, const glm::vec3& inEnd, const glm::vec3& inColor)
+void Renderer::addLine(const glm::vec3& inStart, const glm::vec3& inEnd, float inSize, const glm::vec3& inColor)
 {
-	LinePrimitiveInstance lineInstance;
-	lineInstance.start = inStart;
-	lineInstance.end = inEnd;
-	lineInstance.color = inColor;
+	DebugShapePrimitiveInstance lineStartInstance;
+	lineStartInstance.color = inColor;
+	lineStartInstance.position = inStart;
+	lineStartInstance.size = inSize;
+	lineDebugShapeInstances.push_back(lineStartInstance);
 
-	linePrimitiveInstances.push_back(lineInstance);
+	DebugShapePrimitiveInstance lineEndInstance;
+	lineEndInstance.color = inColor;
+	lineEndInstance.position = inEnd;
+	lineEndInstance.size = inSize;
+	lineDebugShapeInstances.push_back(lineEndInstance);
 }
 
 void Renderer::addSphere(const glm::vec3& inPosition, const glm::vec3& inRotation, float inRadius, const glm::vec3& inColor)
 {
-	SpherePrimitiveInstance sphereInstance;
+	DebugShapeMeshInstance sphereInstance;
 	sphereInstance.color = inColor;
 	maths::computeTransformMatrix(inPosition, inRotation, glm::vec3(inRadius), sphereInstance.model);
-
-	spherePrimitiveInstances.push_back(sphereInstance);
+	sphereDebugShapeInstances.push_back(sphereInstance);
 }
 
 void Renderer::addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, const glm::vec3& inScale, const glm::vec3& inColor)
 {
-	BoxPrimitiveInstance boxInstance;
+	DebugShapeMeshInstance boxInstance;
 	boxInstance.color = inColor;
 	maths::computeTransformMatrix(inPosition, inRotation, inScale, boxInstance.model);
-
-	boxPrimitiveInstances.push_back(boxInstance);
+	boxDebugShapeInstances.push_back(boxInstance);
 }
 
 void Renderer::loadDefaultShaders()
@@ -380,34 +363,38 @@ void Renderer::loadDefaultShaders()
 
 	const std::string WorkDirTMP = WORKDIR;
 
-	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/vertex.glsl";
-	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit_fragment.glsl";
+	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/default.vert";
+	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit.frag";
 	ResourceHandle litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
 	g_Renderer->setLitShader(litShader);
 
-	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit_fragment.glsl";
+	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit.frag";
 	ResourceHandle unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
 	g_Renderer->setUnlitShader(unlitShader);
 
-	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color_fragment.glsl";
+	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color.frag";
 	ResourceHandle solidColorShader = engine::getResources()->loadShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
 
-	const std::string posVertexPath = WorkDirTMP + "/Resources/Shaders/vertex_pos.glsl";
-	ResourceHandle primitiveShader = engine::getResources()->loadShader(posVertexPath, solidColorFragmentPath);
-	g_Renderer->setPrimitiveShader(primitiveShader);
+	const std::string debugMeshVertexPath = WorkDirTMP + "/Resources/Shaders/debug_mesh.vert";
+	const std::string debugFragmentPath = WorkDirTMP + "/Resources/Shaders/debug.frag";
+	ResourceHandle debugMeshShader = engine::getResources()->loadShader(debugMeshVertexPath, debugFragmentPath);
+	g_Renderer->setDebugMeshShader(debugMeshShader);
+
+	const std::string debugPrimitiveVertexPath = WorkDirTMP + "/Resources/Shaders/debug_primitive.vert";
+	ResourceHandle debugPrimitiveShader = engine::getResources()->loadShader(debugPrimitiveVertexPath, debugFragmentPath);
+	g_Renderer->setDebugPrimitiveShader(debugPrimitiveShader);
 }
 
-void Renderer::loadPrimitiveMeshes()
+void Renderer::loadDebugShapes()
 {
 	ZoneScoped;
 
+	debugShapePrimitives.resize((size_t)EDebugShapePrimitive::ENUM_SIZE);
 	// todo: not the cleanest ? right now its following enum order but i can't resize + assign
-	// with enum index since there's no default constructor on PrimitiveMesh
-	//primitiveMeshes.push_back(primitiveMeshGenerationHelper::createPoint());
-	//primitiveMeshes.push_back(primitiveMeshGenerationHelper::createLine());
-	primitiveMeshes.push_back(primitiveMeshGenerationHelper::createBox());
-	primitiveMeshes.push_back(primitiveMeshGenerationHelper::createSphere(6));
+	// with enum index since there's no default constructor on DebugShapeMesh
+	debugShapeMeshes.push_back(debugShapeMeshGenerationHelper::createBox());
+	debugShapeMeshes.push_back(debugShapeMeshGenerationHelper::createSphere(6));
 }
 
 void Renderer::updateLightParameters(Scene& inScene)

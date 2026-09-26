@@ -8,7 +8,7 @@
 #include "ECS/Entity.h"
 #include "ECS/EntityManager.h"
 #include "ECS/Components/TransformComponent.h"
-#include "ECS/Components/SphereBoundingVolumeComponent.h"
+#include "ECS/Components/SphereColliderComponent.h"
 #include "Render/Renderer.h"
 
 namespace
@@ -40,9 +40,9 @@ void FrustumCullingSystem::update(Scene& inScene)
 
 	const Frustum& frustum = engine::getScene()->getCamera().getFrustum();
 
-	for (size_t i = 0; i < inScene.getSphereBoundingVolumeComponents().size(); ++i)
+	for (size_t i = 0; i < inScene.getSphereColliderComponents().size(); ++i)
 	{
-		SphereBoundingVolumeComponent* sphere = inScene.getSphereBoundingVolumeComponents().at(i);
+		SphereColliderComponent* sphere = inScene.getSphereColliderComponents().at(i);
 		ensure(sphere);
 
 		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);

@@ -1,15 +1,15 @@
-#include "Render/DrawPrimitivesHelper.h"
+#include "Render/DebugShapeMeshGenerationHelper.h"
 
 #include <functional>
 
 #include "glm/gtc/constants.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
-#include "Render/PrimitiveMesh.h"
+#include "Render/DebugShapes.h"
 
 namespace
 {
-	void generateCircle(const glm::mat4& inRotationMatrix, unsigned int inNumSegments, std::function<float(float)> inXFunc, std::function<float(float)> inYFunc, std::vector<PrimitiveVertex>& outVertices)
+	void generateCircle(const glm::mat4& inRotationMatrix, unsigned int inNumSegments, std::function<float(float)> inXFunc, std::function<float(float)> inYFunc, std::vector<glm::vec3>& outVertices)
 	{
 		const glm::vec3 startVertex = inRotationMatrix * glm::vec4(inXFunc(0), inYFunc(0), 0, 1);
 		glm::vec3 previousVertex = startVertex;
@@ -30,9 +30,9 @@ namespace
 	}
 }
 
-namespace primitiveMeshGenerationHelper
+namespace debugShapeMeshGenerationHelper
 {
-	PrimitiveMesh createBox()
+	DebugShapeMesh createBox()
 	{
 		//
 		//      5---6
@@ -41,7 +41,7 @@ namespace primitiveMeshGenerationHelper
 		//    4---3
 		//
 
-		std::vector<PrimitiveVertex> vertices;
+		std::vector<glm::vec3> vertices;
 
 		float halfSizeX = 0.5f;
 		float halfSizeY = 0.5f;
@@ -93,12 +93,12 @@ namespace primitiveMeshGenerationHelper
 		vertices.push_back(vertex4);
 		vertices.push_back(vertex8);
 
-		return PrimitiveMesh(std::move(vertices), render::EPrimitiveType::LINES);
+		return DebugShapeMesh(std::move(vertices));
 	}
 
-	PrimitiveMesh createSphere(int inNumSegments)
+	DebugShapeMesh createSphere(int inNumSegments)
 	{
-		std::vector<PrimitiveVertex> vertices;
+		std::vector<glm::vec3> vertices;
 
 		std::function<float(float)> cosFunc = [](float f) {return cos(f); };
 		std::function<float(float)> sinFunc = [](float f) {return sin(f); };
@@ -117,6 +117,6 @@ namespace primitiveMeshGenerationHelper
 
 		generateCircle(rotationMatrix, inNumSegments * 2, sinFunc, cosFunc, vertices);
 
-		return PrimitiveMesh(std::move(vertices), render::EPrimitiveType::LINES);
+		return DebugShapeMesh(std::move(vertices));
 	}
 }

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Render/PrimitiveMesh.h"
+#include "Render/DebugShapes.h"
 #include "Render/GraphicResourceHandle.h"
 #include "Render/ShaderParameterCollection.h"
 #include "Core/Ensure.h"
@@ -15,16 +15,20 @@ class Scene;
 
 struct FrameInfo
 {
-	unsigned int renderedMeshTotal;
-	unsigned int culledMeshTotal;
+	size_t renderedMeshTotal;
+	size_t culledMeshTotal;
+	size_t debugShapesTotal;
 
-	unsigned int renderedPrimitivesTotal;
-	unsigned int culledPrimitivesTotal;
+	size_t shaderPrograms;
+	size_t drawCalls;
 
 	void reset()
 	{
 		renderedMeshTotal = 0;
 		culledMeshTotal = 0;
+		debugShapesTotal = 0;
+		shaderPrograms = 0;
+		drawCalls = 0;
 	}
 };
 
@@ -36,7 +40,8 @@ public:
 	void swap();
 
 private:
-	void renderMeshRenderersComponents(Scene& inScene);
+	void renderMainPass(Scene& inScene);
+	void renderDebugPass(Scene& inScene);
 
 //
 public:
@@ -48,22 +53,21 @@ private:
 
 //
 public:
-	void loadPrimitiveMeshes();
+	void loadDebugShapes();
 
-	void addPoint(const glm::vec3& inPosition, unsigned int inSize, const glm::vec3& inColor);
-	void addLine(const glm::vec3& inStart, const glm::vec3& inEnd, const glm::vec3& inColor);
+	void addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor);
+	void addLine(const glm::vec3& inStart, const glm::vec3& inEnd, float inSize, const glm::vec3& inColor);
 	void addSphere(const glm::vec3& inPosition, const glm::vec3& inRotation, float inRadius, const glm::vec3& inColor);
 	void addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, const glm::vec3& inScale, const glm::vec3& inColor);
 
 private:
-	void renderPrimitives(Scene& inScene);
+	std::vector<DebugShapePrimitiveInstance> pointDebugShapeInstances;
+	std::vector<DebugShapePrimitiveInstance> lineDebugShapeInstances;
+	std::vector<DebugShapePrimitive> debugShapePrimitives;
 
-	std::vector<PointPrimitiveInstance> pointPrimitiveInstances;
-	std::vector<LinePrimitiveInstance> linePrimitiveInstances;
-	std::vector<BoxPrimitiveInstance> boxPrimitiveInstances;
-	std::vector<SpherePrimitiveInstance> spherePrimitiveInstances;
-
-	std::vector<PrimitiveMesh> primitiveMeshes;
+	std::vector<DebugShapeMeshInstance> boxDebugShapeInstances;
+	std::vector<DebugShapeMeshInstance> sphereDebugShapeInstances;
+	std::vector<DebugShapeMesh> debugShapeMeshes;
 
 //
 public:
@@ -76,16 +80,21 @@ public:
 	void setUnlitShader(ResourceHandle inResourceHandle) { unlitShaderHandle = inResourceHandle; }
 	ResourceHandle getSolidColorShader() { return solidColorShaderHandle; }
 	void setSolidColorShader(ResourceHandle inResourceHandle) { solidColorShaderHandle = inResourceHandle; }
-	ResourceHandle getPrimitiveShader() { return primitiveShaderHandle; }
-	void setPrimitiveShader(ResourceHandle inResourceHandle) { primitiveShaderHandle = inResourceHandle; }
+
+	ResourceHandle getDebugPrimitiveShader() { return debugPrimitiveShaderHandle; }
+	void setDebugPrimitiveShader(ResourceHandle inResourceHandle) { debugPrimitiveShaderHandle = inResourceHandle; }
+	ResourceHandle getDebugMeshShader() { return debugMeshShaderHandle; }
+	void setDebugMeshShader(ResourceHandle inResourceHandle) { debugMeshShaderHandle = inResourceHandle; }
 
 private:
 	ShaderParameterCollection globalShaderParameters;
 
-	ResourceHandle primitiveShaderHandle;
-	ResourceHandle solidColorShaderHandle;
 	ResourceHandle litShaderHandle;
 	ResourceHandle unlitShaderHandle;
+	ResourceHandle solidColorShaderHandle;
+
+	ResourceHandle debugPrimitiveShaderHandle;
+	ResourceHandle debugMeshShaderHandle;
 
 //
 public:

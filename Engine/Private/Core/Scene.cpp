@@ -6,7 +6,8 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Render/Color.h"
-#include "Render/DrawPrimitivesHelper.h"
+#include "Render/DebugShapes.h"
+#include "Render/DebugShapeMeshGenerationHelper.h"
 #include "Render/Renderer.h"
 
 bool Scene::initialize()
@@ -64,60 +65,12 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	return meshRendererComponent;
 }
 
-PointRendererComponent* Scene::addPointRendererTo(Entity inEntity
-	, const glm::vec3& inPosition
-	, float inSize
-	, const glm::vec3& inColor)
-{
-	PointRendererComponent* pointRendererComponent = pointRendererComponents.create(inEntity);
-	pointRendererComponent->position = inPosition;
-	pointRendererComponent->size = inSize;
-	pointRendererComponent->color = inColor;
-
-	return pointRendererComponent;
-}
-
-LineRendererComponent* Scene::addLineRendererTo(Entity inEntity
-	, const glm::vec3& inStart
-	, const glm::vec3& inEnd
-	, const glm::vec3& inColor)
-{
-	LineRendererComponent* lineRendererComponent = lineRendererComponents.create(inEntity);
-	lineRendererComponent->start = inStart;
-	lineRendererComponent->end = inEnd;
-	lineRendererComponent->color = inColor;
-
-	return lineRendererComponent;
-}
-
-BoxRendererComponent* Scene::addBoxRendererTo(Entity inEntity
-	, const glm::vec3& inSize
-	, const glm::vec3& inColor)
-{
-	BoxRendererComponent* boxRendererComponent = boxRendererComponents.create(inEntity);
-	boxRendererComponent->size = inSize;
-	boxRendererComponent->color = inColor;
-
-	return boxRendererComponent;
-}
-
-SphereRendererComponent* Scene::addSphereRendererTo(Entity inEntity
-	, const glm::vec3& inRadius
-	, const glm::vec3& inColor)
-{
-	SphereRendererComponent* sphereRendererComponent = sphereRendererComponents.create(inEntity);
-	sphereRendererComponent->radius = inRadius;
-	sphereRendererComponent->color = inColor;
-
-	return sphereRendererComponent;
-}
-
-SphereBoundingVolumeComponent* Scene::addSphereBoundingVolumeTo(Entity inEntity
+SphereColliderComponent* Scene::addSphereColliderTo(Entity inEntity
 	, float inRadius)
 {
-	SphereBoundingVolumeComponent* sphereBoundingVolumeComponent = sphereBoundingVolumeComponents.create(inEntity);
-	sphereBoundingVolumeComponent->radius = inRadius;
-	return sphereBoundingVolumeComponent;
+	SphereColliderComponent* sphereColliderComponent = sphereColliderComponents.create(inEntity);
+	sphereColliderComponent->radius = inRadius;
+	return sphereColliderComponent;
 }
 
 DirectionalLightComponent* Scene::addDirectionalLightTo(Entity inEntity
