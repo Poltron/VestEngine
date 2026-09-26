@@ -46,6 +46,7 @@ void DebugShapePrimitive::setupMesh()
 
 	glBindVertexArray(VAO);
 
+	// note: unsafe if more than 100 primitives
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(DebugShapePrimitive) * 100, nullptr, GL_DYNAMIC_DRAW);
 

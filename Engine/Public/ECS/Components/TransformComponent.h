@@ -91,4 +91,20 @@ struct WorldTransformComponent
 	{
 		return { model[3][0], model[3][1], model[3][2] };
 	}
+
+	glm::vec3 getScale() const
+	{
+		float scaleX = glm::length(glm::vec3(model[0][0], model[0][1], model[0][2]));
+		float scaleY = glm::length(glm::vec3(model[1][0], model[1][1], model[1][2]));
+		float scaleZ = glm::length(glm::vec3(model[2][0], model[2][1], model[2][2]));
+		return { scaleX, scaleY, scaleZ };
+	}
+
+	glm::vec3 getSquaredScale() const
+	{
+		float scaleX = model[0][0] * model[0][0] + model[0][1] * model[0][1] + model[0][2] * model[0][2];
+		float scaleY = model[1][0] * model[1][0] + model[1][1] * model[1][1] + model[1][2] * model[1][2];
+		float scaleZ = model[2][0] * model[2][0] + model[2][1] * model[2][1] + model[2][2] * model[2][2];
+		return { scaleX, scaleY, scaleZ };
+	}
 };

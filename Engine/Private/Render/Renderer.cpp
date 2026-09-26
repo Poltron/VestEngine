@@ -43,6 +43,7 @@ using namespace render;
 bool VestRenderer::initialize()
 {
 	loadDebugShapes();
+
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	// depth test

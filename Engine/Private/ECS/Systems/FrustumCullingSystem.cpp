@@ -23,14 +23,15 @@ namespace
 		return getSignedDistanceToPlane(inPosition, inPlane) > -inRadius;
 	}
 
-	bool isInFrustum(const glm::vec3& inPosition, float inRadius, const Frustum& inFrustum)
+	bool isInFrustum(const glm::vec3& inPosition, float inRadius, float inScale, const Frustum& inFrustum)
 	{
-		return isOnOrInFrontOfPlane(inPosition, inRadius, inFrustum.left)
-			&& isOnOrInFrontOfPlane(inPosition, inRadius, inFrustum.right)
-			&& isOnOrInFrontOfPlane(inPosition, inRadius, inFrustum.top)
-			&& isOnOrInFrontOfPlane(inPosition, inRadius, inFrustum.bottom)
-			&& isOnOrInFrontOfPlane(inPosition, inRadius, inFrustum.near)
-			&& isOnOrInFrontOfPlane(inPosition, inRadius, inFrustum.far);
+		float inScaledRadius = inRadius * inScale;
+		return isOnOrInFrontOfPlane(inPosition, inScaledRadius, inFrustum.left)
+			&& isOnOrInFrontOfPlane(inPosition, inScaledRadius, inFrustum.right)
+			&& isOnOrInFrontOfPlane(inPosition, inScaledRadius, inFrustum.top)
+			&& isOnOrInFrontOfPlane(inPosition, inScaledRadius, inFrustum.bottom)
+			&& isOnOrInFrontOfPlane(inPosition, inScaledRadius, inFrustum.near)
+			&& isOnOrInFrontOfPlane(inPosition, inScaledRadius, inFrustum.far);
 	}
 }
 
@@ -48,6 +49,9 @@ void FrustumCullingSystem::update(Scene& inScene)
 		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);
 		ensure(worldTransform);
 
-		sphere->bInFrustum = isInFrustum(worldTransform->getPosition(), sphere->radius, frustum);
+		glm::vec3 squaredScale = worldTransform->getSquaredScale();
+		float maxScale = glm::sqrt(std::max({ squaredScale.x, squaredScale.y, squaredScale.z }));
+
+		sphere->bInFrustum = isInFrustum(worldTransform->getPosition(), sphere->radius, maxScale, frustum);
 	}
 }
