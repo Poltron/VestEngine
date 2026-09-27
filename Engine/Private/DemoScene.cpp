@@ -376,8 +376,14 @@ namespace demoScene
 				const glm::vec3 scale = glm::vec3(0.2f);
 				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);
 
-				const float boundingSphereRadius = 1;
-				inScene.addSphereColliderTo(entity, boundingSphereRadius);
+				const float radius = 1;
+				const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
+				inScene.addSphereColliderTo(entity, radius, offset);
+				
+				const glm::vec3 linearVel = glm::normalize(glm::vec3(rand() % 2, rand() % 2, rand() % 2));
+				inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
+
+				render::getRenderer()->addMovableSphere(entity, color::red);
 			}
 		}
 

@@ -2,6 +2,9 @@
 
 #include <vector>
 
+#include "ECS/ComponentManager.h"
+#include "ECS/Entity.h"
+#include "ECS/Systems/EntityDebugShapesSystem.h"
 #include "Render/DebugShapes.h"
 #include "Render/GraphicResourceHandle.h"
 #include "Render/ShaderParameterCollection.h"
@@ -54,20 +57,28 @@ private:
 //
 public:
 	void loadDebugShapes();
+	void updateDebugShapes(Scene& inScene);
 
 	void addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor);
 	void addLine(const glm::vec3& inStart, const glm::vec3& inEnd, float inSize, const glm::vec3& inColor);
 	void addSphere(const glm::vec3& inPosition, const glm::vec3& inRotation, float inRadius, const glm::vec3& inColor);
 	void addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, const glm::vec3& inScale, const glm::vec3& inColor);
 
+	void addMovableSphere(Entity inEntity, const glm::vec3& inColor);
+
 private:
+	std::vector<DebugShapePrimitive> debugShapePrimitives;
 	std::vector<DebugShapePrimitiveInstance> pointDebugShapeInstances;
 	std::vector<DebugShapePrimitiveInstance> lineDebugShapeInstances;
-	std::vector<DebugShapePrimitive> debugShapePrimitives;
 
+	std::vector<DebugShapeMesh> debugShapeMeshes;
 	std::vector<DebugShapeMeshInstance> boxDebugShapeInstances;
 	std::vector<DebugShapeMeshInstance> sphereDebugShapeInstances;
-	std::vector<DebugShapeMesh> debugShapeMeshes;
+
+	EntityDebugShapeMeshInstances entitySphereInstances;
+
+	// todo: let this system's file in the renderer module but "register" it to the ECS
+	EntityDebugShapesSystem updateEntityDebugShapesSystem;
 
 //
 public:

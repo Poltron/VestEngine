@@ -11,6 +11,7 @@
 #include "ECS/Components/TransformComponent.h"
 
 #include "ECS/ComponentManager.h"
+#include "ECS/EntityManager.h"
 
 class Scene
 {
@@ -75,7 +76,8 @@ public:
 	*/
 
 	SphereColliderComponent* addSphereColliderTo(Entity inEntity
-		, float radius);
+		, float inRadius
+		, const glm::vec3& inOffset);
 
 	DirectionalLightComponent* addDirectionalLightTo(Entity inEntity
 		, const glm::vec3& inColor

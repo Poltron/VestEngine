@@ -284,6 +284,21 @@ void Renderer::renderDebugPass(Scene& inScene)
 		frameInfo.drawCalls++;
 		frameInfo.debugShapesTotal += sphereDebugShapeInstances.size();
 	}
+
+	{
+		ZoneScopedN("render entity sphere meshes");
+
+		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
+		glBindBuffer(GL_ARRAY_BUFFER, sphereMesh.getVBOInstances());
+		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(entitySphereInstances.instances.size() * sizeof(DebugShapeMeshInstance)), entitySphereInstances.instances.data());
+		
+		glBindVertexArray(sphereMesh.getVAO());
+		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)(entitySphereInstances.instances.size() * sizeof(DebugShapeMeshInstance)), (GLsizei)entitySphereInstances.instances.size());
+		glBindVertexArray(0);
+
+		frameInfo.drawCalls++;
+		frameInfo.debugShapesTotal += entitySphereInstances.instances.size();
+	}
 }
 
 void Renderer::swap()
@@ -358,6 +373,15 @@ void Renderer::addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, 
 	boxDebugShapeInstances.push_back(boxInstance);
 }
 
+void Renderer::addMovableSphere(Entity inEntity, const glm::vec3& inColor)
+{
+	DebugShapeMeshInstance sphereInstance;
+	sphereInstance.color = inColor;
+	
+	entitySphereInstances.instances.push_back(sphereInstance);
+	entitySphereInstances.entities.push_back(inEntity);
+}
+
 void Renderer::loadDefaultShaders()
 {
 	ZoneScoped;
@@ -396,6 +420,11 @@ void Renderer::loadDebugShapes()
 	// with enum index since there's no default constructor on DebugShapeMesh
 	debugShapeMeshes.push_back(debugShapeMeshGenerationHelper::createBox());
 	debugShapeMeshes.push_back(debugShapeMeshGenerationHelper::createSphere(6));
+}
+
+void Renderer::updateDebugShapes(Scene& inScene)
+{
+	updateEntityDebugShapesSystem.update(entitySphereInstances, inScene);
 }
 
 void Renderer::updateLightParameters(Scene& inScene)

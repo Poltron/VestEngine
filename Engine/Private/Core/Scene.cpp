@@ -66,10 +66,12 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 }
 
 SphereColliderComponent* Scene::addSphereColliderTo(Entity inEntity
-	, float inRadius)
+	, float inRadius
+	, const glm::vec3& inOffset)
 {
 	SphereColliderComponent* sphereColliderComponent = sphereColliderComponents.create(inEntity);
 	sphereColliderComponent->radius = inRadius;
+	sphereColliderComponent->offset = inOffset;
 	return sphereColliderComponent;
 }
 

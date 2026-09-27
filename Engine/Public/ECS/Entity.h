@@ -2,6 +2,9 @@
 
 #include "glm/fwd.hpp"
 
+#define ENTITY_FIRST 1
+#define ENTITY_MAX 10010
+
 using Entity = glm::uint32_t;
 
 namespace EntityFuncs

@@ -48,7 +48,7 @@ void DebugShapePrimitive::setupMesh()
 
 	// note: unsafe if more than 100 primitives
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(DebugShapePrimitive) * 100, nullptr, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(DebugShapePrimitiveInstance) * 2000, nullptr, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(0); // position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapePrimitiveInstance), (void*)(offsetof(DebugShapePrimitiveInstance, position)));
@@ -140,7 +140,7 @@ void DebugShapeMesh::setupMesh()
 
 	// instances
 	glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 2000 * sizeof(DebugShapeMeshInstance), nullptr, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(1); // color
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, color)));

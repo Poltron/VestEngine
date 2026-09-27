@@ -8,7 +8,7 @@
 #endif
 #include "tracy/Tracy.hpp"
 
-#include "ECS/EntityManager.h"
+#include "ECS/Entity.h"
 #include "Core/Containers/DenseArray.h"
 
 #define INVALID_COMPONENT_INDEX UINT64_MAX

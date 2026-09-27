@@ -2,6 +2,7 @@
 
 #include "glm/glm.hpp"
 
+#include "ECS/Entity.h"
 #include "Render/GraphicResourceHandle.h"
 
 struct DebugShapePrimitiveInstance
@@ -39,6 +40,12 @@ struct DebugShapeMeshInstance
 {
 	glm::vec3 color;
 	glm::mat4 model;
+};
+
+struct EntityDebugShapeMeshInstances
+{
+	std::vector<Entity> entities;
+	std::vector<DebugShapeMeshInstance> instances;
 };
 
 class DebugShapeMesh

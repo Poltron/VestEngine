@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glm/glm.hpp"
+
 #include "ECS/Entity.h"
 
 // note: they will be used as Conservative Bounding Sphere
@@ -10,5 +12,6 @@ struct SphereColliderComponent
 	Entity entity;
 
 	float radius;
+	glm::vec3 offset;
 	bool bInFrustum;
 };
