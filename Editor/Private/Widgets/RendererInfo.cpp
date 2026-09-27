@@ -25,9 +25,15 @@ void RendererInfo::update()
 		debugShapesTotal += std::to_string(render::getRenderer()->getFrameInfo().debugShapesTotal);
 		ImGui::Text(debugShapesTotal.c_str());
 
+		ImGui::Text(" --- ");
+
 		std::string drawCallsTotal = "Draw calls: ";
 		drawCallsTotal += std::to_string(render::getRenderer()->getFrameInfo().drawCalls);
 		ImGui::Text(drawCallsTotal.c_str());
+
+		std::string shaderProgramsTotal = "Shader Programs: ";
+		shaderProgramsTotal += std::to_string(render::getRenderer()->getFrameInfo().shaderPrograms);
+		ImGui::Text(shaderProgramsTotal.c_str());
 
 		ImGui::End();
 	}

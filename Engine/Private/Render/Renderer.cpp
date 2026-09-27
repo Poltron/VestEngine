@@ -146,10 +146,14 @@ void Renderer::renderMainPass(Scene& inScene)
 		{
 			shader = engine::getResources()->getShader(meshRenderer->shader);
 			ensure(shader != nullptr);
-			shader->use();
-			frameInfo.shaderPrograms++;
+			if (shader->getID() != currentShaderProgram)
+			{
+				currentShaderProgram = shader->getID();
+				shader->use();
+				frameInfo.shaderPrograms++;
 
-			globalShaderParameters.applyToShader(*shader, *engine::getResources());
+				globalShaderParameters.applyToShader(*shader, *engine::getResources());
+			}
 		}
 
 		{
@@ -191,6 +195,7 @@ void Renderer::renderMainPass(Scene& inScene)
 			Shader* shader = engine::getResources()->getShader(getSolidColorShader());
 			ensure(shader);
 			shader->use();
+			currentShaderProgram = shader->getID();
 			frameInfo.shaderPrograms++;
 
 			glm::mat4 outlineMat = worldTransform->model;
@@ -212,6 +217,7 @@ void Renderer::renderDebugPass(Scene& inScene)
 	Shader* shader = engine::getResources()->getShader(debugPrimitiveShaderHandle);
 	ensure(shader != nullptr);
 	shader->use();
+	currentShaderProgram = shader->getID();
 	frameInfo.shaderPrograms++;
 
 	glm::mat4 viewProjection = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();
@@ -250,6 +256,7 @@ void Renderer::renderDebugPass(Scene& inScene)
 	shader = engine::getResources()->getShader(debugMeshShaderHandle);
 	ensure(shader != nullptr);
 	shader->use();
+	currentShaderProgram = shader->getID();
 	frameInfo.shaderPrograms++;
 
 	glm::mat4 viewProjection2 = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();

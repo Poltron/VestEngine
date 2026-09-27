@@ -22,6 +22,8 @@ public:
 	Shader& operator=(Shader&& inOther) noexcept;
 
 	void use();
+	GraphicResourceHandle getID() const { return ID; }
+
 	void setBool(const std::string& name, bool value) const;
 	void setInt(const std::string& name, int value) const;
 	void setFloat(const std::string& name, float value) const;

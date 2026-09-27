@@ -107,6 +107,8 @@ private:
 	ResourceHandle debugPrimitiveShaderHandle;
 	ResourceHandle debugMeshShaderHandle;
 
+	GraphicResourceHandle currentShaderProgram = UINT32_MAX;
+
 //
 public:
 	const FrameInfo& getFrameInfo() const { return frameInfo; }
