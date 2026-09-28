@@ -190,6 +190,8 @@ namespace demoScene
 		render::getRenderer()->addLine({ 0, 0, 0 }, { inLength, 0, 0 }, 5.0f, color::red);
 		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, inLength, 0 }, 5.0f, color::green);
 		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, 0, inLength }, 5.0f, color::blue);
+
+		render::getRenderer()->addSphere({ 0, 0, 0 }, { 0, 0, 0}, inLength, color::yellow);
 	}
 
 	void loadPrimitivesDemo(Scene& inScene)

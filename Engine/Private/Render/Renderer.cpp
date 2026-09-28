@@ -259,8 +259,7 @@ void Renderer::renderDebugPass(Scene& inScene)
 	currentShaderProgram = shader->getID();
 	frameInfo.shaderPrograms++;
 
-	glm::mat4 viewProjection2 = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();
-	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection2));
+	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection));
 
 	{
 		ZoneScopedN("render box meshes");
@@ -282,29 +281,28 @@ void Renderer::renderDebugPass(Scene& inScene)
 
 		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
 		glBindBuffer(GL_ARRAY_BUFFER, sphereMesh.getVBOInstances());
-		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(sphereDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), sphereDebugShapeInstances.data());
+
+		size_t totalCount = 0;
+		size_t totalSize = 0;
+
+		size_t currentCount = sphereDebugShapeInstances.size();
+		size_t currentSize = currentCount * sizeof(DebugShapeMeshInstance);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)currentSize, sphereDebugShapeInstances.data());
+		totalCount += currentCount;
+		totalSize += currentSize;
+
+		currentCount = entitySphereInstances.instances.size();
+		currentSize = currentCount * sizeof(DebugShapeMeshInstance);
+		glBufferSubData(GL_ARRAY_BUFFER, totalSize, (GLsizei)currentSize, entitySphereInstances.instances.data());
+		totalCount += currentCount;
+		totalSize += currentSize;
 
 		glBindVertexArray(sphereMesh.getVAO());
-		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)(sphereDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), (GLsizei)sphereDebugShapeInstances.size());
+		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)totalSize, (GLsizei)totalCount);
 		glBindVertexArray(0);
 
 		frameInfo.drawCalls++;
-		frameInfo.debugShapesTotal += sphereDebugShapeInstances.size();
-	}
-
-	{
-		ZoneScopedN("render entity sphere meshes");
-
-		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
-		glBindBuffer(GL_ARRAY_BUFFER, sphereMesh.getVBOInstances());
-		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(entitySphereInstances.instances.size() * sizeof(DebugShapeMeshInstance)), entitySphereInstances.instances.data());
-		
-		glBindVertexArray(sphereMesh.getVAO());
-		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)(entitySphereInstances.instances.size() * sizeof(DebugShapeMeshInstance)), (GLsizei)entitySphereInstances.instances.size());
-		glBindVertexArray(0);
-
-		frameInfo.drawCalls++;
-		frameInfo.debugShapesTotal += entitySphereInstances.instances.size();
+		frameInfo.debugShapesTotal += totalCount;
 	}
 }
 

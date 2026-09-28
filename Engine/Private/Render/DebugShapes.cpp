@@ -140,7 +140,7 @@ void DebugShapeMesh::setupMesh()
 
 	// instances
 	glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
-	glBufferData(GL_ARRAY_BUFFER, 2000 * sizeof(DebugShapeMeshInstance), nullptr, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 2050 * sizeof(DebugShapeMeshInstance), nullptr, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(1); // color
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, color)));
@@ -161,12 +161,4 @@ void DebugShapeMesh::setupMesh()
 	glVertexAttribDivisor(5, 1);
 
 	glBindVertexArray(0);
-
-	while (GLenum err = glGetError())
-	{
-		if (err != GL_NO_ERROR)
-		{
-			std::cerr << "glUseProgram failed: " << err << std::endl;
-		}
-	}
 }
