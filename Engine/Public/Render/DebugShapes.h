@@ -79,7 +79,8 @@ public:
 	size_t getInstanceCount() const { return instanceCount; }
 	size_t getSize() const { return instanceCount * sizeof(DebugShapeMeshInstance); }
 
-	void updateInstances(const std::vector<DebugShapeMeshInstance>& inInstances);
+	void resetInstances() { instanceCount = 0; }
+	void addInstances(const std::vector<DebugShapeMeshInstance>& inInstances);
 
 private:
 	void setupMesh();

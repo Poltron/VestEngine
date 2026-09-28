@@ -171,10 +171,10 @@ void DebugShapeMesh::setupMesh()
 	glBindVertexArray(0);
 }
 
-void DebugShapeMesh::updateInstances(const std::vector<DebugShapeMeshInstance>& inInstances)
+void DebugShapeMesh::addInstances(const std::vector<DebugShapeMeshInstance>& inInstances)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, getVBOInstances());
-	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(inInstances.size() * sizeof(DebugShapeMeshInstance)), inInstances.data());
+	glBufferSubData(GL_ARRAY_BUFFER, instanceCount * sizeof(DebugShapeMeshInstance), (GLsizei)(inInstances.size() * sizeof(DebugShapeMeshInstance)), inInstances.data());
 
-	instanceCount = inInstances.size();
+	instanceCount += inInstances.size();
 }

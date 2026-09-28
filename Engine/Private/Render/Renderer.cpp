@@ -251,7 +251,8 @@ void Renderer::renderDebugPass(Scene& inScene)
 		ZoneScopedN("render box meshes");
 
 		DebugShapeMesh& boxMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::BOX];
-		boxMesh.updateInstances(boxDebugShapeInstances);
+		boxMesh.resetInstances();
+		boxMesh.addInstances(boxDebugShapeInstances);
 		drawArraysInstanced(boxMesh.getVAO(), EPrimitiveMode::LINES, 0, boxMesh.getSize(), boxMesh.getInstanceCount());
 
 		frameInfo.debugShapesTotal += boxDebugShapeInstances.size();
@@ -263,27 +264,12 @@ void Renderer::renderDebugPass(Scene& inScene)
 		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
 		glBindBuffer(GL_ARRAY_BUFFER, sphereMesh.getVBOInstances());
 
-		size_t totalCount = 0;
-		size_t totalSize = 0;
+		sphereMesh.resetInstances();
+		sphereMesh.addInstances(sphereDebugShapeInstances);
+		sphereMesh.addInstances(entitySphereInstances.instances);
+		drawArraysInstanced(sphereMesh.getVAO(), EPrimitiveMode::LINES, 0, sphereMesh.getSize(), sphereMesh.getInstanceCount());
 
-		size_t currentCount = sphereDebugShapeInstances.size();
-		size_t currentSize = currentCount * sizeof(DebugShapeMeshInstance);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)currentSize, sphereDebugShapeInstances.data());
-		totalCount += currentCount;
-		totalSize += currentSize;
-
-		currentCount = entitySphereInstances.instances.size();
-		currentSize = currentCount * sizeof(DebugShapeMeshInstance);
-		glBufferSubData(GL_ARRAY_BUFFER, totalSize, (GLsizei)currentSize, entitySphereInstances.instances.data());
-		totalCount += currentCount;
-		totalSize += currentSize;
-
-		glBindVertexArray(sphereMesh.getVAO());
-		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)totalSize, (GLsizei)totalCount);
-		glBindVertexArray(0);
-
-		frameInfo.drawCalls++;
-		frameInfo.debugShapesTotal += totalCount;
+		frameInfo.debugShapesTotal += sphereMesh.getInstanceCount();
 	}
 }
 
@@ -523,33 +509,40 @@ void Renderer::updateLightParameters(Scene& inScene)
 }
 
 //
-Renderer* getRenderer() { return g_Renderer; }
-bool initialize()
+namespace render
 {
-	ZoneScoped;
-
-	ensure(!g_Renderer);
-	g_Renderer = new VestRenderer();
-	bool bSuccess = g_Renderer->initialize();
-	if (bSuccess)
-	{
-		std::cout << "Renderer initialization success." << std::endl;
+	Renderer* getRenderer() 
+	{ 
+		return g_Renderer;
 	}
-	else
-	{
-		std::cout << "Renderer initialization failed." << std::endl;
-	}
-	return bSuccess;
-}
 
-void shutdown()
-{
-	ZoneScoped;
-
-	if (g_Renderer)
+	bool initialize()
 	{
-		g_Renderer->shutdown();
+		ZoneScoped;
+
+		ensure(!g_Renderer);
+		g_Renderer = new VestRenderer();
+		bool bSuccess = g_Renderer->initialize();
+		if (bSuccess)
+		{
+			std::cout << "Renderer initialization success." << std::endl;
+		}
+		else
+		{
+			std::cout << "Renderer initialization failed." << std::endl;
+		}
+		return bSuccess;
 	}
-	delete g_Renderer;
-	g_Renderer = nullptr;
+
+	void shutdown()
+	{
+		ZoneScoped;
+
+		if (g_Renderer)
+		{
+			g_Renderer->shutdown();
+		}
+		delete g_Renderer;
+		g_Renderer = nullptr;
+	}
 }
