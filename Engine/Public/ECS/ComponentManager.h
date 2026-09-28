@@ -86,6 +86,12 @@ public:
 		size_t elementIdx = lookupTable[inID];
 		components.remove(elementIdx);
 		lookupTable[inID] = INVALID_COMPONENT_INDEX;
+
+		if (elementIdx < components.size())
+		{
+			T& swappedComponent = components.at(elementIdx);
+			lookupTable[swappedComponent.entity] = elementIdx;
+		}
 	}
 
 	void moveData(DenseArray<T>&& inData)
