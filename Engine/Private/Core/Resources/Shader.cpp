@@ -52,7 +52,8 @@ namespace
 	{
 		if (inLocation == -1)
 		{
-			std::cerr << "GetUniformLocation failed " << inName << std::endl;
+			// todo: muting cause i get flooded because i have some entities with unlit shader and globalparameters contain light values
+			//std::cerr << "GetUniformLocation failed " << inName << std::endl;
 			return false;
 		}
 

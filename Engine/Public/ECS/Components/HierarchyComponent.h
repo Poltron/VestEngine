@@ -4,12 +4,16 @@
 
 struct HierarchyComponent
 { 
-	Entity entity = 0;
+	Entity entity;
 
-	Entity parent = 0;
-	Entity firstChild = 0;
-	Entity nextSibling = 0;
+	Entity parent;
+	Entity firstChild;
+	Entity nextSibling;
 
 	bool bDirty = false;
+
+	HierarchyComponent()
+		: entity(ENTITY_INVALID), parent(ENTITY_INVALID), firstChild(ENTITY_INVALID), nextSibling(ENTITY_INVALID)
+	{}
 };
 

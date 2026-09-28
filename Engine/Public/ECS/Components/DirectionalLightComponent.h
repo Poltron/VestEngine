@@ -7,8 +7,12 @@
 
 struct DirectionalLightComponent
 {
-	Entity entity = 0;
+	Entity entity;
 
-	glm::vec3 color = color::white;
-	float intensity = 1.0f;
+	glm::vec3 color;
+	float intensity;
+
+	DirectionalLightComponent()
+		: entity(ENTITY_INVALID), color(color::white), intensity(1.0f)
+	{}
 };

@@ -16,6 +16,40 @@
 
 namespace
 {
+	const std::string animals[] =
+	{
+		"/Resources/Models/kenney-cube-pets/animal-bee.obj",
+		"/Resources/Models/kenney-cube-pets/animal-caterpillar.obj",
+		"/Resources/Models/kenney-cube-pets/animal-crab.obj",
+		"/Resources/Models/kenney-cube-pets/animal-koala.obj",
+		"/Resources/Models/kenney-cube-pets/animal-pig.obj",
+		"/Resources/Models/kenney-cube-pets/animal-beaver.obj",
+		"/Resources/Models/kenney-cube-pets/animal-elephant.obj",
+		"/Resources/Models/kenney-cube-pets/animal-panda.obj",
+		"/Resources/Models/kenney-cube-pets/animal-polar.obj",
+		"/Resources/Models/kenney-cube-pets/animal-tiger.obj"
+	};
+
+	const size_t animalModelsTotal = 10;
+
+	float getRandomFloat(float inMin, float inMax)
+	{
+		float random = (float)(rand()) / (float)(RAND_MAX);
+		return random * (inMax - inMin) + inMin;
+	}
+
+	ResourceHandle getRandomAnimalModel()
+	{
+		const size_t index = rand() % animalModelsTotal;
+		const std::string animalModel = WORKDIR + animals[index];
+		return engine::getResources()->loadModel(animalModel);
+	}
+
+	glm::vec3 getRandomAnimalSpawnPosition()
+	{
+		return glm::vec3(getRandomFloat(-3, 3), getRandomFloat(-3, 3), getRandomFloat(-3, 3));
+	}
+
 	Entity createScenePivot(Scene& inScene
 		, ResourceHandle inModel
 		, ResourceHandle inShader)
@@ -336,56 +370,32 @@ namespace demoScene
 	{
 		ZoneScoped;
 
+		srand((unsigned int)time(0));
+
 		inScene.getCamera().setPosition(glm::vec3(6.508f, 5.24268f, 3.30692f));
 		inScene.getCamera().setRotation(-154.026f, -42.2807f);
 
 		const std::string WorkDirTMP = WORKDIR;
 
-		const std::string animals[] =
-		{
-			"/Resources/Models/kenney-cube-pets/animal-bee.obj",
-			"/Resources/Models/kenney-cube-pets/animal-caterpillar.obj",
-			"/Resources/Models/kenney-cube-pets/animal-crab.obj",
-			"/Resources/Models/kenney-cube-pets/animal-koala.obj",
-			"/Resources/Models/kenney-cube-pets/animal-pig.obj",
-			"/Resources/Models/kenney-cube-pets/animal-beaver.obj",
-			"/Resources/Models/kenney-cube-pets/animal-elephant.obj",
-			"/Resources/Models/kenney-cube-pets/animal-panda.obj",
-			"/Resources/Models/kenney-cube-pets/animal-polar.obj",
-			"/Resources/Models/kenney-cube-pets/animal-tiger.obj"
-		};
-
-		if (inTotal % 10 != 0 && inTotal <= 0 && inRowSize <= 0 )
+		if (inTotal % animalModelsTotal != 0 && inTotal <= 0 && inRowSize <= 0 )
 		{
 			std::cerr << "AnimalTotal must be a multiple of 10 and RowSize > 0" << std::endl;
 			return;
 		}
 
-		const float animalMeshes = 10;
-		const float totalPerMesh = inTotal / animalMeshes;
+		const float totalPerMesh = inTotal / float(animalModelsTotal);
 
-		const float floorStart = animalMeshes / -2.0f;
+		const float floorStart = animalModelsTotal / -2.0f;
 		const float rowStart = inRowSize / -2.0f;
 
-		for (size_t i = 0; i < animalMeshes; ++i)
+		for (size_t i = 0; i < animalModelsTotal; ++i)
 		{
 			ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[i]);
 
 			for (size_t j = 0; j < totalPerMesh; ++j)
 			{
-				const glm::vec3 pos = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
-				const glm::quat rot = glm::quat(glm::radians(glm::vec3(0,0,0)));
-				const glm::vec3 scale = glm::vec3(0.2f);
-				Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), pos, rot, scale);
-
-				const float radius = 1;
-				const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
-				inScene.addSphereColliderTo(entity, radius, offset);
-				
-				const glm::vec3 linearVel = glm::normalize(glm::vec3(rand() % 2, rand() % 2, rand() % 2));
-				inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
-
-				render::getRenderer()->addMovableSphere(entity, color::red);
+				const glm::vec3 position = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
+				createAnimal(inScene, model, position);
 			}
 		}
 
@@ -393,6 +403,29 @@ namespace demoScene
 		ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[0]);
 		createSceneLights(inScene, model, renderer->getSolidColorShader());
 
-		render::getRenderer()->addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 25, 25, 25 }, color::white);
+		render::getRenderer()->addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);
+	}
+
+	void createAnimal(Scene& inScene)
+	{
+		createAnimal(inScene, getRandomAnimalModel(), getRandomAnimalSpawnPosition());
+	}
+
+	void createAnimal(Scene& inScene, ResourceHandle inModel, const glm::vec3& inPosition)
+	{
+		ResourceHandle model = getRandomAnimalModel();
+		const glm::vec3 position = inPosition;
+		const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
+		const glm::vec3 scale = glm::vec3(0.2f);
+		Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), position, rotation, scale);
+
+		const float radius = 1;
+		const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
+		inScene.addSphereColliderTo(entity, radius, offset);
+
+		const glm::vec3 linearVel = glm::normalize(getRandomAnimalSpawnPosition());
+		inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
+
+		render::getRenderer()->addMovableSphere(entity, color::red);
 	}
 }

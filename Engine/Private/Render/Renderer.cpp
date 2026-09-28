@@ -416,6 +416,24 @@ void Renderer::addMovableSphere(Entity inEntity, const glm::vec3& inColor)
 	entitySphereInstances.entities.push_back(inEntity);
 }
 
+void Renderer::removeMovableSphere(Entity inEntity)
+{
+	for (size_t i = 0; i < entitySphereInstances.entities.size(); ++i)
+	{
+		if (entitySphereInstances.entities[i] != inEntity)
+		{
+			continue;
+		}
+
+		entitySphereInstances.entities[i] = *(entitySphereInstances.entities.end() - 1);
+		entitySphereInstances.entities.pop_back();
+
+		entitySphereInstances.instances[i] = *(entitySphereInstances.instances.end() - 1);
+		entitySphereInstances.instances.pop_back();
+		break;
+	}
+}
+
 void Renderer::loadDefaultShaders()
 {
 	ZoneScoped;

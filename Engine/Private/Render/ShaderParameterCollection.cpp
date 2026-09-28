@@ -5,6 +5,14 @@
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Shader.h"
 
+void ShaderParameterCollection::clear()
+{
+	intParameters.clear();
+	floatParameters.clear();
+	vec3Parameters.clear();
+	textureParameters.clear();
+}
+
 void ShaderParameterCollection::applyToShader(const Shader& inShader, const ResourcesManager& inResources)
 {
 	for (const auto& intParameter : intParameters)

@@ -12,6 +12,7 @@ class Shader;
 
 struct ShaderParameterCollection
 {
+	void clear();
 	void applyToShader(const Shader& inShader, const ResourcesManager& inResources);
 
 	void addTexture(const std::string& inName, GraphicResourceHandle inValue);

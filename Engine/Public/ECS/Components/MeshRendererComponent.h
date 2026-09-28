@@ -7,11 +7,17 @@
 
 struct MeshRendererComponent 
 {
-	Entity entity = 0;
+	Entity entity;
 	
 	ResourceHandle model;
 	ResourceHandle shader;
-	bool bOutline = false;
+	bool bOutline;
 
 	ShaderParameterCollection shaderParameters;
+
+	MeshRendererComponent()
+		: entity(ENTITY_INVALID), model(RESOURCE_INVALID), shader(RESOURCE_INVALID), bOutline(false)
+	{
+		shaderParameters.clear();
+	}
 };

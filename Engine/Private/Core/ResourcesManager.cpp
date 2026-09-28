@@ -21,7 +21,7 @@ ResourceHandle ResourcesManager::loadModel(std::string inPath)
 	{
 		if (loadedModel.second->getPath() == inPath)
 		{
-			std::cout << "INFO : Found existing model for " << inPath << std::endl;
+			//std::cout << "INFO : Found existing model for " << inPath << std::endl;
 			return loadedModel.first;
 		}
 	}
@@ -51,7 +51,7 @@ ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, std::
 	{
 		if (loadedModel.second->getPath() == inName)
 		{
-			std::cout << "INFO : Found existing model for " << inName << std::endl;
+			//std::cout << "INFO : Found existing model for " << inName << std::endl;
 			return loadedModel.first;
 		}
 	}
@@ -81,7 +81,7 @@ ResourceHandle ResourcesManager::loadTexture(std::string inPath, std::string inT
 	{
 		if (loadedTexture.second->getPath() == inPath)
 		{
-			std::cout << "INFO : Found existing texture for " << inPath << std::endl;
+			//std::cout << "INFO : Found existing texture for " << inPath << std::endl;
 			return loadedTexture.first;
 		}
 	}
@@ -108,7 +108,7 @@ ResourceHandle ResourcesManager::loadShader(std::string inVertexPath, std::strin
 {
 	if (shaderHandleCounter > MAX_RESOURCES)
 	{
-		std::cout << "ERROR : Max shader resources reached" << std::endl;
+		//std::cout << "ERROR : Max shader resources reached" << std::endl;
 		return ResourceHandle();
 	}
 

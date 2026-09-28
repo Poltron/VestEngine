@@ -9,7 +9,7 @@
 
 EntityManager::EntityManager()
 {
-	entities[0] = ENTITY_DEAD;
+	numberEntityAlive = 0;
 
 	for (Entity id = ENTITY_FIRST; id < ENTITY_MAX; ++id)
 	{
@@ -26,21 +26,38 @@ Entity EntityManager::createEntity()
 	availableIds.pop();
 
 	entities[entity] = ENTITY_ALIVE;
+	numberEntityAlive++;
 
 	std::cout << "New entity " << entity << std::endl;
 
 	return entity;
 }
 
+void EntityManager::markEntityForDestroy(Entity entity)
+{
+	pendingDestroy.push_back(entity);
+}
+
+void EntityManager::destroyMarkedEntities()
+{
+	for (Entity entity : pendingDestroy)
+	{
+		destroyEntity(entity);
+	}
+
+	pendingDestroy.clear();
+}
+
 void EntityManager::destroyEntity(Entity inEntity)
 {
 	entities[inEntity] = ENTITY_DEAD;
-	availableIds.push(inEntity);
+	numberEntityAlive--;
 
 	std::cout << "Release entity " << inEntity << std::endl;
+	availableIds.push(inEntity);
 }
 
 bool EntityManager::exists(Entity inEntity) const
 {
-	return entities[inEntity] == ENTITY_ALIVE;
+	return EntityFuncs::isEntityValid(inEntity) && entities[inEntity] == ENTITY_ALIVE;
 }

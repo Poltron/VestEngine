@@ -15,4 +15,8 @@ struct PointLightComponent
 	float constant = 0;
 	float linear = 0;
 	float quadratic = 0;
+
+	PointLightComponent()
+		: entity(ENTITY_INVALID), color(color::white), intensity(1.0f), constant(0), linear(0), quadratic(0)
+	{}
 };

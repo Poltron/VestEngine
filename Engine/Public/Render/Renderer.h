@@ -90,6 +90,7 @@ public:
 	void addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, const glm::vec3& inScale, const glm::vec3& inColor);
 
 	void addMovableSphere(Entity inEntity, const glm::vec3& inColor);
+	void removeMovableSphere(Entity inEntity);
 
 private:
 	std::vector<DebugShapePrimitive> debugShapePrimitives;

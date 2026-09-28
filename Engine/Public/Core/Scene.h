@@ -39,7 +39,8 @@ public:
 	Camera& getCamera() { return camera; }
 	Camera& getCameraDebug() { return cameraDebug; }
 
-	const EntityManager& getEntityManager() { return entities; }
+	EntityManager& getEntityManager() { return entities; }
+	const EntityManager& getEntityManager() const { return entities; }
 
 	ComponentManager<LocalTransformComponent>& getLocalTransformComponents() { return localTransformComponents; }
 	const ComponentManager<LocalTransformComponent>& getLocalTransformComponents() const { return localTransformComponents; }
@@ -61,6 +62,9 @@ public:
 	const ComponentManager<DirectionalLightComponent>& getDirectionalLightComponents() const { return directionalLightComponents; }
 	ComponentManager<PointLightComponent>& getPointLightComponents() { return pointLightComponents; }
 	const ComponentManager<PointLightComponent>& getPointLightComponents() const { return pointLightComponents; }
+
+public:
+	void executeEntityChanges();
 
 	LocalTransformComponent* addTransformTo(Entity inEntity
 		, const glm::vec3& inPosition

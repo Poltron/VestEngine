@@ -14,4 +14,8 @@ struct SphereColliderComponent
 	float radius;
 	glm::vec3 offset;
 	bool bInFrustum;
+
+	SphereColliderComponent()
+		: entity(ENTITY_INVALID), radius(1.0f), offset(glm::vec3()), bInFrustum(false)
+	{}
 };

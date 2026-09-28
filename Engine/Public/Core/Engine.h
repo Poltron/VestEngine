@@ -3,8 +3,10 @@
 #include "Camera.h"
 #include "ECS/Systems/FrustumCullingSystem.h"
 #include "ECS/Systems/HierarchySystem.h"
+#include "ECS/Systems/KillZoneSystem.h"
 #include "ECS/Systems/PhysicsSystem.h"
 #include "ECS/Systems/TransformSystem.h"
+#include "ECS/Systems/RespawnSystem.h"
 
 class Scene;
 class ResourcesManager;
@@ -46,6 +48,8 @@ protected:
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
 	FrustumCullingSystem frustumCullingSystem;
+	KillZoneSystem killZoneSystem;
+	RespawnSystem respawnSystem;
 };
 
 namespace engine

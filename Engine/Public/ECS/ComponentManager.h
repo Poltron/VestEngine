@@ -11,7 +11,7 @@
 #include "ECS/Entity.h"
 #include "Core/Containers/DenseArray.h"
 
-#define INVALID_COMPONENT_INDEX UINT64_MAX
+#define COMPONENT_INVALID UINT64_MAX
 
 template<typename T>
 class ComponentManager
@@ -51,7 +51,7 @@ public:
 
 	bool contains(Entity inID) const
 	{
-		return lookupTable[inID] != INVALID_COMPONENT_INDEX;
+		return lookupTable[inID] != COMPONENT_INVALID;
 	}
 
 	T* get(Entity inID)
@@ -85,7 +85,7 @@ public:
 	{
 		size_t elementIdx = lookupTable[inID];
 		components.remove(elementIdx);
-		lookupTable[inID] = INVALID_COMPONENT_INDEX;
+		lookupTable[inID] = COMPONENT_INVALID;
 
 		if (elementIdx < components.size())
 		{
@@ -129,7 +129,7 @@ public:
 				bool bGapRowAdded = false;
 				for (size_t i = ENTITY_FIRST; i < ENTITY_MAX; ++i)
 				{
-					if (lookupTable[i] == INVALID_COMPONENT_INDEX)
+					if (lookupTable[i] == COMPONENT_INVALID)
 					{
 						if (bGapRowAdded)
 						{

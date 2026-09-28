@@ -19,16 +19,17 @@ private:
 	glm::quat rotation;
 	glm::vec3 scale;
 
-	bool bDirty = false;
+	bool bDirty;
 
 public:
-	Entity entity = 0;
+	Entity entity;
 
 	LocalTransformComponent()
 	{
-		entity = 0;
-
-		position = glm::vec3();
+		entity = ENTITY_INVALID;
+		bDirty = false;
+		
+		position = glm::vec3(0);
 		rotation = glm::quat();
 		scale = glm::vec3(1, 1, 1);
 	}
@@ -72,15 +73,13 @@ public:
 
 struct WorldTransformComponent
 {
-	Entity entity = 0;
+	Entity entity;
 
 	glm::mat4 model;
 
 	WorldTransformComponent()
-	{
-		entity = 0;
-		model = glm::identity<glm::mat4>();
-	}
+		: entity(ENTITY_INVALID), model(glm::identity<glm::mat4>())
+	{}
 
 	glm::vec3 getModelForward() const
 	{

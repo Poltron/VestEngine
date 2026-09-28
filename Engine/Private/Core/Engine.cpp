@@ -51,6 +51,8 @@ void VestEngine::launch()
 		Scene* scene = engine::getScene();
 		ensure(scene);
 
+		scene->executeEntityChanges();
+
 		render::getRenderer()->updateLightParameters(*scene);
 
 		scene->getCamera().update(deltaTime);
@@ -59,6 +61,9 @@ void VestEngine::launch()
 		scene->getHierarchyComponents().drawDebug(50, 50);
 		scene->getLocalTransformComponents().drawDebug(300, 50);
 		scene->getWorldTransformComponents().drawDebug(550, 50);
+
+		respawnSystem.update(*scene);
+		killZoneSystem.update(*scene);
 
 		hierarchySystem.update(*scene);
 		physicsSystem.update(*scene, deltaTime);

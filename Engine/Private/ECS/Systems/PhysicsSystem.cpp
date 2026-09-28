@@ -27,7 +27,7 @@ void PhysicsSystem::update(Scene& inScene, double inDeltaTime)
 		const glm::vec3 translationVelocity = rigidbody->linearVelocity * (float)inDeltaTime;
 
 		HierarchyComponent* hierarchy = hierarchies.get(rigidbody->entity);
-		if (hierarchy && hierarchy->parent)
+		if (hierarchy && EntityFuncs::isEntityValid(hierarchy->parent))
 		{
 			WorldTransformComponent* parentWorldTransform = worldTransforms.get(hierarchy->parent);
 			addWorldRotation(rotationVelocity, localTransform, parentWorldTransform);

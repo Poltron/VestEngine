@@ -6,14 +6,24 @@
 
 class EntityManager
 {
+	std::queue<Entity> availableIds;
+	Entity entities[ENTITY_MAX];
+	size_t numberEntityAlive;
+
+	std::vector<Entity> pendingDestroy;
+	
 public:
 	EntityManager();
 
 	Entity createEntity();
-	void destroyEntity(Entity inEntity);
 	bool exists(Entity inEntity) const;
 
+	size_t getNumberEntityAlive() const { return numberEntityAlive; }
+
+	void markEntityForDestroy(Entity entity);
+	void destroyMarkedEntities();
+	const std::vector<Entity>& getEntitiesPendingDestruction() const { return pendingDestroy; }
+
 private:
-	std::queue<Entity> availableIds;
-	Entity entities[ENTITY_MAX];
+	void destroyEntity(Entity inEntity);
 };

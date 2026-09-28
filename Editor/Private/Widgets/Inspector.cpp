@@ -34,16 +34,19 @@ void Inspector::shutdown()
 
 void Inspector::show(Entity inEntity)
 {
-	if (!engine::getScene()->getEntityManager().exists(inEntity))
-		return;
-
-	if (EntityFuncs::isEntityValid(watchedEntity))
+	if (engine::getScene()->getEntityManager().exists(watchedEntity))
 	{
 		MeshRendererComponent* meshRenderer = engine::getScene()->getMeshRendererComponents().get(watchedEntity);
 		if (meshRenderer)
 		{
 			meshRenderer->bOutline = false;
 		}
+	}
+
+	if (!engine::getScene()->getEntityManager().exists(inEntity))
+	{
+		watchedEntity = 0;
+		return;
 	}
 
 	watchedEntity = inEntity;
@@ -70,7 +73,7 @@ void Inspector::show(Entity inEntity)
 
 void Inspector::update()
 {
-	if (!EntityFuncs::isEntityValid(watchedEntity))
+	if (!engine::getScene()->getEntityManager().exists(watchedEntity))
 	{
 		return;
 	}

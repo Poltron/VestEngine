@@ -31,6 +31,49 @@ bool Scene::initialize()
 void Scene::shutdown()
 {}
 
+void Scene::executeEntityChanges()
+{
+	for (Entity entity : entities.getEntitiesPendingDestruction())
+	{
+		if (localTransformComponents.contains(entity))
+		{
+			localTransformComponents.destroy(entity);
+		}
+		if (worldTransformComponents.contains(entity))
+		{
+			worldTransformComponents.destroy(entity);
+		}
+		if (hierarchyComponents.contains(entity))
+		{
+			hierarchyComponents.destroy(entity);
+		}
+		if (meshRendererComponents.contains(entity))
+		{
+			meshRendererComponents.destroy(entity);
+		}
+		if (sphereColliderComponents.contains(entity))
+		{
+			sphereColliderComponents.destroy(entity);
+		}
+		if (rigidbodyComponents.contains(entity))
+		{
+			rigidbodyComponents.destroy(entity);
+		}
+		if (directionalLightComponents.contains(entity))
+		{
+			directionalLightComponents.destroy(entity);
+		}
+		if (pointLightComponents.contains(entity))
+		{
+			pointLightComponents.destroy(entity);
+		}
+
+		render::getRenderer()->removeMovableSphere(entity);
+	}
+
+	entities.destroyMarkedEntities();
+}
+
 LocalTransformComponent* Scene::addTransformTo(Entity inEntity
 	, const glm::vec3& inPosition
 	, const glm::quat& inRotation
