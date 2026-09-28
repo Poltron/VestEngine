@@ -228,8 +228,9 @@ void Renderer::renderDebugPass(Scene& inScene)
 		ZoneScopedN("render point primitives");
 
 		DebugShapePrimitive& pointPrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::POINT];
+		pointPrimitive.resetInstanceCount();
 		pointPrimitive.updateVBO(pointDebugShapeInstances);
-		drawArrays(pointPrimitive.getVAO(), EPrimitiveMode::LINES, 0, pointDebugShapeInstances.size());
+		drawArrays(pointPrimitive.getVAO(), EPrimitiveMode::POINTS, 0, pointDebugShapeInstances.size());
 		frameInfo.debugShapesTotal += pointDebugShapeInstances.size();
 	}
 
@@ -237,6 +238,7 @@ void Renderer::renderDebugPass(Scene& inScene)
 		ZoneScopedN("render line primitives");
 
 		DebugShapePrimitive& linePrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::LINE];
+		linePrimitive.resetInstanceCount();
 		linePrimitive.updateVBO(lineDebugShapeInstances);
 		drawArrays(linePrimitive.getVAO(), EPrimitiveMode::LINES, 0, lineDebugShapeInstances.size());
 		frameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
@@ -255,15 +257,13 @@ void Renderer::renderDebugPass(Scene& inScene)
 		boxMesh.addInstances(boxDebugShapeInstances);
 		drawArraysInstanced(boxMesh.getVAO(), EPrimitiveMode::LINES, 0, boxMesh.getSize(), boxMesh.getInstanceCount());
 
-		frameInfo.debugShapesTotal += boxDebugShapeInstances.size();
+		frameInfo.debugShapesTotal += boxMesh.getInstanceCount();
 	}
 
 	{
 		ZoneScopedN("render sphere meshes");
 
 		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
-		glBindBuffer(GL_ARRAY_BUFFER, sphereMesh.getVBOInstances());
-
 		sphereMesh.resetInstances();
 		sphereMesh.addInstances(sphereDebugShapeInstances);
 		sphereMesh.addInstances(entitySphereInstances.instances);
@@ -449,11 +449,22 @@ void Renderer::loadDebugShapes()
 {
 	ZoneScoped;
 
-	debugShapePrimitives.resize((size_t)EDebugShapePrimitive::ENUM_SIZE);
-	// todo: not the cleanest ? right now its following enum order but i can't resize + assign
-	// with enum index since there's no default constructor on DebugShapeMesh
-	debugShapeMeshes.push_back(debugShapeMeshGenerationHelper::createBox());
-	debugShapeMeshes.push_back(debugShapeMeshGenerationHelper::createSphere(6));
+	// todo: refacto needed
+	// right now its following enum order but i can't resize + assign
+	// with enum index since there's no default constructor
+
+	debugShapePrimitives.push_back(DebugShapePrimitive(10));
+	debugShapePrimitives.push_back(DebugShapePrimitive(10));
+
+	std::vector<glm::vec3> boxVertices;
+	debugShapeMeshGenerationHelper::createBox(boxVertices);
+	DebugShapeMesh box(std::move(boxVertices), 500);
+	debugShapeMeshes.push_back(std::move(box));
+
+	std::vector<glm::vec3> sphereVertices;
+	debugShapeMeshGenerationHelper::createSphere(6, sphereVertices);
+	DebugShapeMesh sphere(std::move(sphereVertices), 500);
+	debugShapeMeshes.push_back(std::move(sphere));
 }
 
 void Renderer::updateDebugShapes(Scene& inScene)

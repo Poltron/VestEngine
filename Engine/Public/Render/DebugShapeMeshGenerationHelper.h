@@ -2,10 +2,8 @@
 
 #include "glm/glm.hpp"
 
-#include "Render/DebugShapes.h"
-
 namespace debugShapeMeshGenerationHelper
 {
-	DebugShapeMesh createBox();
-	DebugShapeMesh createSphere(int inNumSegments);
+	void createBox(std::vector<glm::vec3>& outVertices);
+	void createSphere(int inNumSegments, std::vector<glm::vec3>& outVertices);
 }

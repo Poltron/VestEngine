@@ -32,7 +32,7 @@ namespace
 
 namespace debugShapeMeshGenerationHelper
 {
-	DebugShapeMesh createBox()
+	void createBox(std::vector<glm::vec3>& outVertices)
 	{
 		//
 		//      5---6
@@ -41,7 +41,7 @@ namespace debugShapeMeshGenerationHelper
 		//    4---3
 		//
 
-		std::vector<glm::vec3> vertices;
+		outVertices.clear();
 
 		float halfSizeX = 0.5f;
 		float halfSizeY = 0.5f;
@@ -57,49 +57,45 @@ namespace debugShapeMeshGenerationHelper
 		const glm::vec3 vertex7 = glm::vec4(  halfSizeX, - halfSizeY, - halfSizeZ, 1.0f);
 		const glm::vec3 vertex8 = glm::vec4(- halfSizeX, - halfSizeY, - halfSizeZ, 1.0f);
 
-		vertices.push_back(vertex1);
-		vertices.push_back(vertex2);
-		vertices.push_back(vertex2);
-		vertices.push_back(vertex3);
-		vertices.push_back(vertex3);
-		vertices.push_back(vertex4);
-		vertices.push_back(vertex4);
-		vertices.push_back(vertex1);
+		outVertices.push_back(vertex1);
+		outVertices.push_back(vertex2);
+		outVertices.push_back(vertex2);
+		outVertices.push_back(vertex3);
+		outVertices.push_back(vertex3);
+		outVertices.push_back(vertex4);
+		outVertices.push_back(vertex4);
+		outVertices.push_back(vertex1);
 
-		vertices.push_back(vertex1);
-		vertices.push_back(vertex2);
-		vertices.push_back(vertex2);
-		vertices.push_back(vertex3);
-		vertices.push_back(vertex3);
-		vertices.push_back(vertex4);
-		vertices.push_back(vertex4);
-		vertices.push_back(vertex1);
+		outVertices.push_back(vertex1);
+		outVertices.push_back(vertex2);
+		outVertices.push_back(vertex2);
+		outVertices.push_back(vertex3);
+		outVertices.push_back(vertex3);
+		outVertices.push_back(vertex4);
+		outVertices.push_back(vertex4);
+		outVertices.push_back(vertex1);
 		
-		vertices.push_back(vertex5);
-		vertices.push_back(vertex6);
-		vertices.push_back(vertex6);
-		vertices.push_back(vertex7);
-		vertices.push_back(vertex7);
-		vertices.push_back(vertex8);
-		vertices.push_back(vertex8);
-		vertices.push_back(vertex5);
+		outVertices.push_back(vertex5);
+		outVertices.push_back(vertex6);
+		outVertices.push_back(vertex6);
+		outVertices.push_back(vertex7);
+		outVertices.push_back(vertex7);
+		outVertices.push_back(vertex8);
+		outVertices.push_back(vertex8);
+		outVertices.push_back(vertex5);
 		
-		vertices.push_back(vertex1);
-		vertices.push_back(vertex5);
-		vertices.push_back(vertex2);
-		vertices.push_back(vertex6);
-		vertices.push_back(vertex3);
-		vertices.push_back(vertex7);
-		vertices.push_back(vertex4);
-		vertices.push_back(vertex8);
-
-		return DebugShapeMesh(std::move(vertices));
+		outVertices.push_back(vertex1);
+		outVertices.push_back(vertex5);
+		outVertices.push_back(vertex2);
+		outVertices.push_back(vertex6);
+		outVertices.push_back(vertex3);
+		outVertices.push_back(vertex7);
+		outVertices.push_back(vertex4);
+		outVertices.push_back(vertex8);
 	}
 
-	DebugShapeMesh createSphere(int inNumSegments)
+	void createSphere(int inNumSegments, std::vector<glm::vec3>& outVertices)
 	{
-		std::vector<glm::vec3> vertices;
-
 		std::function<float(float)> cosFunc = [](float f) {return cos(f); };
 		std::function<float(float)> sinFunc = [](float f) {return sin(f); };
 
@@ -109,14 +105,12 @@ namespace debugShapeMeshGenerationHelper
 		{
 			rotationMatrix = glm::rotate(rotationMatrix, glm::radians(circleStep), glm::vec3(0, 1, 0));
 
-			generateCircle(rotationMatrix, inNumSegments * 2, cosFunc, sinFunc, vertices);
+			generateCircle(rotationMatrix, inNumSegments * 2, cosFunc, sinFunc, outVertices);
 		}
 
 		rotationMatrix = glm::identity<glm::mat4>();
 		rotationMatrix = glm::rotate(rotationMatrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
-		generateCircle(rotationMatrix, inNumSegments * 2, sinFunc, cosFunc, vertices);
-
-		return DebugShapeMesh(std::move(vertices));
+		generateCircle(rotationMatrix, inNumSegments * 2, sinFunc, cosFunc, outVertices);
 	}
 }

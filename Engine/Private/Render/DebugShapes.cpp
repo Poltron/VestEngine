@@ -5,12 +5,13 @@
 
 #include <iostream>
 
-DebugShapePrimitive::DebugShapePrimitive()
+DebugShapePrimitive::DebugShapePrimitive(size_t inCapacity)
+	: capacity(inCapacity), instanceCount(0)
 {
 	VAO = 0;
 	VBO = 0;
 
-	setupMesh();
+	initialize();
 }
 
 DebugShapePrimitive::~DebugShapePrimitive()
@@ -20,10 +21,12 @@ DebugShapePrimitive::~DebugShapePrimitive()
 }
 
 DebugShapePrimitive::DebugShapePrimitive(DebugShapePrimitive&& inOther) noexcept
-	: VAO(inOther.VAO), VBO(inOther.VBO)
+	: VAO(inOther.VAO), VBO(inOther.VBO), capacity(inOther.capacity), instanceCount(inOther.instanceCount)
 {
 	inOther.VAO = 0;
 	inOther.VBO = 0;
+	inOther.capacity = 0;
+	inOther.instanceCount = 0;
 }
 
 DebugShapePrimitive& DebugShapePrimitive::operator=(DebugShapePrimitive&& inOther) noexcept
@@ -32,23 +35,25 @@ DebugShapePrimitive& DebugShapePrimitive::operator=(DebugShapePrimitive&& inOthe
 	{
 		VAO = inOther.VAO;
 		VBO = inOther.VBO;
+		capacity = inOther.capacity;
+		instanceCount = inOther.instanceCount;
 
 		inOther.VAO = 0;
 		inOther.VBO = 0;
+		inOther.capacity = 0;
+		inOther.instanceCount = 0;
 	}
 	return *this;
 }
 
-void DebugShapePrimitive::setupMesh()
+void DebugShapePrimitive::initialize()
 {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 
 	glBindVertexArray(VAO);
 
-	// note: unsafe if more than 100 primitives
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(DebugShapePrimitiveInstance) * 2000, nullptr, GL_DYNAMIC_DRAW);
+	reallocateVBO(capacity);
 
 	glEnableVertexAttribArray(0); // position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapePrimitiveInstance), (void*)(offsetof(DebugShapePrimitiveInstance, position)));
@@ -74,23 +79,45 @@ void DebugShapePrimitive::setupMesh()
 	}
 }
 
+void DebugShapePrimitive::reallocateVBO(size_t inNewCapacity)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, inNewCapacity * sizeof(DebugShapePrimitiveInstance), nullptr, GL_DYNAMIC_DRAW);
+	capacity = inNewCapacity;
+}
+
+void DebugShapePrimitive::resetInstanceCount()
+{
+	instanceCount = 0;
+}
+
 void DebugShapePrimitive::updateVBO(std::vector<DebugShapePrimitiveInstance>& inInstances)
 {
-	instanceCount = inInstances.size();
+	const size_t newInstanceCount = instanceCount + inInstances.size();
+	if (newInstanceCount > capacity)
+	{
+		size_t newCapacity = std::max(newInstanceCount, instanceCount * 2);
+		reallocateVBO(newCapacity);
+	}
+	else
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, getVBO());
+	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, getVBO());
 	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(inInstances.size() * sizeof(DebugShapePrimitiveInstance)), inInstances.data());
+
+	instanceCount = newInstanceCount;
 }
 
 //
-DebugShapeMesh::DebugShapeMesh(std::vector<glm::vec3>&& inVertices)
-	: vertices(inVertices)
+DebugShapeMesh::DebugShapeMesh(std::vector<glm::vec3>&& inVertices, size_t inCapacity)
+	: vertices(inVertices), capacity(inCapacity), instanceCount(0)
 {
 	VAO = 0;
 	VBOmesh = 0;
 	VBOinstances = 0;
 
-	setupMesh();
+	initialize();
 }
 
 DebugShapeMesh::~DebugShapeMesh()
@@ -101,7 +128,7 @@ DebugShapeMesh::~DebugShapeMesh()
 }
 
 DebugShapeMesh::DebugShapeMesh(DebugShapeMesh&& inOther) noexcept
-	: VAO(inOther.VAO), VBOmesh(inOther.VBOmesh), VBOinstances(inOther.VBOinstances)
+	: VAO(inOther.VAO), VBOmesh(inOther.VBOmesh), VBOinstances(inOther.VBOinstances), capacity(inOther.capacity), instanceCount(inOther.instanceCount)
 {
 	vertices.clear();
 	vertices = std::move(inOther.vertices);
@@ -121,15 +148,19 @@ DebugShapeMesh& DebugShapeMesh::operator=(DebugShapeMesh&& inOther) noexcept
 		VAO = inOther.VAO;
 		VBOmesh = inOther.VBOmesh;
 		VBOinstances = inOther.VBOinstances;
+		capacity = inOther.capacity;
+		instanceCount = inOther.instanceCount;
 
 		inOther.VAO = 0;
 		inOther.VBOmesh = 0;
 		inOther.VBOinstances = 0;
+		inOther.capacity = capacity;
+		inOther.instanceCount = instanceCount;
 	}
 	return *this;
 }
 
-void DebugShapeMesh::setupMesh()
+void DebugShapeMesh::initialize()
 {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBOmesh);
@@ -147,8 +178,7 @@ void DebugShapeMesh::setupMesh()
 	glVertexAttribDivisor(0, 0);
 
 	// instances
-	glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
-	glBufferData(GL_ARRAY_BUFFER, 2050 * sizeof(DebugShapeMeshInstance), nullptr, GL_DYNAMIC_DRAW);
+	reallocateVBOinstances(capacity);
 
 	glEnableVertexAttribArray(1); // color
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, color)));
@@ -171,10 +201,27 @@ void DebugShapeMesh::setupMesh()
 	glBindVertexArray(0);
 }
 
+void DebugShapeMesh::reallocateVBOinstances(size_t inNewCapacity)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
+	glBufferData(GL_ARRAY_BUFFER, inNewCapacity * sizeof(DebugShapeMeshInstance), nullptr, GL_DYNAMIC_DRAW);
+	capacity = inNewCapacity;
+}
+
 void DebugShapeMesh::addInstances(const std::vector<DebugShapeMeshInstance>& inInstances)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, getVBOInstances());
+	const size_t newInstanceCount = instanceCount + inInstances.size();
+	if (newInstanceCount > capacity)
+	{
+		size_t newCapacity = std::max(newInstanceCount, instanceCount * 2);
+		reallocateVBOinstances(newCapacity);
+	}
+	else
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
+	}
+
 	glBufferSubData(GL_ARRAY_BUFFER, instanceCount * sizeof(DebugShapeMeshInstance), (GLsizei)(inInstances.size() * sizeof(DebugShapeMeshInstance)), inInstances.data());
 
-	instanceCount += inInstances.size();
+	instanceCount = newInstanceCount;
 }
