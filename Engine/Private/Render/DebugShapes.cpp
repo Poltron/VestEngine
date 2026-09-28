@@ -74,6 +74,14 @@ void DebugShapePrimitive::setupMesh()
 	}
 }
 
+void DebugShapePrimitive::updateVBO(std::vector<DebugShapePrimitiveInstance>& inInstances)
+{
+	instanceCount = inInstances.size();
+
+	glBindBuffer(GL_ARRAY_BUFFER, getVBO());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(inInstances.size() * sizeof(DebugShapePrimitiveInstance)), inInstances.data());
+}
+
 //
 DebugShapeMesh::DebugShapeMesh(std::vector<glm::vec3>&& inVertices)
 	: vertices(inVertices)
@@ -161,4 +169,12 @@ void DebugShapeMesh::setupMesh()
 	glVertexAttribDivisor(5, 1);
 
 	glBindVertexArray(0);
+}
+
+void DebugShapeMesh::updateInstances(const std::vector<DebugShapeMeshInstance>& inInstances)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, getVBOInstances());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(inInstances.size() * sizeof(DebugShapeMeshInstance)), inInstances.data());
+
+	instanceCount = inInstances.size();
 }

@@ -47,6 +47,17 @@ namespace
 		}
 		return shaderID;
 	}
+
+	bool isUniformLocationValid(int inLocation, const std::string& inName)
+	{
+		if (inLocation == -1)
+		{
+			std::cerr << "GetUniformLocation failed " << inName << std::endl;
+			return false;
+		}
+
+		return true;
+	}
 }
 
 Shader::Shader(std::string inVertexPath, std::string inFragmentPath)
@@ -142,53 +153,88 @@ void Shader::use()
 void Shader::setBool(const std::string& name, bool value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform1i(location, (int)value);
 }
 
 void Shader::setInt(const std::string& name, int value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform1i(location, value);
 }
 
 void Shader::setFloat(const std::string& name, float value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform1f(location, value);
 }
 
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform3f(location, x, y, z);
 }
 
 void Shader::setVec3(const std::string& name, const glm::vec3& inValue) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform3f(location, inValue.x, inValue.y, inValue.z);
 }
 
 void Shader::setVec4(const std::string& name, float x, float y, float z, float w) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform4f(location, x, y, z, w);
 }
 
 void Shader::setMat4(const std::string& name, glm::f32* value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
-	if (location == -1)
+	if (!isUniformLocationValid(location, name))
 	{
-		std::cerr << "GetUniformLocation failed " << name << std::endl;
 		return;
 	}
+
 	glUniformMatrix4fv(location, 1, GL_FALSE, value);
 }
 
 void Shader::setTexture(const std::string& name, GraphicResourceHandle value) const
 {
 	int location = glGetUniformLocation(ID, name.c_str());
+	if (!isUniformLocationValid(location, name))
+	{
+		return;
+	}
+
 	glUniform1i(location, value);
 }
 

@@ -17,6 +17,8 @@ class DebugShapePrimitive
 	GraphicResourceHandle VAO;
 	GraphicResourceHandle VBO;
 
+	size_t instanceCount;
+
 public:
 	DebugShapePrimitive();
 	~DebugShapePrimitive();
@@ -29,6 +31,8 @@ public:
 
 	GraphicResourceHandle getVAO() const { return VAO; }
 	GraphicResourceHandle getVBO() const { return VBO; }
+
+	void updateVBO(std::vector<DebugShapePrimitiveInstance>& inInstances);
 
 private:
 	void setupMesh();
@@ -56,6 +60,8 @@ class DebugShapeMesh
 	GraphicResourceHandle VBOmesh;
 	GraphicResourceHandle VBOinstances;
 
+	size_t instanceCount;
+
 public:
 	DebugShapeMesh() = delete;
 	DebugShapeMesh(std::vector<glm::vec3>&& inVertices);
@@ -70,6 +76,10 @@ public:
 	GraphicResourceHandle getVAO() const { return VAO; }
 	GraphicResourceHandle getVBOMesh() const { return VBOmesh; }
 	GraphicResourceHandle getVBOInstances() const { return VBOinstances; }
+	size_t getInstanceCount() const { return instanceCount; }
+	size_t getSize() const { return instanceCount * sizeof(DebugShapeMeshInstance); }
+
+	void updateInstances(const std::vector<DebugShapeMeshInstance>& inInstances);
 
 private:
 	void setupMesh();

@@ -167,19 +167,3 @@ void Mesh::bindTextures(const ResourcesManager& inResourcesManager, const Shader
 		inShader.setInt(std::string("material.").append(texture->getType()), (int)i);
 	}
 }
-
-void Mesh::draw() const
-{
-	// note : temporary for container, to remove when only working with proper models ?
-	if (EBO == 0)
-	{
-		glBindVertexArray(getVAO());
-		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size());
-		glBindVertexArray(0);
-		return;
-	}
-
-	glBindVertexArray(getVAO());
-	glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-}

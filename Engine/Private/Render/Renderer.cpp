@@ -13,6 +13,7 @@
 #include "Core/Scene.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Mesh.h"
+#include "Core/Resources/Model.h"
 #include "Core/Resources/Shader.h"
 #include "ECS/Components/DirectionalLightComponent.h"
 #include "ECS/Components/MeshRendererComponent.h"
@@ -79,6 +80,24 @@ namespace
 		SPHERE,
 		ENUM_SIZE
 	};
+
+	GLenum getOpenGLPrimitiveMode(Renderer::EPrimitiveMode inMode)
+	{
+		switch (inMode)
+		{
+		case Renderer::EPrimitiveMode::POINTS:
+			return GL_POINTS;
+			break;
+		case Renderer::EPrimitiveMode::LINES:
+			return GL_LINES;
+			break;
+		case Renderer::EPrimitiveMode::TRIANGLES:
+			return GL_TRIANGLES;
+			break;
+		}
+		ensure(false);
+		return GL_INVALID_ENUM;
+	}
 }
 
 void Renderer::clear()
@@ -141,21 +160,12 @@ void Renderer::renderMainPass(Scene& inScene)
 		const std::string meshRendererName = "render " + model->getPath();
 		ZoneName(meshRendererName.c_str(), meshRendererName.size());
 
-		Shader* shader = nullptr;
+		Shader* shader = useShaderProgram(meshRenderer->shader);
+		ensure(shader);
+
+		globalShaderParameters.applyToShader(*shader, *engine::getResources());
+
 		WorldTransformComponent* worldTransform = nullptr;
-		{
-			shader = engine::getResources()->getShader(meshRenderer->shader);
-			ensure(shader != nullptr);
-			if (shader->getID() != currentShaderProgram)
-			{
-				currentShaderProgram = shader->getID();
-				shader->use();
-				frameInfo.shaderPrograms++;
-
-				globalShaderParameters.applyToShader(*shader, *engine::getResources());
-			}
-		}
-
 		{
 			shader->setVec3("viewPosition", activeCamera->getPosition());
 			shader->setMat4("viewProjection", glm::value_ptr(activeCamera->getViewProjectionMatrix()));
@@ -182,8 +192,7 @@ void Renderer::renderMainPass(Scene& inScene)
 				glStencilMask(0xFF); // allow full writing to stencil
 			}
 
-			frameInfo.drawCalls++;
-			model->draw();
+			drawModel(*model);
 		}
 
 		if (meshRenderer->bOutline)
@@ -191,12 +200,8 @@ void Renderer::renderMainPass(Scene& inScene)
 			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // every fragment where stencil is not equal to 1 passes
 			glStencilMask(0x00); // don't write to stencil
 
-			ensure(getSolidColorShader().IsValid());
-			Shader* shader = engine::getResources()->getShader(getSolidColorShader());
+			Shader* shader = useShaderProgram(getSolidColorShader());
 			ensure(shader);
-			shader->use();
-			currentShaderProgram = shader->getID();
-			frameInfo.shaderPrograms++;
 
 			glm::mat4 outlineMat = worldTransform->model;
 			outlineMat = glm::scale(outlineMat, glm::vec3(1.1f, 1.1f, 1.1f));
@@ -204,8 +209,7 @@ void Renderer::renderMainPass(Scene& inScene)
 			shader->setMat4("model", glm::value_ptr(outlineMat));
 			shader->setVec3("objectColor", color::yellow);
 
-			frameInfo.drawCalls++;
-			model->draw();
+			drawModel(*model);
 
 			glStencilFunc(GL_ALWAYS, 1, 0xFF); // every fragment passes stencil
 		}
@@ -214,11 +218,8 @@ void Renderer::renderMainPass(Scene& inScene)
 
 void Renderer::renderDebugPass(Scene& inScene)
 {
-	Shader* shader = engine::getResources()->getShader(debugPrimitiveShaderHandle);
-	ensure(shader != nullptr);
-	shader->use();
-	currentShaderProgram = shader->getID();
-	frameInfo.shaderPrograms++;
+	Shader* shader = useShaderProgram(debugPrimitiveShaderHandle);
+	ensure(shader);
 
 	glm::mat4 viewProjection = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();
 	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection));
@@ -227,14 +228,8 @@ void Renderer::renderDebugPass(Scene& inScene)
 		ZoneScopedN("render point primitives");
 
 		DebugShapePrimitive& pointPrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::POINT];
-		glBindBuffer(GL_ARRAY_BUFFER, pointPrimitive.getVBO());
-		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(pointDebugShapeInstances.size() * sizeof(DebugShapePrimitiveInstance)), pointDebugShapeInstances.data());
-
-		glBindVertexArray(pointPrimitive.getVAO());
-		glDrawArrays(GL_POINTS, 0, (GLsizei)(pointDebugShapeInstances.size()));
-		glBindVertexArray(0);
-
-		frameInfo.drawCalls++;
+		pointPrimitive.updateVBO(pointDebugShapeInstances);
+		drawArrays(pointPrimitive.getVAO(), EPrimitiveMode::LINES, 0, pointDebugShapeInstances.size());
 		frameInfo.debugShapesTotal += pointDebugShapeInstances.size();
 	}
 
@@ -242,22 +237,13 @@ void Renderer::renderDebugPass(Scene& inScene)
 		ZoneScopedN("render line primitives");
 
 		DebugShapePrimitive& linePrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::LINE];
-		glBindBuffer(GL_ARRAY_BUFFER, linePrimitive.getVBO());
-		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(lineDebugShapeInstances.size() * sizeof(DebugShapePrimitiveInstance)), lineDebugShapeInstances.data());
-
-		glBindVertexArray(linePrimitive.getVAO());
-		glDrawArrays(GL_LINES, 0, (GLsizei)(lineDebugShapeInstances.size()));
-		glBindVertexArray(0);
-
-		frameInfo.drawCalls++;
+		linePrimitive.updateVBO(lineDebugShapeInstances);
+		drawArrays(linePrimitive.getVAO(), EPrimitiveMode::LINES, 0, lineDebugShapeInstances.size());
 		frameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
 	}
 
-	shader = engine::getResources()->getShader(debugMeshShaderHandle);
-	ensure(shader != nullptr);
-	shader->use();
-	currentShaderProgram = shader->getID();
-	frameInfo.shaderPrograms++;
+	shader = useShaderProgram(debugMeshShaderHandle);
+	ensure(shader);
 
 	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection));
 
@@ -265,14 +251,9 @@ void Renderer::renderDebugPass(Scene& inScene)
 		ZoneScopedN("render box meshes");
 
 		DebugShapeMesh& boxMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::BOX];
-		glBindBuffer(GL_ARRAY_BUFFER, boxMesh.getVBOInstances());
-		glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(boxDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), boxDebugShapeInstances.data());
+		boxMesh.updateInstances(boxDebugShapeInstances);
+		drawArraysInstanced(boxMesh.getVAO(), EPrimitiveMode::LINES, 0, boxMesh.getSize(), boxMesh.getInstanceCount());
 
-		glBindVertexArray(boxMesh.getVAO());
-		glDrawArraysInstanced(GL_LINES, 0, (GLsizei)(boxDebugShapeInstances.size() * sizeof(DebugShapeMeshInstance)), (GLsizei)boxDebugShapeInstances.size());
-		glBindVertexArray(0);
-
-		frameInfo.drawCalls++;
 		frameInfo.debugShapesTotal += boxDebugShapeInstances.size();
 	}
 
@@ -336,6 +317,68 @@ Camera& Renderer::getActiveCamera()
 {
 	ensure(activeCamera);
 	return *activeCamera;
+}
+
+Shader* Renderer::useShaderProgram(ResourceHandle inShaderHandle)
+{
+	Shader* shader = engine::getResources()->getShader(inShaderHandle);
+	ensure(shader != nullptr);
+
+	if (shader->getID() != state.shaderProgram)
+	{
+		shader->use();
+		state.shaderProgram = shader->getID();
+
+		frameInfo.shaderPrograms++;
+	}
+
+	return shader;
+}
+
+void Renderer::drawModel(const Model& inModel)
+{
+	for (size_t meshIndex = 0; meshIndex < inModel.getMeshes().size(); ++meshIndex)
+	{
+		const Mesh& mesh = inModel.getMeshes()[meshIndex];
+		if (mesh.getEBO())
+		{
+			drawElements(mesh.getVAO(), EPrimitiveMode::TRIANGLES, mesh.getIndicesSize());
+		}
+		else
+		{
+			drawArrays(mesh.getVAO(), EPrimitiveMode::TRIANGLES, 0, mesh.getVerticesSize());
+		}
+	}
+}
+
+void Renderer::drawArrays(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
+{
+	glBindVertexArray(inVAO);
+	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
+	glDrawArrays(primitiveMode, inOffset, (GLsizei)inCount);
+	glBindVertexArray(0);
+
+	frameInfo.drawCalls++;
+}
+
+void Renderer::drawArraysInstanced(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
+{
+	glBindVertexArray(inVAO);
+	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
+	glDrawArraysInstanced(primitiveMode, inOffset, (GLsizei)inSize, (GLsizei)inCount);
+	glBindVertexArray(0);
+
+	frameInfo.drawCalls++;
+}
+
+void Renderer::drawElements(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount)
+{
+	glBindVertexArray(inVAO);
+	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
+	glDrawElements(primitiveMode, (GLsizei)inCount, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+
+	frameInfo.drawCalls++;
 }
 
 void Renderer::addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor)
@@ -480,8 +523,8 @@ void Renderer::updateLightParameters(Scene& inScene)
 }
 
 //
-Renderer* render::getRenderer() { return g_Renderer; }
-bool render::initialize()
+Renderer* getRenderer() { return g_Renderer; }
+bool initialize()
 {
 	ZoneScoped;
 
@@ -499,7 +542,7 @@ bool render::initialize()
 	return bSuccess;
 }
 
-void render::shutdown()
+void shutdown()
 {
 	ZoneScoped;
 

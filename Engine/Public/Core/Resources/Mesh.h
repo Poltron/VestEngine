@@ -49,11 +49,13 @@ public:
 	Mesh& operator=(Mesh&& inOther) noexcept;
 
 	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
-	void draw() const;
 
 	GraphicResourceHandle getVAO() const { return VAO; }
 	GraphicResourceHandle getVBO() const { return VBO; }
 	GraphicResourceHandle getEBO() const { return EBO; }
+
+	size_t getVerticesSize() const { return vertices.size(); }
+	size_t getIndicesSize() const { return indices.size(); }
 
 private:
 	std::vector<Vertex> vertices;

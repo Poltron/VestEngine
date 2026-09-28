@@ -392,5 +392,7 @@ namespace demoScene
 		Renderer* renderer = render::getRenderer();
 		ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[0]);
 		createSceneLights(inScene, model, renderer->getSolidColorShader());
+
+		render::getRenderer()->addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 25, 25, 25 }, color::white);
 	}
 }

@@ -14,6 +14,7 @@
 #define MAX_POINT_LIGHTS 3
 
 class Camera;
+class Model;
 class Scene;
 
 struct FrameInfo
@@ -53,6 +54,30 @@ public:
 
 private:
 	Camera* activeCamera;
+
+//
+public:
+	enum class EPrimitiveMode
+	{
+		POINTS,
+		LINES,
+		TRIANGLES
+	};
+
+private:
+	Shader* useShaderProgram(ResourceHandle inShaderHandle);
+
+	void drawModel(const Model& inModel);
+	void drawArrays(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveType, int inOffset, size_t inCount);
+	void drawArraysInstanced(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveType, int inOffset, size_t inSize, size_t inCount);
+	void drawElements(GraphicResourceHandle inVAO, EPrimitiveMode inPrimiveType, size_t inCount);
+
+private:
+	struct RendererState
+	{
+		GraphicResourceHandle shaderProgram = UINT32_MAX;
+	};
+	RendererState state;
 
 //
 public:
@@ -107,13 +132,10 @@ private:
 	ResourceHandle debugPrimitiveShaderHandle;
 	ResourceHandle debugMeshShaderHandle;
 
-	GraphicResourceHandle currentShaderProgram = UINT32_MAX;
-
 //
 public:
 	const FrameInfo& getFrameInfo() const { return frameInfo; }
 
-private:
 	FrameInfo frameInfo;
 };
 

@@ -73,14 +73,6 @@ void Model::bindTextures(const ResourcesManager& inResourcesManager, const Shade
 	}
 }
 
-void Model::draw() const
-{
-	for (const Mesh& mesh : meshes)
-	{
-		mesh.draw();
-	}
-}
-
 void Model::processNode(aiNode* node, const aiScene* scene)
 {
 	for (unsigned int i = 0; i < node->mNumMeshes; ++i)

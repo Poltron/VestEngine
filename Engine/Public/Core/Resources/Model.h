@@ -26,9 +26,9 @@ public:
 	Model& operator=(Model&& inOther) noexcept;
 
 	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
-	void draw() const;
 
 	const std::string& getPath() const { return path; }
+	const std::vector<Mesh>& getMeshes() const { return meshes; }
 
 private:
 	std::vector<Mesh> meshes;
