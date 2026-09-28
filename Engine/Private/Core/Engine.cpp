@@ -38,12 +38,15 @@ void VestEngine::launch()
 	setState(EState::RUNNING);
 
 	double lastFrame = platform::getTime();
-
+	size_t frame = 0;
 	while (getState() == EState::RUNNING)
 	{
+		frame++;
 		double currentFrame = platform::getTime();
 		double deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		std::cout << "====== Frame " << frame << std::endl;
 
 		platform::getInputManager().processInput(deltaTime);
 		ui::startFrame();

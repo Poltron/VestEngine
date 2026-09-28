@@ -76,12 +76,13 @@ public:
 		, ResourceHandle inModel
 		, ResourceHandle inShader);
 
-	/*
-	*/
-
 	SphereColliderComponent* addSphereColliderTo(Entity inEntity
 		, float inRadius
 		, const glm::vec3& inOffset);
+
+	RigidbodyComponent* addRigidbodyTo(Entity inEntity
+		, const glm::vec3& inLinearVelocity
+		, const glm::vec3& inAngularVelocity);
 
 	DirectionalLightComponent* addDirectionalLightTo(Entity inEntity
 		, const glm::vec3& inColor
@@ -93,10 +94,6 @@ public:
 		, float inConstant
 		, float inLinear
 		, float inQuadratic);
-
-	RigidbodyComponent* addRigidbodyTo(Entity inEntity
-		, const glm::vec3& inLinearVelocity
-		, const glm::vec3& inAngularVelocity);
 
 	Entity createRenderedModel(ResourceHandle inModel
 		, ResourceHandle inShader

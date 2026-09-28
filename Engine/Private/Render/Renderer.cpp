@@ -1,6 +1,7 @@
 #include "Render/Renderer.h"
 
 #include <iostream>
+#include <algorithm>
 
 #include "glad/glad.h"
 #include "glm/gtc/type_ptr.hpp"
@@ -130,6 +131,14 @@ void Renderer::render(Scene& inScene)
 
 void Renderer::renderMainPass(Scene& inScene)
 {
+	std::sort(inScene.getMeshRendererComponents().getData()
+		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
+		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
+		{
+			return inA.shader.handle < inB.shader.handle;
+		});
+	inScene.getMeshRendererComponents().rebuildLookupTable();
+
 	for (size_t i = 0; i < inScene.getMeshRendererComponents().size(); ++i)
 	{
 		ZoneScoped;
