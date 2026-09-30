@@ -116,6 +116,23 @@ bool VestEditor::initialize()
 			bPingPong = !bPingPong;
 		});
 
+	platform::getInputManager().registerMouseCallback(input::EMouseButton::LEFT
+		, [this](input::EInputState inState, double inDeltaTime) 
+		{
+			if (inState != input::EInputState::PRESS)
+			{
+				return;
+			}
+
+			glm::vec2 cursorPos = platform::getInputManager().getCursorPos();
+			glm::vec3 position, direction;
+			render::getRenderer()->getActiveCamera().transformScreenPosToWorld(cursorPos, position, direction);
+
+			Entity hit = ENTITY_MAX;
+			engine::getScene()->raycast(position, direction, hit);
+			getInspector().show(hit);
+		});
+
 	engine::getEngine()->registerUIUpdateCallback(
 		[this]()
 		{

@@ -13,7 +13,7 @@ namespace
 {
 	void GetWorldInLocal(const WorldTransformComponent& inWorld, const LocalTransformComponent& inLocal, glm::mat4& outNewLocal)
 	{
-		glm::mat4 invParentLocal = glm::inverse(inLocal.getLocalModelMatrix());
+		glm::mat4 invParentLocal = glm::inverse(inLocal.computeModel());
 		outNewLocal = invParentLocal * inWorld.model;
 	}
 

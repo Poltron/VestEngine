@@ -2,6 +2,7 @@
 
 #include "tracy/Tracy.hpp"
 
+#include "Core/Maths.h"
 #include "Core/Scene.h"
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/TransformComponent.h"
@@ -17,7 +18,7 @@ void KillZoneSystem::update(Scene& inScene)
 		WorldTransformComponent* worldTransform = worldTransforms.at(i);
 		assert(worldTransform);
 
-		const glm::vec3 position = worldTransform->getPosition();
+		const glm::vec3 position = maths::getMatrixTranslation(worldTransform->model);
 		if (position.x > 7.5f || position.x < -7.5f
 			|| position.y > 7.5f || position.y < -7.5f
 			|| position.z > 7.5f || position.z < -7.5f)

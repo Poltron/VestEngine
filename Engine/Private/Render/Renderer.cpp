@@ -195,7 +195,7 @@ void Renderer::renderMainPass(Scene& inScene)
 			ensure(shader);
 
 			glm::mat4 outlineMat = worldTransform->model;
-			outlineMat = glm::scale(outlineMat, glm::vec3(1.1f, 1.1f, 1.1f));
+			outlineMat = glm::scale(outlineMat, glm::vec3(1.5f, 1.5f, 1.5f));
 
 			shader->setMat4("model", glm::value_ptr(outlineMat));
 			shader->setVec3("objectColor", color::yellow);
@@ -349,7 +349,7 @@ void Renderer::updateLightParameters(Scene& inScene)
 		//
 		globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
 		globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
-		globalShaderParameters.addVec3("directionalLight.direction", directionalLightTransform->getModelForward());
+		globalShaderParameters.addVec3("directionalLight.direction", maths::getMatrixForward(directionalLightTransform->model));
 	}
 
 	if (inScene.getPointLightComponents().size() > 0)
@@ -376,7 +376,7 @@ void Renderer::updateLightParameters(Scene& inScene)
 			const WorldTransformComponent* pointLightTransform = inScene.getWorldTransformComponents().get(pointLight->entity);
 			assert(pointLightTransform != nullptr);
 
-			globalShaderParameters.addVec3(pointLightName + ".position", pointLightTransform->getPosition());
+			globalShaderParameters.addVec3(pointLightName + ".position", maths::getMatrixTranslation(pointLightTransform->model));
 		}
 	}
 }

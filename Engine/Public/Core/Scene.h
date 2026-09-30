@@ -66,6 +66,8 @@ public:
 public:
 	void executeEntityChanges();
 
+	bool raycast(const glm::vec3& inStart, const glm::vec3& inDirection, Entity& outHit) const;
+
 	LocalTransformComponent* addTransformTo(Entity inEntity
 		, const glm::vec3& inPosition
 		, const glm::quat& inRotation

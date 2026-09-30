@@ -2,13 +2,10 @@
 
 #include <vector>
 
-#include "ECS/ComponentManager.h"
-#include "ECS/Entity.h"
 #include "Render/Debug/DebugShapeSubRenderer.h"
 #include "Render/GraphicResourceHandle.h"
 #include "Render/FrameInfo.h"
 #include "Render/ShaderParameterCollection.h"
-#include "Core/Ensure.h"
 #include "Core/ResourceHandle.h"
 
 #define MAX_POINT_LIGHTS 3

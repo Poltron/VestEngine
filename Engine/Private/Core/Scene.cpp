@@ -1,6 +1,10 @@
 #include "Core/Scene.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/intersect.hpp"
+
 #include "Core/Engine.h"
+#include "Core/Maths.h"
 #include "Core/ResourcesManager.h"
 #include "ECS/HierarchyHelper.h"
 #include "Platform/InputManager.h"
@@ -73,6 +77,61 @@ void Scene::executeEntityChanges()
 	entities.destroyMarkedEntities();
 }
 
+bool Scene::raycast(const glm::vec3& inStart, const glm::vec3& inDirection, Entity& outHit) const
+{
+	struct Collision
+	{
+		Entity entity;
+		float distance;
+	};
+
+	std::vector<Collision> collisions;
+
+	for (size_t i = 0; i < sphereColliderComponents.size(); ++i)
+	{
+		const SphereColliderComponent* sphereCollider = sphereColliderComponents.at(i);
+		ensure(sphereCollider);
+		const WorldTransformComponent* worldTransform = worldTransformComponents.get(sphereCollider->entity);
+		ensure(worldTransform);
+
+		const glm::mat4 offsetModel = glm::translate(worldTransform->model, sphereCollider->offset);
+		const glm::vec3 spherePosition = maths::getMatrixTranslation(offsetModel);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint(spherePosition, 5.0f, color::red);
+		
+		const glm::vec3 sphereSquaredScale = maths::getMatrixSquaredScale(worldTransform->model);
+		float maxScaleAxis = glm::sqrt(std::max({ sphereSquaredScale.x, sphereSquaredScale.y, sphereSquaredScale.z }));
+		const float sphereSquaredRadius = (maxScaleAxis * sphereCollider->radius) * (maxScaleAxis * sphereCollider->radius);
+
+		float intersectionDistance = 0;
+		if (glm::intersectRaySphere<glm::vec3>(inStart, inDirection, spherePosition, sphereSquaredRadius, intersectionDistance))
+		{
+			Collision collision;
+			collision.entity = sphereCollider->entity;
+			collision.distance = intersectionDistance;
+			collisions.push_back(collision);
+		}
+	}
+
+	if (collisions.size() > 0)
+	{
+		Collision closest = collisions[0];
+		for (size_t i = 1; i < collisions.size(); ++i)
+		{
+			const Collision& collision = collisions[i];
+			if (collision.distance < closest.distance)
+			{
+				closest = collision;
+			}
+		}
+
+		outHit = closest.entity;
+
+		return true;
+	}
+
+	return false;
+}
+
 LocalTransformComponent* Scene::addTransformTo(Entity inEntity
 	, const glm::vec3& inPosition
 	, const glm::quat& inRotation
@@ -85,7 +144,7 @@ LocalTransformComponent* Scene::addTransformTo(Entity inEntity
 	localTransformComponent->setLocalScale(inScale);
 
 	WorldTransformComponent* worldTransformComponent = worldTransformComponents.create(inEntity);
-	worldTransformComponent->model = localTransformComponent->getLocalModelMatrix();
+	worldTransformComponent->model = localTransformComponent->computeModel();
 
 	HierarchyComponent* hierarchyComponent = hierarchyComponents.create(inEntity);
 	if (inParentHierarchy)

@@ -42,7 +42,7 @@ void TransformSystem::update(Scene& inScene)
 			parentWorldModel = parentWorldTransform->model;
 		}
 
-		worldTransform->model = parentWorldModel * localTransform->getLocalModelMatrix();
+		worldTransform->model = parentWorldModel * localTransform->computeModel();
 		localTransform->setDirty(false);
 	}
 }

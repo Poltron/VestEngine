@@ -4,6 +4,7 @@
 
 #include "Camera.h"
 #include "Core/Engine.h"
+#include "Core/Maths.h"
 #include "Core/Scene.h"
 #include "ECS/Entity.h"
 #include "ECS/EntityManager.h"
@@ -49,9 +50,9 @@ void FrustumCullingSystem::update(Scene& inScene)
 		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);
 		ensure(worldTransform);
 
-		glm::vec3 squaredScale = worldTransform->getSquaredScale();
+		glm::vec3 squaredScale = maths::getMatrixSquaredScale(worldTransform->model);
 		float maxScale = glm::sqrt(std::max({ squaredScale.x, squaredScale.y, squaredScale.z }));
 
-		sphere->bInFrustum = isInFrustum(worldTransform->getPosition(), sphere->radius, maxScale, frustum);
+		sphere->bInFrustum = isInFrustum(maths::getMatrixTranslation(worldTransform->model), sphere->radius, maxScale, frustum);
 	}
 }

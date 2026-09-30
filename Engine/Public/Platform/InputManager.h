@@ -3,6 +3,8 @@
 #include <functional>
 #include <unordered_map>
 
+#include "glm/glm.hpp"
+
 #include "Platform/Input.h"
 
 struct KeyInput
@@ -55,6 +57,8 @@ public:
 
 	virtual input::ECursorInputMode getCursorInputMode() = 0;
 	virtual void setCursorInputMode(input::ECursorInputMode inButton) = 0;
+
+	virtual glm::vec2 getCursorPos() = 0;
 	virtual bool isKeyPressed(input::EKey inKey) = 0;
 	virtual bool isButtonPressed(input::EMouseButton inButton) = 0;
 

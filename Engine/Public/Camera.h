@@ -36,12 +36,16 @@ public:
 	const glm::vec3& getPosition() const;
 	void setPosition(const glm::vec3& inPosition);
 
+	const glm::vec3& getForward() const { return forward; }
+
 	void setFOV(float inFov);
 
 	glm::mat4& getProjectionMatrix();
 	glm::mat4& getViewMatrix();
 	glm::mat4& getViewProjectionMatrix();
 	const Frustum& getFrustum() const;
+
+	void transformScreenPosToWorld(const glm::vec2& inCursorPos, glm::vec3& outPosition, glm::vec3& outDirection);
 
 private:
 	void updateProjectionMatrix();

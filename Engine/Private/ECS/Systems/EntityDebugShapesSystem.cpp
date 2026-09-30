@@ -4,7 +4,7 @@
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/SphereColliderComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "Render/DebugShapes.h"
+#include "Render/Debug/DebugShapes.h"
 
 void EntityDebugShapesSystem::update(EntityDebugShapeMeshInstances& inSphereInstances
 	, Scene& inScene)

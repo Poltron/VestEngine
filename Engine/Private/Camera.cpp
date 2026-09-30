@@ -8,6 +8,7 @@
 
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
+#include "Platform/WindowManager.h"
 
 namespace
 {
@@ -192,6 +193,27 @@ glm::mat4& Camera::getViewProjectionMatrix()
 const Frustum& Camera::getFrustum() const
 {
 	return frustum;
+}
+
+void Camera::transformScreenPosToWorld(const glm::vec2& inCursorPos, glm::vec3& outPosition, glm::vec3& outDirection)
+{
+	glm::vec2 windowSize = platform::getWindowManager().getSize();
+
+	// NDC space is [-1..1]
+	float ndc_x = (inCursorPos.x / windowSize.x - 0.5f) * 2;
+	float ndc_y = (inCursorPos.y / windowSize.y - 0.5f) * -2; // glfw has inverse y axis
+
+	glm::vec4 rayStart = glm::vec4(ndc_x, ndc_y, -1.0f, 1.0f); // -1 is near plane Z level
+	glm::vec4 rayEnd = glm::vec4(ndc_x, ndc_y, 1.0f, 1.0f); // 1 is far plane Z level
+
+	glm::vec4 worldStart = glm::inverse(projection * view) * rayStart;
+	worldStart /= worldStart.w;
+
+	glm::vec4 worldEnd = glm::inverse(projection * view) * rayEnd;
+	worldEnd /= worldEnd.w;
+	
+	outPosition = worldStart;
+	outDirection = glm::normalize(worldEnd - worldStart);
 }
 
 void Camera::setFOV(float inFov)

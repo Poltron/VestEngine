@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 #include "Core/Engine.h"
+#include "Core/Maths.h"
 #include "Core/Scene.h"
 
 
@@ -20,9 +21,9 @@ void LocalTransformComponentInspector::update()
 		return;
 	}
 
-	position = localTransform->getPosition();
+	position = maths::getMatrixTranslation(localTransform->computeModel());
 	rotation = glm::degrees(glm::eulerAngles(localTransform->getRotation()));
-	scale = localTransform->getScale();
+	scale = maths::getMatrixScale(localTransform->computeModel());
 
 	if (ImGui::InputFloat3("Position", &position.x))
 	{

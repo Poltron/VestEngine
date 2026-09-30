@@ -76,6 +76,13 @@ public:
 		return fromGLFWCursorInputMode[value - PLATFORM_CURSOR_INPUT_MODE_FIRST];
 	}
 
+	virtual glm::vec2 getCursorPos() override
+	{
+		double x, y;
+		glfwGetCursorPos(g_GLFWWindow, &x, &y);
+		return glm::vec2(x,y);
+	}
+
 	virtual bool isKeyPressed(input::EKey inKey) override
 	{
 		ensure(inKey != input::EKey::UNKNOWN);
@@ -469,6 +476,8 @@ public:
 		glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
 		
 		glViewport(0, 0, width, height);
+
+		size = glm::vec2(width, height);
 
 		return g_GLFWWindow;
 	}
