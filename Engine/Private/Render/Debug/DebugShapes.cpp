@@ -1,9 +1,9 @@
-#include "Render/DebugShapes.h"
-
-#include "glad/glad.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/Debug/DebugShapes.h"
 
 #include <iostream>
+#include "glad/glad.h"
+
+#include "Render/GraphicResourceHandle.h"
 
 DebugShapePrimitive::DebugShapePrimitive(size_t inCapacity)
 	: capacity(inCapacity), instanceCount(0)

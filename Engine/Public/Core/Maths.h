@@ -4,7 +4,7 @@
 
 namespace maths
 {
-	void computeTransformMatrix(const glm::vec3& inPosition
+	inline void computeTransformMatrix(const glm::vec3& inPosition
 		, const glm::vec3& inRotation
 		, const glm::vec3& inScale
 		, glm::mat4& outMatrix)

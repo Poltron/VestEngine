@@ -10,8 +10,7 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Render/Color.h"
-#include "Render/DebugShapes.h"
-#include "Render/DebugShapeMeshGenerationHelper.h"
+#include "Render/Debug/DebugShapeSubRenderer.h"
 #include "Render/Renderer.h"
 
 namespace
@@ -221,44 +220,44 @@ namespace demoScene
 {
 	void loadAxis(Scene& inScene, float inLength)
 	{
-		render::getRenderer()->addLine({ 0, 0, 0 }, { inLength, 0, 0 }, 5.0f, color::red);
-		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, inLength, 0 }, 5.0f, color::green);
-		render::getRenderer()->addLine({ 0, 0, 0 }, { 0, 0, inLength }, 5.0f, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 0, 0, 0 }, { inLength, 0, 0 }, 5.0f, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 0, 0, 0 }, { 0, inLength, 0 }, 5.0f, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 0, 0, 0 }, { 0, 0, inLength }, 5.0f, color::blue);
 
-		render::getRenderer()->addSphere({ 0, 0, 0 }, { 0, 0, 0}, inLength, color::yellow);
+		render::getRenderer()->getDebugShapeSubRenderer().addSphere({ 0, 0, 0 }, { 0, 0, 0}, inLength, color::yellow);
 	}
 
 	void loadPrimitivesDemo(Scene& inScene)
 	{
 		ZoneScoped;
 
-		render::getRenderer()->addPoint({ 0, 0, 0 }, 3, color::red);
-		render::getRenderer()->addPoint({ 0, 0, -1 }, 5, color::green);
-		render::getRenderer()->addPoint({ 0, 0, -2 }, 7, color::blue);
-		render::getRenderer()->addPoint({ 0, 0, -3 }, 9, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 0, 0, 0 }, 3, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 0, 0, -1 }, 5, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 0, 0, -2 }, 7, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 0, 0, -3 }, 9, color::white);
 
-		render::getRenderer()->addLine({ 1, 0, 0 }, { 1, 1, 0 }, 1.0f, color::red);
-		render::getRenderer()->addLine({ 1, 0, -1 }, { 1, 1, -1 }, 1.0f, color::green);
-		render::getRenderer()->addLine({ 1, 0, -2 }, { 1, 1, -2 }, 1.0f, color::blue);
-		render::getRenderer()->addLine({ 1, 0, -3 }, { 1, 1, -3 }, 1.0f, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 1, 0, 0 }, { 1, 1, 0 }, 1.0f, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 1, 0, -1 }, { 1, 1, -1 }, 1.0f, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 1, 0, -2 }, { 1, 1, -2 }, 1.0f, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addLine({ 1, 0, -3 }, { 1, 1, -3 }, 1.0f, color::white);
 
-		render::getRenderer()->addPoint({ 3, 0.5f, 0 }, 3, color::red);
-		render::getRenderer()->addSphere({ 3, 0.5f, 0 }, { 0, 0, 0 }, 0.125f, color::red);
-		render::getRenderer()->addPoint({ 3, 0.5f, -1 }, 3, color::green);
-		render::getRenderer()->addSphere({ 3, 0.5f, -1 }, { 45, 0, 0 }, 0.25f, color::green);
-		render::getRenderer()->addPoint({ 3, 0.5f, -2 }, 3, color::blue);
-		render::getRenderer()->addSphere({ 3, 0.5f, -2 }, { 0, 45, 0 }, 0.375f, color::blue);
-		render::getRenderer()->addPoint({ 3, 0.5f, -3 }, 3, color::white);
-		render::getRenderer()->addSphere({ 3, 0.5f, -3 }, { 0, 0, 45 }, 0.5f, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 3, 0.5f, 0 }, 3, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addSphere({ 3, 0.5f, 0 }, { 0, 0, 0 }, 0.125f, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 3, 0.5f, -1 }, 3, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addSphere({ 3, 0.5f, -1 }, { 45, 0, 0 }, 0.25f, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 3, 0.5f, -2 }, 3, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addSphere({ 3, 0.5f, -2 }, { 0, 45, 0 }, 0.375f, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 3, 0.5f, -3 }, 3, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addSphere({ 3, 0.5f, -3 }, { 0, 0, 45 }, 0.5f, color::white);
 
-		render::getRenderer()->addPoint({ 5, 0.5f, 0 }, 3, color::red);
-		render::getRenderer()->addBox({ 5, 0.5f, 0 }, { 0, 0, 0 }, { 1, 1, 1 }, color::red);
-		render::getRenderer()->addPoint({ 5, 0.5f, -1 }, 3, color::green);
-		render::getRenderer()->addBox({ 5, 0.5f, -1 }, { 45, 0, 0 }, { 0.25, 0.5f, 0.25f }, color::green);
-		render::getRenderer()->addPoint({ 5, 0.5f, -2 }, 3, color::blue);
-		render::getRenderer()->addBox({ 5, 0.5f, -2 }, { 0, 45, 0 }, { 0.75f, 0.5f, 1.0f }, color::blue);
-		render::getRenderer()->addPoint({ 5, 0.5f, -3 }, 3, color::white);
-		render::getRenderer()->addBox({ 5, 0.5f, -3 }, { 0, 0, 45 }, { 0.5f, 1, 0.25f }, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 5, 0.5f, 0 }, 3, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 5, 0.5f, 0 }, { 0, 0, 0 }, { 1, 1, 1 }, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 5, 0.5f, -1 }, 3, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 5, 0.5f, -1 }, { 45, 0, 0 }, { 0.25, 0.5f, 0.25f }, color::green);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 5, 0.5f, -2 }, 3, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 5, 0.5f, -2 }, { 0, 45, 0 }, { 0.75f, 0.5f, 1.0f }, color::blue);
+		render::getRenderer()->getDebugShapeSubRenderer().addPoint({ 5, 0.5f, -3 }, 3, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 5, 0.5f, -3 }, { 0, 0, 45 }, { 0.5f, 1, 0.25f }, color::white);
 	}
 
 	void loadCubesDemo(Scene& inScene)
@@ -403,7 +402,7 @@ namespace demoScene
 		ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[0]);
 		createSceneLights(inScene, model, renderer->getSolidColorShader());
 
-		render::getRenderer()->addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);
+		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);
 	}
 
 	void createAnimal(Scene& inScene)
@@ -426,6 +425,6 @@ namespace demoScene
 		const glm::vec3 linearVel = glm::normalize(getRandomAnimalSpawnPosition());
 		inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
 
-		render::getRenderer()->addMovableSphere(entity, color::red);
+		render::getRenderer()->getDebugShapeSubRenderer().addMovableSphere(entity, color::red);
 	}
 }

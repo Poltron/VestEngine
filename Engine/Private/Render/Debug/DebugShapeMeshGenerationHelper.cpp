@@ -1,11 +1,9 @@
-#include "Render/DebugShapeMeshGenerationHelper.h"
+#include "Render/Debug/DebugShapeMeshGenerationHelper.h"
 
 #include <functional>
 
 #include "glm/gtc/constants.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-
-#include "Render/DebugShapes.h"
 
 namespace
 {

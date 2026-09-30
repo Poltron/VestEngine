@@ -6,9 +6,8 @@
 #include "Platform/InputManager.h"
 #include "Platform/Platform.h"
 #include "Render/Color.h"
-#include "Render/DebugShapes.h"
-#include "Render/DebugShapeMeshGenerationHelper.h"
 #include "Render/Renderer.h"
+#include "Render/Debug/DebugShapeSubRenderer.h"
 
 bool Scene::initialize()
 {
@@ -68,7 +67,7 @@ void Scene::executeEntityChanges()
 			pointLightComponents.destroy(entity);
 		}
 
-		render::getRenderer()->removeMovableSphere(entity);
+		render::getRenderer()->getDebugShapeSubRenderer().removeMovableSphere(entity);
 	}
 
 	entities.destroyMarkedEntities();

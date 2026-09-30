@@ -25,8 +25,6 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Color.h"
-#include "Render/DebugShapes.h"
-#include "Render/DebugShapeMeshGenerationHelper.h"
 
 class VestRenderer final : public Renderer
 {
@@ -44,8 +42,6 @@ using namespace render;
 //
 bool VestRenderer::initialize()
 {
-	loadDebugShapes();
-
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	// depth test
@@ -68,31 +64,17 @@ void VestRenderer::shutdown()
 //
 namespace
 {
-	enum class EDebugShapePrimitive : unsigned int
-	{
-		POINT = 0,
-		LINE,
-		ENUM_SIZE
-	};
-
-	enum class EDebugShapeMesh : unsigned int
-	{
-		BOX = 0,
-		SPHERE,
-		ENUM_SIZE
-	};
-
-	GLenum getOpenGLPrimitiveMode(Renderer::EPrimitiveMode inMode)
+	GLenum getOpenGLPrimitiveMode(EPrimitiveMode inMode)
 	{
 		switch (inMode)
 		{
-		case Renderer::EPrimitiveMode::POINTS:
+		case EPrimitiveMode::POINTS:
 			return GL_POINTS;
 			break;
-		case Renderer::EPrimitiveMode::LINES:
+		case EPrimitiveMode::LINES:
 			return GL_LINES;
 			break;
-		case Renderer::EPrimitiveMode::TRIANGLES:
+		case EPrimitiveMode::TRIANGLES:
 			return GL_TRIANGLES;
 			break;
 		}
@@ -227,59 +209,7 @@ void Renderer::renderMainPass(Scene& inScene)
 
 void Renderer::renderDebugPass(Scene& inScene)
 {
-	Shader* shader = useShaderProgram(debugPrimitiveShaderHandle);
-	ensure(shader);
-
-	glm::mat4 viewProjection = activeCamera->getProjectionMatrix() * activeCamera->getViewMatrix();
-	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection));
-
-	{
-		ZoneScopedN("render point primitives");
-
-		DebugShapePrimitive& pointPrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::POINT];
-		pointPrimitive.resetInstanceCount();
-		pointPrimitive.updateVBO(pointDebugShapeInstances);
-		drawArrays(pointPrimitive.getVAO(), EPrimitiveMode::POINTS, 0, pointDebugShapeInstances.size());
-		frameInfo.debugShapesTotal += pointDebugShapeInstances.size();
-	}
-
-	{
-		ZoneScopedN("render line primitives");
-
-		DebugShapePrimitive& linePrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::LINE];
-		linePrimitive.resetInstanceCount();
-		linePrimitive.updateVBO(lineDebugShapeInstances);
-		drawArrays(linePrimitive.getVAO(), EPrimitiveMode::LINES, 0, lineDebugShapeInstances.size());
-		frameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
-	}
-
-	shader = useShaderProgram(debugMeshShaderHandle);
-	ensure(shader);
-
-	shader->setMat4("uViewProjection", glm::value_ptr(viewProjection));
-
-	{
-		ZoneScopedN("render box meshes");
-
-		DebugShapeMesh& boxMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::BOX];
-		boxMesh.resetInstances();
-		boxMesh.addInstances(boxDebugShapeInstances);
-		drawArraysInstanced(boxMesh.getVAO(), EPrimitiveMode::LINES, 0, boxMesh.getSize(), boxMesh.getInstanceCount());
-
-		frameInfo.debugShapesTotal += boxMesh.getInstanceCount();
-	}
-
-	{
-		ZoneScopedN("render sphere meshes");
-
-		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
-		sphereMesh.resetInstances();
-		sphereMesh.addInstances(sphereDebugShapeInstances);
-		sphereMesh.addInstances(entitySphereInstances.instances);
-		drawArraysInstanced(sphereMesh.getVAO(), EPrimitiveMode::LINES, 0, sphereMesh.getSize(), sphereMesh.getInstanceCount());
-
-		frameInfo.debugShapesTotal += sphereMesh.getInstanceCount();
-	}
+	debugShapeSubRenderer.render(*this, frameInfo);
 }
 
 void Renderer::swap()
@@ -376,76 +306,12 @@ void Renderer::drawElements(GraphicResourceHandle inVAO, EPrimitiveMode inPrimit
 	frameInfo.drawCalls++;
 }
 
-void Renderer::addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor)
-{
-	DebugShapePrimitiveInstance pointInstance;
-	pointInstance.color = inColor;
-	pointInstance.position = inPosition;
-	pointInstance.size = inSize;
-	pointDebugShapeInstances.push_back(pointInstance);
-}
-
-void Renderer::addLine(const glm::vec3& inStart, const glm::vec3& inEnd, float inSize, const glm::vec3& inColor)
-{
-	DebugShapePrimitiveInstance lineStartInstance;
-	lineStartInstance.color = inColor;
-	lineStartInstance.position = inStart;
-	lineStartInstance.size = inSize;
-	lineDebugShapeInstances.push_back(lineStartInstance);
-
-	DebugShapePrimitiveInstance lineEndInstance;
-	lineEndInstance.color = inColor;
-	lineEndInstance.position = inEnd;
-	lineEndInstance.size = inSize;
-	lineDebugShapeInstances.push_back(lineEndInstance);
-}
-
-void Renderer::addSphere(const glm::vec3& inPosition, const glm::vec3& inRotation, float inRadius, const glm::vec3& inColor)
-{
-	DebugShapeMeshInstance sphereInstance;
-	sphereInstance.color = inColor;
-	maths::computeTransformMatrix(inPosition, inRotation, glm::vec3(inRadius), sphereInstance.model);
-	sphereDebugShapeInstances.push_back(sphereInstance);
-}
-
-void Renderer::addBox(const glm::vec3& inPosition, const glm::vec3& inRotation, const glm::vec3& inScale, const glm::vec3& inColor)
-{
-	DebugShapeMeshInstance boxInstance;
-	boxInstance.color = inColor;
-	maths::computeTransformMatrix(inPosition, inRotation, inScale, boxInstance.model);
-	boxDebugShapeInstances.push_back(boxInstance);
-}
-
-void Renderer::addMovableSphere(Entity inEntity, const glm::vec3& inColor)
-{
-	DebugShapeMeshInstance sphereInstance;
-	sphereInstance.color = inColor;
-	
-	entitySphereInstances.instances.push_back(sphereInstance);
-	entitySphereInstances.entities.push_back(inEntity);
-}
-
-void Renderer::removeMovableSphere(Entity inEntity)
-{
-	for (size_t i = 0; i < entitySphereInstances.entities.size(); ++i)
-	{
-		if (entitySphereInstances.entities[i] != inEntity)
-		{
-			continue;
-		}
-
-		entitySphereInstances.entities[i] = *(entitySphereInstances.entities.end() - 1);
-		entitySphereInstances.entities.pop_back();
-
-		entitySphereInstances.instances[i] = *(entitySphereInstances.instances.end() - 1);
-		entitySphereInstances.instances.pop_back();
-		break;
-	}
-}
-
 void Renderer::loadDefaultShaders()
 {
 	ZoneScoped;
+
+	debugShapeSubRenderer.loadShaders();
+	debugShapeSubRenderer.loadDebugShapes();
 
 	const std::string WorkDirTMP = WORKDIR;
 
@@ -461,42 +327,11 @@ void Renderer::loadDefaultShaders()
 	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color.frag";
 	ResourceHandle solidColorShader = engine::getResources()->loadShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
-
-	const std::string debugMeshVertexPath = WorkDirTMP + "/Resources/Shaders/debug_mesh.vert";
-	const std::string debugFragmentPath = WorkDirTMP + "/Resources/Shaders/debug.frag";
-	ResourceHandle debugMeshShader = engine::getResources()->loadShader(debugMeshVertexPath, debugFragmentPath);
-	g_Renderer->setDebugMeshShader(debugMeshShader);
-
-	const std::string debugPrimitiveVertexPath = WorkDirTMP + "/Resources/Shaders/debug_primitive.vert";
-	ResourceHandle debugPrimitiveShader = engine::getResources()->loadShader(debugPrimitiveVertexPath, debugFragmentPath);
-	g_Renderer->setDebugPrimitiveShader(debugPrimitiveShader);
-}
-
-void Renderer::loadDebugShapes()
-{
-	ZoneScoped;
-
-	// todo: refacto needed
-	// right now its following enum order but i can't resize + assign
-	// with enum index since there's no default constructor
-
-	debugShapePrimitives.push_back(DebugShapePrimitive(10));
-	debugShapePrimitives.push_back(DebugShapePrimitive(10));
-
-	std::vector<glm::vec3> boxVertices;
-	debugShapeMeshGenerationHelper::createBox(boxVertices);
-	DebugShapeMesh box(std::move(boxVertices), 500);
-	debugShapeMeshes.push_back(std::move(box));
-
-	std::vector<glm::vec3> sphereVertices;
-	debugShapeMeshGenerationHelper::createSphere(6, sphereVertices);
-	DebugShapeMesh sphere(std::move(sphereVertices), 500);
-	debugShapeMeshes.push_back(std::move(sphere));
 }
 
 void Renderer::updateDebugShapes(Scene& inScene)
 {
-	updateEntityDebugShapesSystem.update(entitySphereInstances, inScene);
+	debugShapeSubRenderer.updateDebugShapes(inScene);
 }
 
 void Renderer::updateLightParameters(Scene& inScene)
