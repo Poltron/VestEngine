@@ -206,10 +206,12 @@ void Camera::transformScreenPosToWorld(const glm::vec2& inCursorPos, glm::vec3& 
 	glm::vec4 rayStart = glm::vec4(ndc_x, ndc_y, -1.0f, 1.0f); // -1 is near plane Z level
 	glm::vec4 rayEnd = glm::vec4(ndc_x, ndc_y, 1.0f, 1.0f); // 1 is far plane Z level
 
-	glm::vec4 worldStart = glm::inverse(projection * view) * rayStart;
+	glm::mat4 invViewProj = glm::inverse(projection * view);
+
+	glm::vec4 worldStart = invViewProj * rayStart;
 	worldStart /= worldStart.w;
 
-	glm::vec4 worldEnd = glm::inverse(projection * view) * rayEnd;
+	glm::vec4 worldEnd = invViewProj * rayEnd;
 	worldEnd /= worldEnd.w;
 	
 	outPosition = worldStart;
