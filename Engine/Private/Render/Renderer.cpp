@@ -3,10 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
-#include "glad/glad.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "tracy/Tracy.hpp"
-#include "tracy/TracyOpenGL.hpp"
 
 #include "Camera.h"
 #include "Core/Engine.h"
@@ -15,7 +13,6 @@
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Mesh.h"
 #include "Core/Resources/Model.h"
-#include "Core/Resources/Shader.h"
 #include "ECS/Components/DirectionalLightComponent.h"
 #include "ECS/Components/MeshRendererComponent.h"
 #include "ECS/Components/PointLightComponent.h"
@@ -25,6 +22,7 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Color.h"
+#include "RenderBackend/RenderBackend.h"
 
 class VestRenderer final : public Renderer
 {
@@ -42,18 +40,6 @@ using namespace render;
 //
 bool VestRenderer::initialize()
 {
-	glEnable(GL_PROGRAM_POINT_SIZE);
-
-	// depth test
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
-	// stencil test
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilMask(0x00);
-
 	return true;
 }
 
@@ -62,36 +48,12 @@ void VestRenderer::shutdown()
 
 //
 //
-namespace
-{
-	GLenum getOpenGLPrimitiveMode(EPrimitiveMode inMode)
-	{
-		switch (inMode)
-		{
-		case EPrimitiveMode::POINTS:
-			return GL_POINTS;
-			break;
-		case EPrimitiveMode::LINES:
-			return GL_LINES;
-			break;
-		case EPrimitiveMode::TRIANGLES:
-			return GL_TRIANGLES;
-			break;
-		}
-		ensure(false);
-		return GL_INVALID_ENUM;
-	}
-}
 
 void Renderer::clear()
 {
-	ZoneScoped;
-	TracyGpuZone("Renderer::clear");
+	render::getRenderBackend()->startTracyGPUZone("Renderer::clear");
 
-	glStencilMask(0xFF);
-	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	glStencilMask(0x00);
+	render::getRenderBackend()->clear();
 
 	frameInfo.reset();
 }
@@ -99,7 +61,6 @@ void Renderer::clear()
 void Renderer::render(Scene& inScene)
 {
 	ZoneScopedN("Renderer::render");
-	TracyGpuZone("Renderer::render");
 
 	if (!activeCamera)
 	{
@@ -117,7 +78,7 @@ void Renderer::renderMainPass(Scene& inScene)
 		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
 		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
 		{
-			return inA.shader.handle < inB.shader.handle;
+			return inA.shader.id < inB.shader.id;
 		});
 	inScene.getMeshRendererComponents().rebuildLookupTable();
 
@@ -127,7 +88,7 @@ void Renderer::renderMainPass(Scene& inScene)
 
 		MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().at(i);
 		ensure(meshRenderer != nullptr);
-		if (!meshRenderer->shader.IsValid())
+		if (!meshRenderer->shader.isValid())
 		{
 			std::cout << "WARNING: " << meshRenderer->entity << " has no shader" << std::endl;
 			continue;
@@ -151,36 +112,37 @@ void Renderer::renderMainPass(Scene& inScene)
 		const std::string meshRendererName = "render " + model->getPath();
 		ZoneName(meshRendererName.c_str(), meshRendererName.size());
 
-		Shader* shader = useShaderProgram(meshRenderer->shader);
-		ensure(shader);
+		ensure(meshRenderer->shader.isValid());
+		render::getRenderBackend()->useShaderProgram(meshRenderer->shader);
+		frameInfo.shaderPrograms++;
 
-		globalShaderParameters.applyToShader(*shader, *engine::getResources());
+		globalShaderParameters.applyToShader();
 
 		WorldTransformComponent* worldTransform = nullptr;
 		{
-			shader->setVec3("viewPosition", activeCamera->getPosition());
-			shader->setMat4("viewProjection", glm::value_ptr(activeCamera->getViewProjectionMatrix()));
+			render::getRenderBackend()->setVec3("viewPosition", activeCamera->getPosition());
+			render::getRenderBackend()->setMat4("viewProjection", glm::value_ptr(activeCamera->getViewProjectionMatrix()));
 
 			worldTransform = inScene.getWorldTransformComponents().get(meshRenderer->entity);
 			ensure(worldTransform != nullptr);
 
-			shader->setMat4("model", glm::value_ptr(worldTransform->model));
+			render::getRenderBackend()->setMat4("model", glm::value_ptr(worldTransform->model));
 		}
 
 		{
 			ensure(model != nullptr);
-			model->bindTextures(*engine::getResources(), *shader);
+			model->bindTextures(*engine::getResources());
 		}
 
 		{
-			meshRenderer->shaderParameters.applyToShader(*shader, *engine::getResources());
-			shader->setFloat("material.shininess", 32.0f);
+			meshRenderer->shaderParameters.applyToShader();
+			render::getRenderBackend()->setFloat("material.shininess", 32.0f);
 		}
 
 		{
 			if (meshRenderer->bOutline)
 			{
-				glStencilMask(0xFF); // allow full writing to stencil
+				render::getRenderBackend()->setStencilMask(0xFF); // allow full writing to stencil
 			}
 
 			drawModel(*model);
@@ -188,21 +150,22 @@ void Renderer::renderMainPass(Scene& inScene)
 
 		if (meshRenderer->bOutline)
 		{
-			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // every fragment where stencil is not equal to 1 passes
-			glStencilMask(0x00); // don't write to stencil
+			render::getRenderBackend()->setStencilFunc(EComparisonFunc::NOTEQUAL, 1, 0xFF);
+			render::getRenderBackend()->setStencilMask(0x00); // don't write to stencil
 
-			Shader* shader = useShaderProgram(getSolidColorShader());
-			ensure(shader);
+			ensure(getSolidColorShader().isValid());
+			render::getRenderBackend()->useShaderProgram(getSolidColorShader());
+			frameInfo.shaderPrograms++;
 
 			glm::mat4 outlineMat = worldTransform->model;
 			outlineMat = glm::scale(outlineMat, glm::vec3(1.5f, 1.5f, 1.5f));
 
-			shader->setMat4("model", glm::value_ptr(outlineMat));
-			shader->setVec3("objectColor", color::yellow);
+			render::getRenderBackend()->setMat4("model", glm::value_ptr(outlineMat));
+			render::getRenderBackend()->setVec3("objectColor", color::yellow);
 
 			drawModel(*model);
 
-			glStencilFunc(GL_ALWAYS, 1, 0xFF); // every fragment passes stencil
+			render::getRenderBackend()->setStencilFunc(EComparisonFunc::ALWAYS, 1, 0xFF); // every fragment passes stencil
 		}
 	}
 }
@@ -215,12 +178,11 @@ void Renderer::renderDebugPass(Scene& inScene)
 void Renderer::swap()
 {
 	{
-		ZoneScoped;
-		TracyGpuZone("Renderer::swap");
+		render::getRenderBackend()->startTracyGPUZone("Renderer::swap");
 		platform::getWindowManager().swapBuffers();
 	}
 
-	TracyGpuCollect;
+	render::getRenderBackend()->tracyGpuCollect();
 }
 
 void Renderer::setActiveCamera(Camera* inCamera)
@@ -244,66 +206,22 @@ Camera& Renderer::getActiveCamera()
 	return *activeCamera;
 }
 
-Shader* Renderer::useShaderProgram(ResourceHandle inShaderHandle)
-{
-	Shader* shader = engine::getResources()->getShader(inShaderHandle);
-	ensure(shader != nullptr);
-
-	if (shader->getID() != state.shaderProgram)
-	{
-		shader->use();
-		state.shaderProgram = shader->getID();
-
-		frameInfo.shaderPrograms++;
-	}
-
-	return shader;
-}
-
 void Renderer::drawModel(const Model& inModel)
 {
 	for (size_t meshIndex = 0; meshIndex < inModel.getMeshes().size(); ++meshIndex)
 	{
 		const Mesh& mesh = inModel.getMeshes()[meshIndex];
-		if (mesh.getEBO())
+		if (mesh.getEBO().id)
 		{
-			drawElements(mesh.getVAO(), EPrimitiveMode::TRIANGLES, mesh.getIndicesSize());
+			render::getRenderBackend()->drawElements(mesh.getVAO(), EPrimitiveMode::TRIANGLES, mesh.getIndicesSize(), 0);
+			frameInfo.drawCalls++;
 		}
 		else
 		{
-			drawArrays(mesh.getVAO(), EPrimitiveMode::TRIANGLES, 0, mesh.getVerticesSize());
+			render::getRenderBackend()->drawArrays(mesh.getVAO(), EPrimitiveMode::TRIANGLES, 0, mesh.getVerticesSize());
+			frameInfo.drawCalls++;
 		}
 	}
-}
-
-void Renderer::drawArrays(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
-{
-	glBindVertexArray(inVAO);
-	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
-	glDrawArrays(primitiveMode, inOffset, (GLsizei)inCount);
-	glBindVertexArray(0);
-
-	frameInfo.drawCalls++;
-}
-
-void Renderer::drawArraysInstanced(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
-{
-	glBindVertexArray(inVAO);
-	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
-	glDrawArraysInstanced(primitiveMode, inOffset, (GLsizei)inSize, (GLsizei)inCount);
-	glBindVertexArray(0);
-
-	frameInfo.drawCalls++;
-}
-
-void Renderer::drawElements(GraphicResourceHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount)
-{
-	glBindVertexArray(inVAO);
-	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
-	glDrawElements(primitiveMode, (GLsizei)inCount, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-
-	frameInfo.drawCalls++;
 }
 
 void Renderer::loadDefaultShaders()
@@ -317,15 +235,15 @@ void Renderer::loadDefaultShaders()
 
 	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/default.vert";
 	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit.frag";
-	ResourceHandle litShader = engine::getResources()->loadShader(vertexPath, litFragmentPath);
+	GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
 	g_Renderer->setLitShader(litShader);
 
 	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit.frag";
-	ResourceHandle unlitShader = engine::getResources()->loadShader(vertexPath, unlitFragmentPath);
+	GPUHandle unlitShader = render::getRenderBackend()->compileShader(vertexPath, unlitFragmentPath);
 	g_Renderer->setUnlitShader(unlitShader);
 
 	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color.frag";
-	ResourceHandle solidColorShader = engine::getResources()->loadShader(vertexPath, solidColorFragmentPath);
+	GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
 }
 

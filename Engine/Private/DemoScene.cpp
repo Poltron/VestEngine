@@ -51,7 +51,7 @@ namespace
 
 	Entity createScenePivot(Scene& inScene
 		, ResourceHandle inModel
-		, ResourceHandle inShader)
+		, GPUHandle inShader)
 	{
 		const float boundingSphereRadius = 1.0f;
 
@@ -70,7 +70,7 @@ namespace
 
 	std::vector<Entity> createSceneCubes(Scene& inScene
 		, ResourceHandle inModel
-		, ResourceHandle inShader
+		, GPUHandle inShader
 		, Entity inParentEntity)
 	{
 		std::vector<Entity> entities;
@@ -155,7 +155,7 @@ namespace
 
 	void createSceneLights(Scene& inScene
 		, ResourceHandle inModel
-		, ResourceHandle inShader)
+		, GPUHandle inShader)
 	{
 		glm::vec3 lightScale(0.2f);
 		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));

@@ -17,14 +17,14 @@ public:
 	Texture(Texture&& inOther) noexcept;
 	Texture& operator=(Texture&& inOther) noexcept;
 
-	GraphicResourceHandle getTextureID() const { return textureID; }
+	GPUHandle getHandle() const { return handle; }
 	const std::string& getType() const { return type; }
 	const std::string& getPath() const { return path; }
 
 private:
 	void loadTexture();
 
-	GraphicResourceHandle textureID;
+	GPUHandle handle;
 	std::string type;
 	std::string path;
 };

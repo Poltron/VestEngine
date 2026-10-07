@@ -5,8 +5,8 @@
 
 #include "Core/ResourceHandle.h"
 #include "Core/Resources/Model.h"
-#include "Core/Resources/Shader.h"
-#include "Core/Resources/Texture.h"
+#include "Core/Resources/Material.h"
+#include "Render/Resources/Texture.h"
 
 #define MAX_RESOURCES 10
 
@@ -17,7 +17,7 @@ public:
 	~ResourcesManager();
 
 	ResourceHandle loadTexture(std::string inPath, std::string inType);
-	ResourceHandle loadShader(std::string inVertexPath, std::string inFragmentPath);
+	ResourceHandle loadMaterial();
 	ResourceHandle loadModel(std::string inPath);
 	ResourceHandle createModel(std::vector<Mesh>&& inMeshes, std::string inName);
 
@@ -25,8 +25,8 @@ public:
 	const Texture* getTexture(ResourceHandle handle) const;
 	Model* getModel(ResourceHandle handle);
 	const Model* getModel(ResourceHandle handle) const;
-	Shader* getShader(ResourceHandle handle);
-	const Shader* getShader(ResourceHandle handle) const;
+	Material* getMaterial(ResourceHandle handle);
+	const Material* getMaterial(ResourceHandle handle) const;
 
 private:
 	// note : vector is temporary, currently unsafe if vector is reallocated since lookup table is not updated
@@ -38,8 +38,8 @@ private:
 	std::unordered_map<ResourceHandle, Model*> modelsLookup;
 	std::vector<Model> models;
 
-	uint32_t shaderHandleCounter = 0;
-	std::unordered_map<ResourceHandle, Shader*> shadersLookup;
-	std::vector<Shader> shaders;
+	uint32_t materialHandleCounter = 0;
+	std::unordered_map<ResourceHandle, Material*> materialsLookup;
+	std::vector<Material> materials;
 };
 

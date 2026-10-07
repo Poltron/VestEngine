@@ -24,8 +24,8 @@ enum class EDebugShapeMesh : unsigned int
 
 class DebugShapeSubRenderer
 {
-	ResourceHandle debugPrimitiveShaderHandle;
-	ResourceHandle debugMeshShaderHandle;
+	GPUHandle debugPrimitiveShaderHandle;
+	GPUHandle debugMeshShaderHandle;
 
 	std::vector<DebugShapePrimitive> debugShapePrimitives;
 	std::vector<DebugShapePrimitiveInstance> pointDebugShapeInstances;
@@ -46,10 +46,10 @@ public:
 	void render(Renderer& inRenderer, FrameInfo& inFrameInfo);
 	void updateDebugShapes(Scene& inScene);
 
-	ResourceHandle getDebugPrimitiveShader() { return debugPrimitiveShaderHandle; }
-	void setDebugPrimitiveShader(ResourceHandle inResourceHandle) { debugPrimitiveShaderHandle = inResourceHandle; }
-	ResourceHandle getDebugMeshShader() { return debugMeshShaderHandle; }
-	void setDebugMeshShader(ResourceHandle inResourceHandle) { debugMeshShaderHandle = inResourceHandle; }
+	GPUHandle getDebugPrimitiveShader() { return debugPrimitiveShaderHandle; }
+	void setDebugPrimitiveShader(GPUHandle inHandle) { debugPrimitiveShaderHandle = inHandle; }
+	GPUHandle getDebugMeshShader() { return debugMeshShaderHandle; }
+	void setDebugMeshShader(GPUHandle inHandle) { debugMeshShaderHandle = inHandle; }
 
 	void addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor);
 	void addLine(const glm::vec3& inStart, const glm::vec3& inEnd, float inSize, const glm::vec3& inColor);

@@ -65,11 +65,11 @@ void Model::load(std::string inPath)
 	processNode(scene->mRootNode, scene);
 }
 
-void Model::bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const
+void Model::bindTextures(const ResourcesManager& inResourcesManager) const
 {
 	for (const Mesh& mesh : meshes)
 	{
-		mesh.bindTextures(inResourcesManager, inShader);
+		mesh.bindTextures(inResourcesManager);
 	}
 }
 

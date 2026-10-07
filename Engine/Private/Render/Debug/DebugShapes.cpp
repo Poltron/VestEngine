@@ -4,27 +4,28 @@
 #include "glad/glad.h"
 
 #include "Render/GraphicResourceHandle.h"
+#include "RenderBackend/RenderBackend.h"
 
 DebugShapePrimitive::DebugShapePrimitive(size_t inCapacity)
 	: capacity(inCapacity), instanceCount(0)
 {
-	VAO = 0;
-	VBO = 0;
+	VAO = {};
+	VBO = {};
 
 	initialize();
 }
 
 DebugShapePrimitive::~DebugShapePrimitive()
 {
-	glDeleteBuffers(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTICES, VBO);
 }
 
 DebugShapePrimitive::DebugShapePrimitive(DebugShapePrimitive&& inOther) noexcept
 	: VAO(inOther.VAO), VBO(inOther.VBO), capacity(inOther.capacity), instanceCount(inOther.instanceCount)
 {
-	inOther.VAO = 0;
-	inOther.VBO = 0;
+	inOther.VAO = {};
+	inOther.VBO = {};
 	inOther.capacity = 0;
 	inOther.instanceCount = 0;
 }
@@ -38,8 +39,8 @@ DebugShapePrimitive& DebugShapePrimitive::operator=(DebugShapePrimitive&& inOthe
 		capacity = inOther.capacity;
 		instanceCount = inOther.instanceCount;
 
-		inOther.VAO = 0;
-		inOther.VBO = 0;
+		inOther.VAO = {};
+		inOther.VBO = {};
 		inOther.capacity = 0;
 		inOther.instanceCount = 0;
 	}
@@ -48,10 +49,10 @@ DebugShapePrimitive& DebugShapePrimitive::operator=(DebugShapePrimitive&& inOthe
 
 void DebugShapePrimitive::initialize()
 {
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+	VAO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTEX_ARRAY);
+	VBO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTICES);
 
-	glBindVertexArray(VAO);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
 
 	reallocateVBO(capacity);
 
@@ -68,20 +69,20 @@ void DebugShapePrimitive::initialize()
 	glVertexAttribDivisor(1, 0);
 	glVertexAttribDivisor(2, 0);
 
-	glBindVertexArray(0);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 
 	while (GLenum err = glGetError())
 	{
 		if (err != GL_NO_ERROR)
 		{
-			std::cerr << "glUseProgram failed: " << err << std::endl;
+			std::cerr << "DebugShapePrimitive::initialize failed: " << err << std::endl;
 		}
 	}
 }
 
 void DebugShapePrimitive::reallocateVBO(size_t inNewCapacity)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBO);
 	glBufferData(GL_ARRAY_BUFFER, inNewCapacity * sizeof(DebugShapePrimitiveInstance), nullptr, GL_DYNAMIC_DRAW);
 	capacity = inNewCapacity;
 }
@@ -101,7 +102,7 @@ void DebugShapePrimitive::updateVBO(std::vector<DebugShapePrimitiveInstance>& in
 	}
 	else
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, getVBO());
+		render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBO);
 	}
 
 	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(inInstances.size() * sizeof(DebugShapePrimitiveInstance)), inInstances.data());
@@ -113,18 +114,18 @@ void DebugShapePrimitive::updateVBO(std::vector<DebugShapePrimitiveInstance>& in
 DebugShapeMesh::DebugShapeMesh(std::vector<glm::vec3>&& inVertices, size_t inCapacity)
 	: vertices(inVertices), capacity(inCapacity), instanceCount(0)
 {
-	VAO = 0;
-	VBOmesh = 0;
-	VBOinstances = 0;
+	VAO = {};
+	VBOmesh = {};
+	VBOinstances = {};
 
 	initialize();
 }
 
 DebugShapeMesh::~DebugShapeMesh()
 {
-	glDeleteBuffers(1, &VAO);
-	glDeleteBuffers(1, &VBOmesh);
-	glDeleteBuffers(1, &VBOinstances);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTICES, VBOmesh);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::INDICES, VBOinstances);
 }
 
 DebugShapeMesh::DebugShapeMesh(DebugShapeMesh&& inOther) noexcept
@@ -133,9 +134,9 @@ DebugShapeMesh::DebugShapeMesh(DebugShapeMesh&& inOther) noexcept
 	vertices.clear();
 	vertices = std::move(inOther.vertices);
 
-	inOther.VAO = 0;
-	inOther.VBOmesh = 0;
-	inOther.VBOinstances = 0;
+	inOther.VAO = {};
+	inOther.VBOmesh = {};
+	inOther.VBOinstances = {};
 }
 
 DebugShapeMesh& DebugShapeMesh::operator=(DebugShapeMesh&& inOther) noexcept
@@ -151,9 +152,9 @@ DebugShapeMesh& DebugShapeMesh::operator=(DebugShapeMesh&& inOther) noexcept
 		capacity = inOther.capacity;
 		instanceCount = inOther.instanceCount;
 
-		inOther.VAO = 0;
-		inOther.VBOmesh = 0;
-		inOther.VBOinstances = 0;
+		inOther.VAO = {};
+		inOther.VBOmesh = {};
+		inOther.VBOinstances = {};
 		inOther.capacity = capacity;
 		inOther.instanceCount = instanceCount;
 	}
@@ -162,15 +163,16 @@ DebugShapeMesh& DebugShapeMesh::operator=(DebugShapeMesh&& inOther) noexcept
 
 void DebugShapeMesh::initialize()
 {
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBOmesh);
-	glGenBuffers(1, &VBOinstances);
+	VAO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTEX_ARRAY);
+	VBOmesh = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTICES);
+	VBOinstances = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTICES);
 
-	glBindVertexArray(VAO);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
 
 	// vertices
-	glBindBuffer(GL_ARRAY_BUFFER, VBOmesh);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBOmesh);
+	size_t size = vertices.size() * sizeof(glm::vec3);
+	render::getRenderBackend()->allocateGPUBuffer(EBufferType::VERTICES, size, vertices.data(), EBufferUsage::STATIC);
 
 	glEnableVertexAttribArray(0); // vertex
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
@@ -198,13 +200,15 @@ void DebugShapeMesh::initialize()
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 
-	glBindVertexArray(0);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 }
 
 void DebugShapeMesh::reallocateVBOinstances(size_t inNewCapacity)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
-	glBufferData(GL_ARRAY_BUFFER, inNewCapacity * sizeof(DebugShapeMeshInstance), nullptr, GL_DYNAMIC_DRAW);
+	const size_t newSize = inNewCapacity * sizeof(DebugShapeMeshInstance);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBOinstances);
+	render::getRenderBackend()->allocateGPUBuffer(EBufferType::VERTICES, newSize, nullptr, EBufferUsage::DYNAMIC);
+
 	capacity = inNewCapacity;
 }
 
@@ -218,10 +222,12 @@ void DebugShapeMesh::addInstances(const std::vector<DebugShapeMeshInstance>& inI
 	}
 	else
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, VBOinstances);
+		render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBOinstances);
 	}
 
-	glBufferSubData(GL_ARRAY_BUFFER, instanceCount * sizeof(DebugShapeMeshInstance), (GLsizei)(inInstances.size() * sizeof(DebugShapeMeshInstance)), inInstances.data());
+	const size_t offset = instanceCount * sizeof(DebugShapeMeshInstance);
+	const size_t size = inInstances.size() * sizeof(DebugShapeMeshInstance);
+	render::getRenderBackend()->setGPUBufferData(EBufferType::VERTICES, offset, size, (void*)inInstances.data());
 
 	instanceCount = newInstanceCount;
 }

@@ -1,4 +1,4 @@
-#include "Core/Resources/Texture.h"
+#include "Render/Resources/Texture.h"
 
 #include "glad/glad.h"
 
@@ -6,6 +6,7 @@
 #include "stb_image.h"
 
 #include "Core/Ensure.h"
+#include "RenderBackend/RenderBackend.h"
 
 Texture::Texture(std::string inPath, std::string inType)
 {
@@ -17,13 +18,13 @@ Texture::Texture(std::string inPath, std::string inType)
 
 Texture::~Texture()
 {
-	glDeleteTextures(1, &textureID);
+	render::getRenderBackend()->deleteTexture(handle);
 }
 
 Texture::Texture(Texture&& inOther) noexcept
-	: textureID(inOther.textureID), type(inOther.type), path(inOther.path)
+	: handle(inOther.handle), type(inOther.type), path(inOther.path)
 {
-	inOther.textureID = 0;
+	inOther.handle = {};
 	inOther.type.clear();
 	inOther.path.clear();
 }
@@ -32,11 +33,11 @@ Texture& Texture::operator=(Texture&& inOther) noexcept
 {
 	if (this != &inOther)
 	{
-		textureID = inOther.textureID;
+		handle = inOther.getHandle();
 		type = inOther.type;
 		path = inOther.path;
 
-		inOther.textureID = 0;
+		inOther.handle = {};
 		inOther.type.clear();
 		inOther.path.clear();
 	}
@@ -48,7 +49,7 @@ void Texture::loadTexture()
 	stbi_set_flip_vertically_on_load(true);
 
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+	uint8_t* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 	if (!data)
 	{
 		std::cout << "ERROR: Failed to load texture: " << path << std::endl;
@@ -70,8 +71,8 @@ void Texture::loadTexture()
 
 	}
 
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	glGenTextures(1, &handle.id);
+	glBindTexture(GL_TEXTURE_2D, handle.id);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, internalFormat, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -82,6 +83,8 @@ void Texture::loadTexture()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	render::getRenderBackend()->createTexture(data);
 
 	stbi_image_free(data);
 }

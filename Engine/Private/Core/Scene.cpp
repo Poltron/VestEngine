@@ -157,7 +157,7 @@ LocalTransformComponent* Scene::addTransformTo(Entity inEntity
 
 MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	, ResourceHandle inModel
-	, ResourceHandle inShader)
+	, GPUHandle inShader)
 {
 	MeshRendererComponent* meshRendererComponent = meshRendererComponents.create(inEntity);
 	meshRendererComponent->model = inModel;
@@ -215,7 +215,7 @@ RigidbodyComponent* Scene::addRigidbodyTo(Entity inEntity
 }
 
 Entity Scene::createRenderedModel(ResourceHandle inModel
-	, ResourceHandle inShader
+	, GPUHandle inShader
 	, const glm::vec3& inPosition
 	, const glm::quat& inRotation
 	, const glm::vec3& inScale

@@ -3,14 +3,14 @@
 ResourcesManager::ResourcesManager()
 {
 	models.reserve(MAX_RESOURCES);
-	shaders.reserve(MAX_RESOURCES);
+	materials.reserve(MAX_RESOURCES);
 	textures.reserve(MAX_RESOURCES);
 }
 
 ResourcesManager::~ResourcesManager()
 {
 	textures.clear();
-	shaders.clear();
+	materials.clear();
 	models.clear();
 }
 
@@ -104,25 +104,25 @@ ResourceHandle ResourcesManager::loadTexture(std::string inPath, std::string inT
 	return handle;
 }
 
-ResourceHandle ResourcesManager::loadShader(std::string inVertexPath, std::string inFragmentPath)
+ResourceHandle ResourcesManager::loadMaterial()
 {
-	if (shaderHandleCounter > MAX_RESOURCES)
+	if (materialHandleCounter > MAX_RESOURCES)
 	{
 		//std::cout << "ERROR : Max shader resources reached" << std::endl;
 		return ResourceHandle();
 	}
 
 
-	Shader shader = Shader(std::move(inVertexPath), std::move(inFragmentPath));
-	shaders.push_back(std::move(shader));
+	//Material material = Material(std::move(inVertexPath), std::move(inFragmentPath));
+	//shaders.push_back(std::move(shader));
 
-	ResourceHandle handle(shaderHandleCounter);
-	shadersLookup.insert({ handle, &shaders.back() });
-	shaderHandleCounter++;
+	//ResourceHandle handle(shaderHandleCounter);
+	//shadersLookup.insert({ handle, &shaders.back() });
+	//shaderHandleCounter++;
 
-	std::cout << "INFO : Loaded shader " << handle.handle << " ( " << shaders.back().getVertexPath() << " + " << shaders.back().getFragmentPath() << " )" << std::endl;
+	//std::cout << "INFO : Loaded shader " << handle.handle << " ( " << shaders.back().getVertexPath() << " + " << shaders.back().getFragmentPath() << " )" << std::endl;
 
-	return handle;
+	return ResourceHandle();
 }
 
 
@@ -150,14 +150,14 @@ const Texture* ResourcesManager::getTexture(ResourceHandle handle) const
 	return texturesLookup.at(handle);
 }
 
-Shader* ResourcesManager::getShader(ResourceHandle handle)
+Material* ResourcesManager::getMaterial(ResourceHandle handle)
 {
 	assert(handle.IsValid());
-	return shadersLookup.at(handle);
+	return materialsLookup.at(handle);
 }
 
-const Shader* ResourcesManager::getShader(ResourceHandle handle) const
+const Material* ResourcesManager::getMaterial(ResourceHandle handle) const
 {
 	assert(handle.IsValid());
-	return shadersLookup.at(handle);
+	return materialsLookup.at(handle);
 }

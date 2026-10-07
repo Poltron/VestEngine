@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/ResourceHandle.h"
+#include "Render/GraphicResourceHandle.h"
 #include "Render/ShaderParameterCollection.h"
 
 #include "ECS/Entity.h"
@@ -10,13 +11,13 @@ struct MeshRendererComponent
 	Entity entity;
 	
 	ResourceHandle model;
-	ResourceHandle shader;
+	GPUHandle shader;
 	bool bOutline;
 
 	ShaderParameterCollection shaderParameters;
 
 	MeshRendererComponent()
-		: entity(ENTITY_INVALID), model(RESOURCE_INVALID), shader(RESOURCE_INVALID), bOutline(false)
+		: entity(ENTITY_INVALID), model(RESOURCE_INVALID), shader({}), bOutline(false)
 	{
 		shaderParameters.clear();
 	}

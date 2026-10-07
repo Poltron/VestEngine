@@ -499,7 +499,7 @@ public:
 
 	virtual void swapBuffers() override
 	{
-		glfwSwapBuffers(static_cast<GLFWwindow*>(window));
+		glfwSwapBuffers(g_GLFWWindow);
 	}
 
 	virtual void resize(int inWidth, int inHeight) override

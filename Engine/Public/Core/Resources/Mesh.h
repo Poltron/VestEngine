@@ -1,13 +1,11 @@
 #pragma once
 
 #include <vector>
-#include <string>
 
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
 #include "Core/ResourceHandle.h"
-#include "Core/Resources/Texture.h"
 #include "Render/GraphicResourceHandle.h"
 
 class ResourcesManager;
@@ -30,8 +28,6 @@ struct Vertex
 	}
 };
 
-class Shader;
-
 class Mesh
 {
 public:
@@ -48,11 +44,11 @@ public:
 	Mesh(Mesh&& inOther) noexcept;
 	Mesh& operator=(Mesh&& inOther) noexcept;
 
-	void bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const;
+	void bindTextures(const ResourcesManager& inResourcesManager) const;
 
-	GraphicResourceHandle getVAO() const { return VAO; }
-	GraphicResourceHandle getVBO() const { return VBO; }
-	GraphicResourceHandle getEBO() const { return EBO; }
+	GPUHandle getVAO() const { return VAO; }
+	GPUHandle getVBO() const { return VBO; }
+	GPUHandle getEBO() const { return EBO; }
 
 	size_t getVerticesSize() const { return vertices.size(); }
 	size_t getIndicesSize() const { return indices.size(); }
@@ -62,9 +58,9 @@ private:
 	std::vector<unsigned int> indices;
 	std::vector<ResourceHandle> textures;
 
-	GraphicResourceHandle VAO;
-	GraphicResourceHandle VBO;
-	GraphicResourceHandle EBO;
+	GPUHandle VAO;
+	GPUHandle VBO;
+	GPUHandle EBO;
 
 	void setupMesh();
 };

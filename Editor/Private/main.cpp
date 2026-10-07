@@ -25,6 +25,7 @@ int main(int argc, char* argv[])
 
 	if (platform::initialize()
 		&& engine::initialize()
+		&& render::initializeBackend()
 		&& render::initialize()
 		&& ui::initialize())
 	{
@@ -61,6 +62,7 @@ int main(int argc, char* argv[])
 	ui::shutdown();
 	engine::shutdown();
 	render::shutdown();
+	render::shutdownBackend();
 	platform::shutdown();
 	return 0;
 }

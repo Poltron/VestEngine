@@ -1,9 +1,13 @@
 #include "Render/ShaderParameterCollection.h"
 
-#include "glad/glad.h"
-
+#include "Core/Engine.h"
+#include "Core/Ensure.h"
 #include "Core/ResourcesManager.h"
-#include "Core/Resources/Shader.h"
+#include "Core/ResourceHandle.h"
+#include "Core/Resources/Material.h"
+#include "Render/Renderer.h"
+#include "Render/Resources/Texture.h"
+#include "RenderBackend/RenderBackend.h"
 
 void ShaderParameterCollection::clear()
 {
@@ -13,48 +17,35 @@ void ShaderParameterCollection::clear()
 	textureParameters.clear();
 }
 
-void ShaderParameterCollection::applyToShader(const Shader& inShader, const ResourcesManager& inResources)
+void ShaderParameterCollection::applyToShader()
 {
 	for (const auto& intParameter : intParameters)
 	{
-		inShader.setInt(intParameter.first, intParameter.second);
+		render::getRenderBackend()->setInt(intParameter.first, intParameter.second);
 	}
 
 	for (const auto& floatParameter : floatParameters)
 	{
-		inShader.setFloat(floatParameter.first, floatParameter.second);
+		render::getRenderBackend()->setFloat(floatParameter.first, floatParameter.second);
 	}
 
 	for (const auto& vec3Parameter : vec3Parameters)
 	{
-		inShader.setVec3(vec3Parameter.first, vec3Parameter.second);
+		render::getRenderBackend()->setVec3(vec3Parameter.first, vec3Parameter.second);
 	}
 
 	for (size_t i = 0; i < textureParameters.size(); ++i)
 	{
 		const auto& textureParameter = textureParameters[i];
 
-		glActiveTexture(GL_TEXTURE0 + (GLenum)i);
+		Texture* texture = engine::getResources()->getTexture(textureParameter.second);
+		ensure(texture);
 
-		// note: kind of a hack, passing resourcehandle internal value in textureparameter.second
-		ResourceHandle resourceHandle(textureParameter.second);
-		if (resourceHandle.IsValid())
-		{
-			const Texture* texture = inResources.getTexture(ResourceHandle(textureParameter.second));
-			assert(texture != nullptr);
-
-			glBindTexture(GL_TEXTURE_2D, texture->getTextureID());
-		}
-		else
-		{
-			glBindTexture(GL_TEXTURE_2D, 0);
-		}
-
-		inShader.setInt(textureParameter.first, (int)i);
+		render::getRenderBackend()->bindTexture(texture->getHandle(), texture->getType(), i);
 	}
 }
 
-void ShaderParameterCollection::addTexture(const std::string& inName, GraphicResourceHandle inValue)
+void ShaderParameterCollection::addTexture(const std::string& inName, ResourceHandle inValue)
 {
 	for (auto it = textureParameters.begin(); it != textureParameters.end(); ++it)
 	{

@@ -1,11 +1,68 @@
 #pragma once
 
-typedef unsigned int GraphicResourceHandle;
+#include <stdint.h>
 
-namespace graphicResourceHandle
+struct PipelineHandle
 {
-	inline bool isValid(GraphicResourceHandle inHandle)
+	uint32_t id;
+
+	PipelineHandle()
+		: id(UINT32_MAX)
+	{}
+
+	bool isValid() const
 	{
-		return inHandle > 0;
+		return id != UINT32_MAX;
 	}
-}
+};
+
+struct GPUHandle
+{
+	uint32_t id;
+
+	GPUHandle(uint32_t inId)
+		: id(inId)
+	{}
+
+	GPUHandle()
+		: GPUHandle(UINT32_MAX)
+	{}
+
+	bool isValid() const
+	{
+		return id != UINT32_MAX;
+	}
+};
+
+enum class EBufferType
+{
+	VERTEX_ARRAY,
+	VERTICES,
+	INDICES
+};
+
+enum class EBufferUsage
+{
+	STATIC,
+	STREAM,
+	DYNAMIC
+};
+
+enum class EPrimitiveMode
+{
+	POINTS,
+	LINES,
+	TRIANGLES
+};
+
+enum class EComparisonFunc : uint8_t
+{
+	NEVER = 0,
+	LESS,
+	LEQUAL,
+	EQUAL,
+	NOTEQUAL,
+	GEQUAL,
+	GREATER,
+	ALWAYS
+};

@@ -3,8 +3,8 @@
 #include "glad/glad.h"
 #include "glm/detail/type_vec3.hpp"
 
-#include "Core/Resources/Shader.h"
 #include "Core/ResourcesManager.h"
+#include "RenderBackend/RenderBackend.h"
 
 std::vector<Vertex> Mesh::getNormalTextureCubeVertices()
 {
@@ -57,18 +57,18 @@ std::vector<Vertex> Mesh::getNormalTextureCubeVertices()
 Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
 	: vertices(inVertices), indices(inIndices), textures(inTextures)
 {
-	VAO = 0;
-	VBO = 0;
-	EBO = 0;
+	VAO = {};
+	VBO = {};
+	EBO = {};
 
 	setupMesh();
 }
 
 Mesh::~Mesh()
 {
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTICES, VBO);
+	render::getRenderBackend()->deleteGPUBuffer(EBufferType::INDICES, EBO);
 }
 
 Mesh::Mesh(Mesh&& inOther) noexcept
@@ -82,9 +82,9 @@ Mesh::Mesh(Mesh&& inOther) noexcept
 	indices = inOther.indices;
 	textures = inOther.textures;
 
-	inOther.VAO = 0;
-	inOther.VBO = 0;
-	inOther.EBO = 0;
+	inOther.VAO = {};
+	inOther.VBO = {};
+	inOther.EBO = {};
 }
 
 Mesh& Mesh::operator=(Mesh&& inOther) noexcept
@@ -103,9 +103,9 @@ Mesh& Mesh::operator=(Mesh&& inOther) noexcept
 		VBO = inOther.VBO;
 		EBO = inOther.EBO;
 
-		inOther.VAO = 0;
-		inOther.VBO = 0;
-		inOther.EBO = 0;
+		inOther.VAO = {};
+		inOther.VBO = {};
+		inOther.EBO = {};
 
 	}
 	return *this;
@@ -113,23 +113,23 @@ Mesh& Mesh::operator=(Mesh&& inOther) noexcept
 
 void Mesh::setupMesh()
 {
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+	VAO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTEX_ARRAY);
+	VBO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTICES);
 
 	// note : temporary for container mesh, to remove when only working with proper models
 	if (indices.size() > 0)
 	{
-		glGenBuffers(1, &EBO);
+		EBO = render::getRenderBackend()->createGPUBuffer(EBufferType::INDICES);
 	}
 
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 
 	// note : temporary for container mesh, to remove when only working with proper models
-	if (EBO > 0)
+	if (EBO.id > 0)
 	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		render::getRenderBackend()->bindGPUBuffer(EBufferType::INDICES, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 	}
 
@@ -142,10 +142,10 @@ void Mesh::setupMesh()
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
 
-	glBindVertexArray(0);
+	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 }
 
-void Mesh::bindTextures(const ResourcesManager& inResourcesManager, const Shader& inShader) const
+void Mesh::bindTextures(const ResourcesManager& inResourcesManager) const
 {
 	for (std::vector<ResourceHandle>::size_type i = 0; i < textures.size(); ++i)
 	{
@@ -161,9 +161,6 @@ void Mesh::bindTextures(const ResourcesManager& inResourcesManager, const Shader
 			continue;
 		}
 
-		glActiveTexture(GL_TEXTURE0 + (GLenum)i);
-		glBindTexture(GL_TEXTURE_2D, texture->getTextureID());
-
-		inShader.setInt(std::string("material.").append(texture->getType()), (int)i);
+		render::getRenderBackend()->bindTexture(texture->getHandle(), texture->getType(), i);
 	}
 }
