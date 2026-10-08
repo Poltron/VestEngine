@@ -25,12 +25,12 @@ struct GPUHandle
 	{}
 
 	GPUHandle()
-		: GPUHandle(UINT32_MAX)
+		: GPUHandle(0)
 	{}
 
 	bool isValid() const
 	{
-		return id != UINT32_MAX;
+		return id > 0;
 	}
 };
 
@@ -65,4 +65,10 @@ enum class EComparisonFunc : uint8_t
 	GEQUAL,
 	GREATER,
 	ALWAYS
+};
+
+enum class ETextureFormat
+{
+	RGB,
+	RGBA
 };

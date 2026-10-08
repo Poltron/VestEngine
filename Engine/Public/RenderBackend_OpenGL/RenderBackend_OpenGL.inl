@@ -10,8 +10,15 @@
 #include "tracy/TracyOpenGL.hpp"
 
 #include "Core/Ensure.h"
+#include "Platform/WindowCreationFlags.h"
+#include "Platform/WindowManager.h"
 #include "RenderBackend/RenderBackend.h"
 #include "Render/GraphicResourceHandle.h"
+
+struct RenderBackend::Impl
+{
+	GLuint currentShaderProgram = 0;
+};
 
 namespace
 {
@@ -152,321 +159,465 @@ namespace
 		ensure(false);
 		return GL_INVALID_ENUM;
 	}
+
+	GLenum getOpenGLTextureFormat(ETextureFormat inTextureFormat)
+	{
+		switch (inTextureFormat)
+		{
+		case ETextureFormat::RGB:
+			return GL_RGB;
+			break;
+		case ETextureFormat::RGBA:
+			return GL_RGBA;
+			break;
+		}
+		ensure(false);
+		return GL_INVALID_ENUM;
+	}
 }
 
-class RenderBackend_OpenGL : public RenderBackend
+RenderBackend::RenderBackend()
 {
-protected:
-	GLuint currentShaderProgram = 0;
+	impl = new Impl();
+}
 
-public:
-	void initialize()
+void RenderBackend::getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints)
+{
+	outHints.push_back({ contextHints::Requirements::ClientAPI, (uint8_t)contextHints::EClientAPI::OPENGL });
+	outHints.push_back({ contextHints::Requirements::ContextCreationAPI, (uint8_t)contextHints::EContextCreationAPI::NATIVE });
+	outHints.push_back({ contextHints::Requirements::MajorVersion, 3 });
+	outHints.push_back({ contextHints::Requirements::MinorVersion, 3 });
+}
+
+bool RenderBackend::initWindowGraphicLibrary(void* inProcAddress, size_t inWidth, size_t inHeight)
+{
+	if (!gladLoadGLLoader((GLADloadproc)inProcAddress))
 	{
-		glEnable(GL_PROGRAM_POINT_SIZE);
-
-		// depth test
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-
-		// stencil test
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0x00);
-
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return false;
 	}
 
-	void shutdown()
-	{
+	TracyGpuContext;
+	glViewport(0, 0, (GLsizei)inWidth, (GLsizei)inHeight);
 
+	return true;
+}
+
+void RenderBackend::initialize()
+{
+	glEnable(GL_PROGRAM_POINT_SIZE);
+
+	// depth test
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	// stencil test
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0x00);
+}
+
+void RenderBackend::shutdown()
+{ }
+
+void RenderBackend::tracyGPUCollect()
+{
+	TracyGpuCollect;
+}
+
+void RenderBackend::clear()
+{
+	ZoneScopedN("Renderer::clear");
+	TracyGpuZone("Renderer::clear");
+
+	glStencilMask(0xFF);
+	glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glStencilMask(0x00);
+}
+
+void RenderBackend::resizeViewport(int inX, int inY, int inWidth, int inHeight)
+{
+	glViewport(inX, inY, inWidth, inHeight);
+}
+
+void RenderBackend::setStencilMask(unsigned int inMask)
+{
+	glStencilMask((GLuint)inMask);
+}
+
+void RenderBackend::setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned int inMask)
+{
+	GLenum func = getOpenGLComparisonFunc(inFunc);
+	glStencilFunc(func, (GLint)inValue, (GLuint)inMask);
+}
+
+GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
+{
+	std::string content = readFile(inVertexPath.data());
+	if (content.size() == 0)
+	{
+		std::cout << "ERROR: Shader " << inVertexPath << " is empty." << std::endl;
+		return {};
 	}
 
-	virtual void startTracyGPUZone(const std::string& inName) override
-	{
-		//ZoneScopedN(inName.c_str());
-		//TracyGpuZone(inName);
-	}
-
-	virtual void tracyGpuCollect()
-	{
-		TracyGpuCollect;
-	}
-
-	virtual void clear() override
-	{
-		glStencilMask(0xFF);
-		glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glStencilMask(0x00);
-	}
-
-	virtual void setStencilMask(unsigned int inMask) override
-	{
-		glStencilMask(inMask);
-	}
-
-	virtual void setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned int inMask) override
-	{
-		GLenum func = getOpenGLComparisonFunc(inFunc);
-		glStencilFunc(func, (GLint)inValue, (GLuint)inMask);
-	}
-
-	virtual GPUHandle compileShader(std::string_view inVertexPath, std::string_view inFragmentPath) override
-	{
-		std::string content = readFile(inVertexPath.data());
-		if (content.size() == 0)
-		{
-			std::cout << "ERROR: Shader " << inVertexPath << " is empty." << std::endl;
-			return {};
-		}
-
-		GLuint vertexShader = createAndCompileShader(GL_VERTEX_SHADER, content.data());
-		if (vertexShader == 0)
-		{
-			return {};
-		}
-
-		content = readFile(inFragmentPath.data());
-		if (content.size() == 0)
-		{
-			std::cout << "ERROR: FragmentShader " << inFragmentPath << " is empty." << std::endl;
-			return {};
-		}
-		GLuint fragmentShader = createAndCompileShader(GL_FRAGMENT_SHADER, content.c_str());
-		if (fragmentShader == 0)
-		{
-			return {};
-		}
-
-		GLuint ID = glCreateProgram();
-		glAttachShader(ID, vertexShader);
-		glAttachShader(ID, fragmentShader);
-		glLinkProgram(ID);
-
-		GLint success;
-		glGetProgramiv(ID, GL_LINK_STATUS, &success);
-		if (!success) {
-			char infoLog[512];
-			glGetProgramInfoLog(ID, 512, NULL, infoLog);
-			std::cout << "Shader Linking Failed: " << infoLog << std::endl;
-		}
-
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
-
-		return GPUHandle(ID);
-	}
-
-	virtual void useShaderProgram(GPUHandle inHandle) override
-	{
-		glUseProgram(inHandle.id);
-
-		while (GLenum err = glGetError())
-		{
-			if (err != GL_NO_ERROR)
-			{
-				std::cerr << "glUseProgram \"" << inHandle.id << "\" failed: " << err << std::endl;
-			}
-		}
-	}
-
-	virtual void setBool(std::string_view inName, bool inValue) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName))
-		{
-			return;
-		}
-
-		glUniform1i(location, (int)inValue);
-	}
-
-	virtual void setInt(std::string_view inName, int inValue) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName))
-		{
-			return;
-		}
-
-		glUniform1i(location, inValue);
-	}
-
-	virtual void setFloat(std::string_view inName, float inValue) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName))
-		{
-			return;
-		}
-
-		glUniform1f(location, inValue);
-	}
-
-	virtual void setVec3(std::string_view inName, const glm::vec3& inValue) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName))
-		{
-			return;
-		}
-
-		glUniform3f(location, inValue.x, inValue.y, inValue.z);
-	}
-
-	virtual void setVec4(std::string_view inName, float x, float y, float z, float w) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName))
-		{
-			return;
-		}
-
-		glUniform4f(location, x, y, z, w);
-	}
-
-	virtual void setMat4(std::string_view inName, glm::f32* inValue) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName))
-		{
-			return;
-		}
-
-		glUniformMatrix4fv(location, 1, GL_FALSE, inValue);
-	}
-
-	virtual void setTexture(std::string_view inName, GPUHandle inValue) override
-	{
-		int location = glGetUniformLocation(currentShaderProgram, inName.data());
-		if (!isUniformLocationValid(location, inName.data()))
-		{
-			return;
-		}
-
-		glUniform1i(location, inValue.id);
-	}
-
-	//
-	virtual void drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount) override
-	{
-		bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
-
-		GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
-		glDrawArrays(primitiveMode, inOffset, (GLsizei)inCount);
-
-		bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
-	}
-
-	virtual void drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount) override
-	{
-		bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
-
-		GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
-		glDrawArraysInstanced(primitiveMode, inOffset, (GLsizei)inSize, (GLsizei)inCount);
-
-		bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
-	}
-
-	virtual void drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices) override
-	{
-		bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
-
-		GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
-		glDrawElements(primitiveMode, (GLsizei)inCount, GL_UNSIGNED_INT, inIndices);
-
-		bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
-	}
-
-
-	//
-	virtual GPUHandle createTexture(uint8_t* inData) override
+	GLuint vertexShader = createAndCompileShader(GL_VERTEX_SHADER, content.data());
+	if (vertexShader == 0)
 	{
 		return {};
 	}
 
-	virtual void bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex) override
+	content = readFile(inFragmentPath.data());
+	if (content.size() == 0)
 	{
-		glActiveTexture(GL_TEXTURE0 + (GLenum)inIndex);
-		glBindTexture(GL_TEXTURE_2D, inHandle.id);
-		setInt(std::string("material.").append(inType), (int)inIndex);
+		std::cout << "ERROR: FragmentShader " << inFragmentPath << " is empty." << std::endl;
+		return {};
+	}
+	GLuint fragmentShader = createAndCompileShader(GL_FRAGMENT_SHADER, content.c_str());
+	if (fragmentShader == 0)
+	{
+		return {};
 	}
 
-	virtual void deleteTexture(GPUHandle inHandle) override
-	{
-		glDeleteTextures(1, &inHandle.id);
+	GLuint ID = glCreateProgram();
+	glAttachShader(ID, vertexShader);
+	glAttachShader(ID, fragmentShader);
+	glLinkProgram(ID);
+
+	GLint success;
+	glGetProgramiv(ID, GL_LINK_STATUS, &success);
+	if (!success) {
+		char infoLog[512];
+		glGetProgramInfoLog(ID, 512, NULL, infoLog);
+		std::cout << "Shader Linking Failed: " << infoLog << std::endl;
 	}
 
-	//
-	virtual GPUHandle createGPUBuffer(EBufferType inType) override
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	return GPUHandle(ID);
+}
+
+void RenderBackend::useShaderProgram(GPUHandle inHandle)
+{
+	if (impl->currentShaderProgram == inHandle.id)
 	{
-		GPUHandle handle = {};
-		switch (inType)
+		return;
+	}
+
+	glUseProgram(inHandle.id);
+	impl->currentShaderProgram = inHandle.id;
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
 		{
-		case EBufferType::VERTEX_ARRAY:
-			glGenVertexArrays(1, &handle.id);
-			break;
-		case EBufferType::VERTICES:
-		case EBufferType::INDICES:
-			glGenBuffers(1, &handle.id);
-			break;
-		}
-		return handle;
-	}
-
-	virtual void allocateGPUBuffer(EBufferType inType, size_t inCapacity, void* inData, EBufferUsage inUsage) override
-	{
-		GLenum type = getOpenGLBufferType(inType);
-		GLenum usage = getOpenGLBufferUsage(inUsage);
-		glBufferData(type, inCapacity, inData, usage);
-	}
-
-	virtual void bindGPUBuffer(EBufferType inType, GPUHandle inHandle) override
-	{
-		switch (inType)
-		{
-		case EBufferType::VERTEX_ARRAY:
-			glBindVertexArray(inHandle.id);
-			break;
-		case EBufferType::VERTICES:
-			glBindBuffer(GL_ARRAY_BUFFER, inHandle.id);
-			break;
-		case EBufferType::INDICES:
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, inHandle.id);
-			break;
+			std::cerr << "glUseProgram \"" << inHandle.id << "\" failed: " << err << std::endl;
 		}
 	}
+}
 
-	virtual void deleteGPUBuffer(EBufferType inType, GPUHandle inHandle) override
+void RenderBackend::setBool(std::string_view inName, bool inValue)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName))
 	{
-		switch (inType)
+		return;
+	}
+
+	glUniform1i(location, (int)inValue);
+}
+
+void RenderBackend::setInt(std::string_view inName, int inValue)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName))
+	{
+		return;
+	}
+
+	glUniform1i(location, inValue);
+}
+
+void RenderBackend::setFloat(std::string_view inName, float inValue)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName))
+	{
+		return;
+	}
+
+	glUniform1f(location, inValue);
+}
+
+void RenderBackend::setVec3(std::string_view inName, const glm::vec3& inValue)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName))
+	{
+		return;
+	}
+
+	glUniform3f(location, inValue.x, inValue.y, inValue.z);
+}
+
+void RenderBackend::setVec4(std::string_view inName, float x, float y, float z, float w)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName))
+	{
+		return;
+	}
+
+	glUniform4f(location, x, y, z, w);
+}
+
+void RenderBackend::setMat4(std::string_view inName, glm::f32* inValue)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName))
+	{
+		return;
+	}
+
+	glUniformMatrix4fv(location, 1, GL_FALSE, inValue);
+}
+
+void RenderBackend::setTexture(std::string_view inName, GPUHandle inValue)
+{
+	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
+	if (!isUniformLocationValid(location, inName.data()))
+	{
+		return;
+	}
+
+	glUniform1i(location, inValue.id);
+}
+
+//
+void RenderBackend::drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
+{
+	bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
+
+	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
+	glDrawArrays(primitiveMode, inOffset, (GLsizei)inCount);
+
+	bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
 		{
-		case EBufferType::VERTEX_ARRAY:
-			glDeleteVertexArrays(1, &inHandle.id);
-			break;
-		case EBufferType::VERTICES:
-		case EBufferType::INDICES:
-			glDeleteBuffers(1, &inHandle.id);
-			break;
+			std::cerr << "glDrawArrays failed: " << err << std::endl;
+		}
+	}
+}
+
+void RenderBackend::drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
+{
+	bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
+
+	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
+	glDrawArraysInstanced(primitiveMode, inOffset, (GLsizei)inSize, (GLsizei)inCount);
+
+	bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "glDrawArraysInstanced failed: " << err << std::endl;
+		}
+	}
+}
+
+void RenderBackend::drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
+{
+	bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
+
+	GLenum primitiveMode = getOpenGLPrimitiveMode(inPrimitiveMode);
+	glDrawElements(primitiveMode, (GLsizei)inCount, GL_UNSIGNED_INT, inIndices);
+
+	bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "glDrawElements failed: " << err << std::endl;
+		}
+	}
+}
+
+
+//
+GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t inHeight, ETextureFormat inInternalFormat)
+{
+	GLenum glInternalFormat = getOpenGLTextureFormat(inInternalFormat);
+
+	GPUHandle handle;
+	glGenTextures(1, &handle.id);
+	glBindTexture(GL_TEXTURE_2D, handle.id);
+	glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, (GLsizei)inWidth, (GLsizei)inHeight, 0, glInternalFormat, GL_UNSIGNED_BYTE, inData);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "createTexture " << handle.id << " failed: " << err << std::endl;
 		}
 	}
 
-	virtual void setGPUBufferData(EBufferType inType, size_t inOffset, size_t inSize, void* inData) override
+	return handle;
+}
+
+void RenderBackend::bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex)
+{
+	glActiveTexture(GL_TEXTURE0 + (GLenum)inIndex);
+	glBindTexture(GL_TEXTURE_2D, inHandle.id);
+
+	setInt(std::string("material.").append(inType), (int)inIndex);
+
+	while (GLenum err = glGetError())
 	{
-		GLenum type = getOpenGLBufferType(inType);
-		glBufferSubData(type, inOffset, inSize, inData);
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "bindTexture " << inHandle.id << " failed: " << err << std::endl;
+		}
 	}
-};
+}
+
+void RenderBackend::deleteTexture(GPUHandle inHandle)
+{
+	glDeleteTextures(1, &inHandle.id);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "deleteTexture " << inHandle.id << " failed: " << err << std::endl;
+		}
+	}
+}
+
+//
+GPUHandle RenderBackend::createGPUBuffer(EBufferType inType)
+{
+	GPUHandle handle = {};
+	switch (inType)
+	{
+	case EBufferType::VERTEX_ARRAY:
+		glGenVertexArrays(1, &handle.id);
+		break;
+	case EBufferType::VERTICES:
+	case EBufferType::INDICES:
+		glGenBuffers(1, &handle.id);
+		break;
+	}
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "createGPUBuffer " << handle.id << " failed: " << err << std::endl;
+		}
+	}
+
+	return handle;
+}
+
+void RenderBackend::allocateGPUBuffer(EBufferType inType, size_t inCapacity, void* inData, EBufferUsage inUsage)
+{
+	GLenum type = getOpenGLBufferType(inType);
+	GLenum usage = getOpenGLBufferUsage(inUsage);
+	glBufferData(type, inCapacity, inData, usage);
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "allocateGPUBuffer " << inCapacity << "bytes failed: " << err << std::endl;
+		}
+	}
+}
+
+void RenderBackend::bindGPUBuffer(EBufferType inType, GPUHandle inHandle)
+{
+	switch (inType)
+	{
+	case EBufferType::VERTEX_ARRAY:
+		glBindVertexArray(inHandle.id);
+		break;
+	case EBufferType::VERTICES:
+		glBindBuffer(GL_ARRAY_BUFFER, inHandle.id);
+		break;
+	case EBufferType::INDICES:
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, inHandle.id);
+		break;
+	}
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "bindGPUBuffer " << inHandle.id << "bytes failed: " << err << std::endl;
+		}
+	}
+}
+
+void RenderBackend::deleteGPUBuffer(EBufferType inType, GPUHandle inHandle)
+{
+	switch (inType)
+	{
+	case EBufferType::VERTEX_ARRAY:
+		glDeleteVertexArrays(1, &inHandle.id);
+		break;
+	case EBufferType::VERTICES:
+	case EBufferType::INDICES:
+		glDeleteBuffers(1, &inHandle.id);
+		break;
+	}
+
+	while (GLenum err = glGetError())
+	{
+		if (err != GL_NO_ERROR)
+		{
+			std::cerr << "deleteGPUBuffer " << inHandle.id << " failed: " << err << std::endl;
+		}
+	}
+}
+
+void RenderBackend::setGPUBufferData(EBufferType inType, size_t inOffset, size_t inSize, void* inData)
+{
+	GLenum type = getOpenGLBufferType(inType);
+	glBufferSubData(type, inOffset, inSize, inData);
+}
+
+void RenderBackend::setVertexLayoutData(unsigned int inLayoutIndex, size_t inSizeInBytes, size_t inVertexStride, void* inDataOffset, unsigned int inDivisor)
+{
+	glEnableVertexAttribArray((GLuint)inLayoutIndex);
+	glVertexAttribPointer((GLuint)inLayoutIndex, (GLint)inSizeInBytes, GL_FLOAT, GL_FALSE, (GLsizei)inVertexStride, inDataOffset);
+	glVertexAttribDivisor((GLuint)inLayoutIndex, (GLuint)inDivisor);
+}
 
 
 namespace render
 {
-	RenderBackend_OpenGL* g_renderBackEnd = nullptr;
+	RenderBackend* g_renderBackEnd = nullptr;
 
 	bool initializeBackend()
 	{
-		g_renderBackEnd = new RenderBackend_OpenGL();
+		g_renderBackEnd = new RenderBackend();
 		g_renderBackEnd->initialize();
 		return true;
 	}

@@ -47,12 +47,8 @@ void VestRenderer::shutdown()
 {}
 
 //
-//
-
 void Renderer::clear()
 {
-	render::getRenderBackend()->startTracyGPUZone("Renderer::clear");
-
 	render::getRenderBackend()->clear();
 
 	frameInfo.reset();
@@ -177,12 +173,8 @@ void Renderer::renderDebugPass(Scene& inScene)
 
 void Renderer::swap()
 {
-	{
-		render::getRenderBackend()->startTracyGPUZone("Renderer::swap");
-		platform::getWindowManager().swapBuffers();
-	}
-
-	render::getRenderBackend()->tracyGpuCollect();
+	platform::getWindowManager().swapBuffers();
+	render::getRenderBackend()->tracyGPUCollect();
 }
 
 void Renderer::setActiveCamera(Camera* inCamera)

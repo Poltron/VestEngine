@@ -1,7 +1,6 @@
 #include "Render/Debug/DebugShapes.h"
 
 #include <iostream>
-#include "glad/glad.h"
 
 #include "Render/GraphicResourceHandle.h"
 #include "RenderBackend/RenderBackend.h"
@@ -56,34 +55,19 @@ void DebugShapePrimitive::initialize()
 
 	reallocateVBO(capacity);
 
-	glEnableVertexAttribArray(0); // position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapePrimitiveInstance), (void*)(offsetof(DebugShapePrimitiveInstance, position)));
-
-	glEnableVertexAttribArray(1); // color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapePrimitiveInstance), (void*)(offsetof(DebugShapePrimitiveInstance, color)));
-
-	glEnableVertexAttribArray(2); // color
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(DebugShapePrimitiveInstance), (void*)(offsetof(DebugShapePrimitiveInstance, size)));
-
-	glVertexAttribDivisor(0, 0);
-	glVertexAttribDivisor(1, 0);
-	glVertexAttribDivisor(2, 0);
+	const unsigned int divisor = 0;
+	render::getRenderBackend()->setVertexLayoutData(0, 3, sizeof(DebugShapePrimitiveInstance), (void*)offsetof(DebugShapePrimitiveInstance, position), divisor);
+	render::getRenderBackend()->setVertexLayoutData(1, 3, sizeof(DebugShapePrimitiveInstance), (void*)offsetof(DebugShapePrimitiveInstance, color), divisor);
+	render::getRenderBackend()->setVertexLayoutData(2, 1, sizeof(DebugShapePrimitiveInstance), (void*)offsetof(DebugShapePrimitiveInstance, size), divisor);
 
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
-
-	while (GLenum err = glGetError())
-	{
-		if (err != GL_NO_ERROR)
-		{
-			std::cerr << "DebugShapePrimitive::initialize failed: " << err << std::endl;
-		}
-	}
 }
 
 void DebugShapePrimitive::reallocateVBO(size_t inNewCapacity)
 {
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBO);
-	glBufferData(GL_ARRAY_BUFFER, inNewCapacity * sizeof(DebugShapePrimitiveInstance), nullptr, GL_DYNAMIC_DRAW);
+	render::getRenderBackend()->allocateGPUBuffer(EBufferType::VERTICES, inNewCapacity * sizeof(DebugShapePrimitiveInstance), nullptr, EBufferUsage::DYNAMIC);
+
 	capacity = inNewCapacity;
 }
 
@@ -105,7 +89,7 @@ void DebugShapePrimitive::updateVBO(std::vector<DebugShapePrimitiveInstance>& in
 		render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBO);
 	}
 
-	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizei)(inInstances.size() * sizeof(DebugShapePrimitiveInstance)), inInstances.data());
+	render::getRenderBackend()->setGPUBufferData(EBufferType::VERTICES, 0, inInstances.size() * sizeof(DebugShapePrimitiveInstance), inInstances.data());
 
 	instanceCount = newInstanceCount;
 }
@@ -174,31 +158,17 @@ void DebugShapeMesh::initialize()
 	size_t size = vertices.size() * sizeof(glm::vec3);
 	render::getRenderBackend()->allocateGPUBuffer(EBufferType::VERTICES, size, vertices.data(), EBufferUsage::STATIC);
 
-	glEnableVertexAttribArray(0); // vertex
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-
-	glVertexAttribDivisor(0, 0);
+	render::getRenderBackend()->setVertexLayoutData(0, 3, sizeof(glm::vec3), (void*)0, 0);
 
 	// instances
 	reallocateVBOinstances(capacity);
 
-	glEnableVertexAttribArray(1); // color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, color)));
-
-	glEnableVertexAttribArray(2); // model[0]
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model)));
-	glEnableVertexAttribArray(3); // model[1]
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model) + sizeof(glm::vec4) * 1));
-	glEnableVertexAttribArray(4); // model[2]
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model) + sizeof(glm::vec4) * 2));
-	glEnableVertexAttribArray(5); // model[3]
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model) + sizeof(glm::vec4) * 3));
-
-	glVertexAttribDivisor(1, 1);
-	glVertexAttribDivisor(2, 1);
-	glVertexAttribDivisor(3, 1);
-	glVertexAttribDivisor(4, 1);
-	glVertexAttribDivisor(5, 1);
+	const unsigned int divisor = 1;
+	render::getRenderBackend()->setVertexLayoutData(1, 3, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, color)), divisor);
+	render::getRenderBackend()->setVertexLayoutData(2, 4, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model)), divisor);
+	render::getRenderBackend()->setVertexLayoutData(3, 4, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model) + sizeof(glm::vec4) * 1), divisor);
+	render::getRenderBackend()->setVertexLayoutData(4, 4, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model) + sizeof(glm::vec4) * 2), divisor);
+	render::getRenderBackend()->setVertexLayoutData(5, 4, sizeof(DebugShapeMeshInstance), (void*)(offsetof(DebugShapeMeshInstance, model) + sizeof(glm::vec4) * 3), divisor);
 
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 }

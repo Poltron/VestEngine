@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <string_view>
 
+#include "Platform/WindowCreationFlags.h"
 #include "Render/GraphicResourceHandle.h"
 
 #define RENDER_OPENGL 1
@@ -10,45 +11,60 @@
 class RenderBackend
 {
 public:
-	//
-	virtual void startTracyGPUZone(const std::string& inName) = 0;
-	virtual void tracyGpuCollect() = 0;
+	RenderBackend();
+
+	void initialize();
+	void shutdown();
 
 	//
-	virtual void clear() = 0;
+	static bool initWindowGraphicLibrary(void* inProcAddress, size_t inWidth, size_t inHeight);
+	static void getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints);
 
 	//
-	virtual void drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount) = 0;
-	virtual void drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount) = 0;
-	virtual void drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices) = 0;
+	void tracyGPUCollect();
+
+	void resizeViewport(int inX, int inY, int inWidth, int inHeight);
+	void clear();
 
 	//
-	virtual void setStencilMask(unsigned int inMask) = 0;
-	virtual void setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned int inMask) = 0;
+	void drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount);
+	void drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount);
+	void drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices);
 
 	//
-	virtual GPUHandle compileShader(std::string_view inVertexPath, std::string_view inFragmentPath) = 0;
-	virtual void useShaderProgram(GPUHandle inHandle) = 0;
-
-	virtual void setBool(std::string_view name, bool value) = 0;
-	virtual void setInt(std::string_view name, int value) = 0;
-	virtual void setFloat(std::string_view name, float value) = 0;
-	virtual void setVec3(std::string_view name, const glm::vec3& inValue) = 0;
-	virtual void setVec4(std::string_view name, float x, float y, float z, float w) = 0;
-	virtual void setMat4(std::string_view name, glm::f32* value) = 0;
-	virtual void setTexture(std::string_view name, GPUHandle value) = 0;
+	void setStencilMask(unsigned int inMask);
+	void setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned int inMask);
 
 	//
-	virtual GPUHandle createTexture(uint8_t* inData) = 0;
-	virtual void bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex) = 0;
-	virtual void deleteTexture(GPUHandle inHandle) = 0;
+	GPUHandle compileShader(std::string_view inVertexPath, std::string_view inFragmentPath);
+	void useShaderProgram(GPUHandle inHandle);
+
+	void setBool(std::string_view name, bool value);
+	void setInt(std::string_view name, int value);
+	void setFloat(std::string_view name, float value);
+	void setVec3(std::string_view name, const glm::vec3& inValue);
+	void setVec4(std::string_view name, float x, float y, float z, float w);
+	void setMat4(std::string_view name, glm::f32* value);
+	void setTexture(std::string_view name, GPUHandle value);
 
 	//
-	virtual GPUHandle createGPUBuffer(EBufferType inType) = 0;
-	virtual void allocateGPUBuffer(EBufferType inType, size_t inSize, void* inData, EBufferUsage inUsage) = 0;
-	virtual void bindGPUBuffer(EBufferType inType, GPUHandle inHandle) = 0;
-	virtual void deleteGPUBuffer(EBufferType inType, GPUHandle inHandle) = 0;
-	virtual void setGPUBufferData(EBufferType inType, size_t inOffset, size_t inSize, void* inData) = 0;
+	GPUHandle createTexture(uint8_t* inData, size_t inWidth, size_t inHeight, ETextureFormat inInternalFormat);
+	void bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex);
+	void deleteTexture(GPUHandle inHandle);
+
+	//
+	GPUHandle createGPUBuffer(EBufferType inType);
+	void allocateGPUBuffer(EBufferType inType, size_t inSize, void* inData, EBufferUsage inUsage);
+	void bindGPUBuffer(EBufferType inType, GPUHandle inHandle);
+	void deleteGPUBuffer(EBufferType inType, GPUHandle inHandle);
+	void setGPUBufferData(EBufferType inType, size_t inOffset, size_t inSize, void* inData);
+
+	//
+	void setVertexLayoutData(unsigned int inLayoutIndex, size_t inSizeInBytes, size_t inVertexStride, void* inDataOffset, unsigned int inDivisor);
+
+private:
+	struct Impl;
+	Impl* impl;
 };
 
 namespace render

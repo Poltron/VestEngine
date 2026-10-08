@@ -2,14 +2,14 @@
 
 #include <iostream>
 
-#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include "tracy/Tracy.hpp"
-#include "tracy/TracyOpenGL.hpp"
 
 #include "Core/Ensure.h"
 #include "Platform/InputManager.h"
+#include "Platform/WindowCreationFlags.h"
 #include "Platform/WindowManager.h"
+#include "RenderBackend/RenderBackend.h"
 
 #define PLATFORM_KEY_SIZE GLFW_KEY_LAST + 1
 #define PLATFORM_MOUSE_BUTTON_SIZE GLFW_MOUSE_BUTTON_LAST + 1
@@ -442,15 +442,107 @@ namespace WindowEvents
 	void framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, int inHeight);
 }
 
+namespace
+{
+	int getGLFWContextHint(contextHints::Requirements inHint)
+	{
+		switch (inHint)
+		{
+		case contextHints::Requirements::ClientAPI:
+			return GLFW_CLIENT_API;
+			break;
+		case contextHints::Requirements::ContextCreationAPI:
+			return GLFW_CONTEXT_CREATION_API;
+			break;
+		case contextHints::Requirements::MajorVersion:
+			return GLFW_VERSION_MAJOR;
+			break;
+		case contextHints::Requirements::MinorVersion:
+			return GLFW_VERSION_MINOR;
+			break;
+		case contextHints::Requirements::OpenGLProfile:
+			return GLFW_OPENGL_PROFILE;
+			break;
+		}
+
+		ensure(false);
+		return GLFW_INVALID_ENUM;
+	}
+
+	int getGLFWContextHintValue(int inGLFWHint, uint8_t inValue)
+	{
+		if (inGLFWHint == GLFW_CLIENT_API)
+		{
+			switch ((contextHints::EClientAPI)inValue)
+			{
+			case contextHints::EClientAPI::NONE:
+				return GLFW_NO_API;
+				break;
+			case contextHints::EClientAPI::OPENGL:
+				return GLFW_OPENGL_API;
+				break;
+			case contextHints::EClientAPI::OPENGLES:
+				return GLFW_OPENGL_ES_API;
+				break;
+			}
+		}
+		else if (inGLFWHint == GLFW_CONTEXT_CREATION_API)
+		{
+			switch ((contextHints::EContextCreationAPI)inValue)
+			{
+			case contextHints::EContextCreationAPI::NATIVE:
+				return GLFW_NATIVE_CONTEXT_API;
+				break;
+			case contextHints::EContextCreationAPI::EGL:
+				return GLFW_EGL_CONTEXT_API;
+				break;
+			case contextHints::EContextCreationAPI::OSMESA:
+				return GLFW_OSMESA_CONTEXT_API;
+				break;
+			}
+		}
+		else if (inGLFWHint == GLFW_OPENGL_PROFILE)
+		{
+			switch ((contextHints::EOpenGLProfile)inValue)
+			{
+			case contextHints::EOpenGLProfile::ANY:
+				return GLFW_OPENGL_ANY_PROFILE;
+				break;
+			case contextHints::EOpenGLProfile::COMPAT:
+				return GLFW_OPENGL_COMPAT_PROFILE;
+				break;
+			case contextHints::EOpenGLProfile::CORE:
+				return GLFW_OPENGL_CORE_PROFILE;
+				break;
+			}
+		}
+		else if (inGLFWHint == GLFW_VERSION_MAJOR || inGLFWHint == GLFW_VERSION_MINOR)
+		{
+			return (int)inValue;
+		}
+
+		ensure(false);
+		return GLFW_INVALID_VALUE;
+	}
+}
+
 class GLFWWindowManager final : public WindowManager
 {
 public:
 	void* createWindow(int width, int height)
 	{
 		glfwInit();
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+		std::vector<std::pair<contextHints::Requirements, uint8_t>> hints;
+		RenderBackend::getContextRequirements(hints);
+		for (const auto& hint : hints)
+		{
+			int GLFWHint = getGLFWContextHint(hint.first);
+			int GLFWValue = getGLFWContextHintValue(GLFWHint, hint.second);
+			glfwWindowHint(GLFWHint, GLFWValue);
+		}
+		
+		// todo: load from config file
 
 		g_GLFWWindow = glfwCreateWindow(width, height, "VestEngine", NULL, NULL);
 		if (g_GLFWWindow == NULL)
@@ -464,18 +556,15 @@ public:
 
 		glfwMakeContextCurrent(g_GLFWWindow);
 
-		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+#ifdef RENDER_OPENGL
+		if (!RenderBackend::initWindowGraphicLibrary(glfwGetProcAddress, width, height))
 		{
-			std::cout << "Failed to initialize GLAD" << std::endl;
 			return nullptr;
 		}
-
-		TracyGpuContext;
+#endif
 
 		glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
 		glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
-		
-		glViewport(0, 0, width, height);
 
 		size = glm::vec2(width, height);
 
@@ -504,7 +593,7 @@ public:
 
 	virtual void resize(int inWidth, int inHeight) override
 	{
-		glViewport(0, 0, inWidth, inHeight);
+		render::getRenderBackend()->resizeViewport(0, 0, inWidth, inHeight);
 	}
 };
 
@@ -570,12 +659,18 @@ void platform::shutdown()
 {
 	ZoneScoped;
 
-	g_GLFWInputManager->shutdown();
-	delete g_GLFWInputManager;
+	if (g_GLFWInputManager)
+	{
+		g_GLFWInputManager->shutdown();
+		delete g_GLFWInputManager;
+	}
 	g_GLFWInputManager = nullptr;
 
-	g_GLFWWindowManager->destroyWindow();
-	delete g_GLFWWindowManager;
+	if (g_GLFWWindowManager)
+	{
+		g_GLFWWindowManager->destroyWindow();
+		delete g_GLFWWindowManager;
+	}
 	g_GLFWWindowManager = nullptr;
 
 	g_GLFWWindow = nullptr;

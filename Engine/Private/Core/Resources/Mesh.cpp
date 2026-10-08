@@ -1,6 +1,5 @@
 #include "Core/Resources/Mesh.h"
 
-#include "glad/glad.h"
 #include "glm/detail/type_vec3.hpp"
 
 #include "Core/ResourcesManager.h"
@@ -124,23 +123,19 @@ void Mesh::setupMesh()
 
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTICES, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
+	render::getRenderBackend()->allocateGPUBuffer(EBufferType::VERTICES, vertices.size() * sizeof(Vertex), vertices.data(), EBufferUsage::STATIC);
+	
 	// note : temporary for container mesh, to remove when only working with proper models
 	if (EBO.id > 0)
 	{
 		render::getRenderBackend()->bindGPUBuffer(EBufferType::INDICES, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+		render::getRenderBackend()->allocateGPUBuffer(EBufferType::INDICES, indices.size() * sizeof(unsigned int), indices.data(), EBufferUsage::STATIC);
 	}
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
+	
+	const unsigned int divisor = 0;
+	render::getRenderBackend()->setVertexLayoutData(0, 3, sizeof(Vertex), (void*)offsetof(Vertex, position), divisor);
+	render::getRenderBackend()->setVertexLayoutData(1, 3, sizeof(Vertex), (void*)offsetof(Vertex, normal), divisor);
+	render::getRenderBackend()->setVertexLayoutData(2, 2, sizeof(Vertex), (void*)offsetof(Vertex, texCoords), divisor);
 
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 }
