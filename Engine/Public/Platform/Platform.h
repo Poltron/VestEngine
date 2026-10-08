@@ -3,6 +3,8 @@
 class InputManager;
 class WindowManager;
 
+class InputHandler;
+
 namespace platform
 {
 	bool initialize();

@@ -50,20 +50,27 @@ struct ScrollInput
 
 class InputManager
 {
+// ~Platform specific 
+	friend class InputHandler;
+
+	struct Impl;
+	Impl* impl;
+
 public:
-	virtual bool initialize();
-	virtual void shutdown();
+	bool initialize();
+	void shutdown();
 	void processInput(double inDeltaTime);
 
-	virtual input::ECursorInputMode getCursorInputMode() = 0;
-	virtual void setCursorInputMode(input::ECursorInputMode inButton) = 0;
+	input::ECursorInputMode getCursorInputMode();
+	void setCursorInputMode(input::ECursorInputMode inButton);
 
-	virtual glm::vec2 getCursorPos() = 0;
-	virtual bool isKeyPressed(input::EKey inKey) = 0;
-	virtual bool isButtonPressed(input::EMouseButton inButton) = 0;
+	glm::vec2 getCursorPos();
+	bool isKeyPressed(input::EKey inKey);
+	bool isButtonPressed(input::EMouseButton inButton);
 
 protected:
-	virtual void pollEvents() = 0;
+	void pollEvents();
+// end of platform specific
 
 public:
 	using KeyCallback = std::function<void(input::EInputState/* state */, input::EKeyModifier/* mods */, double/* deltaTime */)>;

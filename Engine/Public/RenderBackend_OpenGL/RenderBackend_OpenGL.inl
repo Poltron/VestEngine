@@ -10,7 +10,7 @@
 #include "tracy/TracyOpenGL.hpp"
 
 #include "Core/Ensure.h"
-#include "Platform/WindowCreationFlags.h"
+#include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
 #include "RenderBackend/RenderBackend.h"
 #include "Render/GraphicResourceHandle.h"

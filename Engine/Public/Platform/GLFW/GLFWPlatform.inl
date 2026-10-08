@@ -7,7 +7,7 @@
 
 #include "Core/Ensure.h"
 #include "Platform/InputManager.h"
-#include "Platform/WindowCreationFlags.h"
+#include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
 #include "RenderBackend/RenderBackend.h"
 
@@ -20,13 +20,13 @@
 #define PLATFORM_CURSOR_INPUT_MODE_LAST GLFW_CURSOR_CAPTURED
 #define PLATFORM_CURSOR_INPUT_MODE_SIZE (PLATFORM_CURSOR_INPUT_MODE_LAST - PLATFORM_CURSOR_INPUT_MODE_FIRST + 1)
 
-class GLFWInputManager;
-class GLFWWindowManager;
+class InputHandler;
 
 namespace GLFW {
-	GLFWInputManager* g_GLFWInputManager = nullptr;
-	GLFWWindowManager* g_GLFWWindowManager = nullptr;
+	InputManager* g_GLFWInputManager = nullptr;
+	WindowManager* g_GLFWWindowManager = nullptr;
 	GLFWwindow* g_GLFWWindow = nullptr;
+	InputHandler* g_InputHandler = nullptr;
 }
 using namespace GLFW;
 
@@ -39,68 +39,8 @@ namespace InputCallbacks
 	void mouseButton_callback(GLFWwindow* inWindow, int inButton, int inAction, int inMods);
 }
 
-class GLFWInputManager final : public InputManager
+struct InputManager::Impl
 {
-public:
-	virtual bool initialize() override
-	{
-		ZoneScoped;
-
-		bool bSuccess = InputManager::initialize();
-
-		fillInputLookupTables();
-
-		glfwSetKeyCallback(g_GLFWWindow, InputCallbacks::key_callback);
-		glfwSetMouseButtonCallback(g_GLFWWindow, InputCallbacks::mouseButton_callback);
-		glfwSetScrollCallback(g_GLFWWindow, InputCallbacks::scroll_callback);
-		glfwSetCursorPosCallback(g_GLFWWindow, InputCallbacks::cursorPos_callback);
-
-		glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-		return bSuccess;
-	}
-
-	std::vector<KeyInput>& getKeyInputs() { return keyInputs; }
-	std::vector<MouseInput>& getMouseInputs() { return mouseInputs; }
-	std::vector<CursorPosInput>& getCursorPosInputs() { return cursorPosInputs; }
-	std::vector<ScrollInput>& getScrollInputs() { return scrollInputs; }
-
-	virtual void setCursorInputMode(input::ECursorInputMode inInputMode) override
-	{
-		glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, toGLFWCursorInputMode[(int)inInputMode]);
-	}
-
-	virtual input::ECursorInputMode getCursorInputMode() override
-	{
-		int value = glfwGetInputMode(g_GLFWWindow, GLFW_CURSOR);
-		return fromGLFWCursorInputMode[value - PLATFORM_CURSOR_INPUT_MODE_FIRST];
-	}
-
-	virtual glm::vec2 getCursorPos() override
-	{
-		double x, y;
-		glfwGetCursorPos(g_GLFWWindow, &x, &y);
-		return glm::vec2(x,y);
-	}
-
-	virtual bool isKeyPressed(input::EKey inKey) override
-	{
-		ensure(inKey != input::EKey::UNKNOWN);
-
-		int glfwKey = toGLFWKey[static_cast<int>(inKey)];
-		int state = glfwGetKey(g_GLFWWindow, glfwKey);
-		return fromGLFWInputState[state] == input::EInputState::PRESS;
-	}
-
-	virtual bool isButtonPressed(input::EMouseButton inButton) override
-	{
-		ensure(inButton != input::EMouseButton::UNKNOWN);
-
-		int glfwButton = toGLFWMouseButton[static_cast<int>(inButton)];
-		int state = glfwGetMouseButton(g_GLFWWindow, glfwButton);
-		return fromGLFWInputState[state] == input::EInputState::PRESS;
-	}
-
 	input::EKey fromGLFWKey[PLATFORM_KEY_SIZE];
 	int toGLFWKey[(int)input::EKey::ENUM_SIZE];
 
@@ -113,20 +53,13 @@ public:
 	input::ECursorInputMode fromGLFWCursorInputMode[PLATFORM_CURSOR_INPUT_MODE_SIZE];
 	int toGLFWCursorInputMode[(int)input::ECursorInputMode::ENUM_SIZE];
 
-protected:
-	virtual void pollEvents() override
-	{
-		glfwPollEvents();
-	}
-
-private:
 	// note: would like some const arrays but GLFW values are not sequential,
 	// would like designated initializers but they aren't available until C++20
 	void fillInputLookupTables()
 	{
 		fromGLFWKey[GLFW_KEY_SPACE] = input::EKey::SPACE;
 		fromGLFWKey[GLFW_KEY_APOSTROPHE] = input::EKey::APOSTROPHE;
-		fromGLFWKey[GLFW_KEY_COMMA]	= input::EKey::COMMA;
+		fromGLFWKey[GLFW_KEY_COMMA] = input::EKey::COMMA;
 		fromGLFWKey[GLFW_KEY_MINUS] = input::EKey::MINUS;
 		fromGLFWKey[GLFW_KEY_PERIOD] = input::EKey::PERIOD;
 		fromGLFWKey[GLFW_KEY_SLASH] = input::EKey::SLASH;
@@ -407,33 +340,134 @@ private:
 	}
 };
 
+
+class InputHandler
+{
+public:
+	InputManager* inputManager;
+	WindowManager* windowManager;
+
+	void addCursorPosInput(double inX, double inY)
+	{
+		inputManager->cursorPosInputs.push_back({ inX, inY });
+	}
+
+	void addScrollInput(double inX, double inY)
+	{
+		inputManager->scrollInputs.push_back({ inX, inY });
+	}
+
+	void addKeyInput(int inGLFWKey, int inScancode, int inAction, int inMods)
+	{
+		input::EKey key = inputManager->impl->fromGLFWKey[inGLFWKey];
+		input::EInputState state = inputManager->impl->fromGLFWInputState[inAction];
+		input::EKeyModifier mods = input::EKeyModifier::NONE; // todo
+
+		inputManager->keyInputs.push_back({ key, state, mods });
+		std::cout << "Key: " << inGLFWKey << " / " << inAction << " / " << inMods << std::endl;
+	}
+
+	void addMouseButtonInput(int inGLFWButton, int inAction, int inMods)
+	{
+		input::EMouseButton button = inputManager->impl->fromGLFWMouseButton[inGLFWButton];
+		input::EInputState state = inputManager->impl->fromGLFWInputState[inAction];
+		inputManager->mouseInputs.push_back({ button, state });
+		std::cout << "Button: " << inGLFWButton << " / " << inAction << " / " << inMods << std::endl;
+	}
+
+	void addCloseWindowRequest()
+	{
+		windowManager->receivedCloseWindowRequest();
+	}
+
+	void addResizeRequest(double inWidth, double inHeight)
+	{
+		windowManager->resize((unsigned int)inWidth, (unsigned int)inHeight);
+	}
+};
+
+bool InputManager::initialize()
+{
+	ZoneScoped;
+
+	impl = new InputManager::Impl();
+
+	impl->fillInputLookupTables();
+
+	glfwSetKeyCallback(g_GLFWWindow, InputCallbacks::key_callback);
+	glfwSetMouseButtonCallback(g_GLFWWindow, InputCallbacks::mouseButton_callback);
+	glfwSetScrollCallback(g_GLFWWindow, InputCallbacks::scroll_callback);
+	glfwSetCursorPosCallback(g_GLFWWindow, InputCallbacks::cursorPos_callback);
+
+	glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+	return true;
+}
+
+void InputManager::setCursorInputMode(input::ECursorInputMode inInputMode)
+{
+	glfwSetInputMode(g_GLFWWindow, GLFW_CURSOR, impl->toGLFWCursorInputMode[(int)inInputMode]);
+}
+
+input::ECursorInputMode InputManager::getCursorInputMode()
+{
+	int value = glfwGetInputMode(g_GLFWWindow, GLFW_CURSOR);
+	return impl->fromGLFWCursorInputMode[value - PLATFORM_CURSOR_INPUT_MODE_FIRST];
+}
+
+glm::vec2 InputManager::getCursorPos()
+{
+	double x, y;
+	glfwGetCursorPos(g_GLFWWindow, &x, &y);
+	return glm::vec2(x, y);
+}
+
+bool InputManager::isKeyPressed(input::EKey inKey)
+{
+	ensure(inKey != input::EKey::UNKNOWN);
+
+	int glfwKey = impl->toGLFWKey[static_cast<int>(inKey)];
+	int state = glfwGetKey(g_GLFWWindow, glfwKey);
+	return impl->fromGLFWInputState[state] == input::EInputState::PRESS;
+}
+
+bool InputManager::isButtonPressed(input::EMouseButton inButton)
+{
+	ensure(inButton != input::EMouseButton::UNKNOWN);
+
+	int glfwButton = impl->toGLFWMouseButton[static_cast<int>(inButton)];
+	int state = glfwGetMouseButton(g_GLFWWindow, glfwButton);
+	return impl->fromGLFWInputState[state] == input::EInputState::PRESS;
+}
+
+void InputManager::pollEvents()
+{
+	glfwPollEvents();
+}
+
 void InputCallbacks::cursorPos_callback(GLFWwindow* inWindow, double inX, double inY)
 {
-	g_GLFWInputManager->getCursorPosInputs().push_back({ inX, inY });
+	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
+	handler->addCursorPosInput(inX, inY);
 }
 
 void InputCallbacks::scroll_callback(GLFWwindow* inWindow, double inX, double inY)
 {
-	g_GLFWInputManager->getScrollInputs().push_back({ inX, inY });
+	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
+	handler->addScrollInput(inX, inY);
 }
 
 void InputCallbacks::key_callback(GLFWwindow* inWindow, int inGLFWKey, int inScancode, int inAction, int inMods)
 {
-	input::EKey key = g_GLFWInputManager->fromGLFWKey[inGLFWKey];
-	input::EInputState state = g_GLFWInputManager->fromGLFWInputState[inAction];
-	input::EKeyModifier mods = input::EKeyModifier::NONE; // todo
-	g_GLFWInputManager->getKeyInputs().push_back({ key, state, mods });
-	std::cout << "Key: " << inGLFWKey << " / " << inAction << " / " << inMods << std::endl;
+	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
+	handler->addKeyInput(inGLFWKey, inScancode, inAction, inMods);
 }
 
 void InputCallbacks::mouseButton_callback(GLFWwindow* inWindow, int inGLFWButton, int inAction, int inMods)
 {
-	input::EMouseButton button = g_GLFWInputManager->fromGLFWMouseButton[inGLFWButton];
-	input::EInputState state = g_GLFWInputManager->fromGLFWInputState[inAction];
-	g_GLFWInputManager->getMouseInputs().push_back({ button, state });
-	std::cout << "Button: " << inGLFWButton << " / " << inAction << " / " << inMods << std::endl;
+	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
+	handler->addMouseButtonInput(inGLFWButton, inAction, inMods);
 }
-
 
 //
 namespace WindowEvents
@@ -526,84 +560,78 @@ namespace
 	}
 }
 
-class GLFWWindowManager final : public WindowManager
+void* WindowManager::createWindow(unsigned int width, unsigned int height)
 {
-public:
-	void* createWindow(int width, int height)
+	glfwInit();
+
+	std::vector<std::pair<contextHints::Requirements, uint8_t>> hints;
+	RenderBackend::getContextRequirements(hints);
+	for (const auto& hint : hints)
 	{
-		glfwInit();
+		int GLFWHint = getGLFWContextHint(hint.first);
+		int GLFWValue = getGLFWContextHintValue(GLFWHint, hint.second);
+		glfwWindowHint(GLFWHint, GLFWValue);
+	}
 
-		std::vector<std::pair<contextHints::Requirements, uint8_t>> hints;
-		RenderBackend::getContextRequirements(hints);
-		for (const auto& hint : hints)
-		{
-			int GLFWHint = getGLFWContextHint(hint.first);
-			int GLFWValue = getGLFWContextHintValue(GLFWHint, hint.second);
-			glfwWindowHint(GLFWHint, GLFWValue);
-		}
-		
-		// todo: load from config file
+	// todo: load from config file
 
-		g_GLFWWindow = glfwCreateWindow(width, height, "VestEngine", NULL, NULL);
-		if (g_GLFWWindow == NULL)
-		{
-			std::cout << "Failed to create GLFW window" << std::endl;
-			destroyWindow();
-			return nullptr;
-		}
+	g_GLFWWindow = glfwCreateWindow(width, height, "VestEngine", NULL, NULL);
+	if (g_GLFWWindow == NULL)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
+		shutdown();
+		return nullptr;
+	}
 
-		window = g_GLFWWindow;
+	window = g_GLFWWindow;
 
-		glfwMakeContextCurrent(g_GLFWWindow);
+	glfwMakeContextCurrent(g_GLFWWindow);
 
 #ifdef RENDER_OPENGL
-		if (!RenderBackend::initWindowGraphicLibrary(glfwGetProcAddress, width, height))
-		{
-			return nullptr;
-		}
+	if (!RenderBackend::initWindowGraphicLibrary(glfwGetProcAddress, width, height))
+	{
+		return nullptr;
+	}
 #endif
 
-		glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
-		glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
+	glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
+	glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
 
-		size = glm::vec2(width, height);
+	size = glm::vec2(width, height);
 
-		return g_GLFWWindow;
-	}
+	return g_GLFWWindow;
+}
 
-	void destroyWindow()
-	{
-		glfwTerminate();
-	}
+void WindowManager::shutdown()
+{
+	glfwTerminate();
+}
 
-	void closeWindow()
-	{
-		glfwSetWindowShouldClose(g_GLFWWindow, true);
-	}
+void WindowManager::closeWindow()
+{
+	glfwSetWindowShouldClose(g_GLFWWindow, true);
+}
 
-	void receivedCloseWindowRequest()
-	{
-		windowCloseRequestCallback();
-	}
+void WindowManager::swapBuffers()
+{
+	glfwSwapBuffers(g_GLFWWindow);
+}
 
-	virtual void swapBuffers() override
-	{
-		glfwSwapBuffers(g_GLFWWindow);
-	}
-
-	virtual void resize(int inWidth, int inHeight) override
-	{
-		render::getRenderBackend()->resizeViewport(0, 0, inWidth, inHeight);
-	}
-};
+void WindowManager::resize(unsigned int inWidth, unsigned int inHeight)
+{
+	render::getRenderBackend()->resizeViewport(0, 0, inWidth, inHeight);
+}
 
 void WindowEvents::windows_close_callback(GLFWwindow* inWindow)
 {
-	g_GLFWWindowManager->receivedCloseWindowRequest();
+	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
+	handler->addCloseWindowRequest();
 }
 
 void WindowEvents::framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, int inHeight)
 {
+	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
+	handler->addResizeRequest(inWidth, inHeight);
 	g_GLFWWindowManager->resize(inWidth, inHeight);
 }
 
@@ -630,7 +658,7 @@ bool platform::initialize()
 {
 	ZoneScoped;
 
-	g_GLFWWindowManager = new GLFWWindowManager();
+	g_GLFWWindowManager = new WindowManager();
 
 	const int width = 800;
 	const int height = 600;
@@ -642,7 +670,7 @@ bool platform::initialize()
 
 	centerWindow(g_GLFWWindow);
 
-	g_GLFWInputManager = new GLFWInputManager();
+	g_GLFWInputManager = new InputManager();
 	bool bSuccess = g_GLFWInputManager->initialize();
 	if (bSuccess)
 	{
@@ -652,6 +680,12 @@ bool platform::initialize()
 	{
 		std::cout << "Platform initialization failed." << std::endl;
 	}
+
+	g_InputHandler = new InputHandler();
+	g_InputHandler->windowManager = g_GLFWWindowManager;
+	g_InputHandler->inputManager = g_GLFWInputManager;
+	glfwSetWindowUserPointer(g_GLFWWindow, g_InputHandler);
+
 	return bSuccess;
 }
 
@@ -668,7 +702,7 @@ void platform::shutdown()
 
 	if (g_GLFWWindowManager)
 	{
-		g_GLFWWindowManager->destroyWindow();
+		g_GLFWWindowManager->shutdown();
 		delete g_GLFWWindowManager;
 	}
 	g_GLFWWindowManager = nullptr;

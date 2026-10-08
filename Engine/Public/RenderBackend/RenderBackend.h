@@ -3,13 +3,16 @@
 #include <glm/glm.hpp>
 #include <string_view>
 
-#include "Platform/WindowCreationFlags.h"
+#include "Platform/WindowHints.h"
 #include "Render/GraphicResourceHandle.h"
 
 #define RENDER_OPENGL 1
 
 class RenderBackend
 {
+	struct Impl;
+	Impl* impl;
+
 public:
 	RenderBackend();
 
@@ -58,13 +61,7 @@ public:
 	void bindGPUBuffer(EBufferType inType, GPUHandle inHandle);
 	void deleteGPUBuffer(EBufferType inType, GPUHandle inHandle);
 	void setGPUBufferData(EBufferType inType, size_t inOffset, size_t inSize, void* inData);
-
-	//
 	void setVertexLayoutData(unsigned int inLayoutIndex, size_t inSizeInBytes, size_t inVertexStride, void* inDataOffset, unsigned int inDivisor);
-
-private:
-	struct Impl;
-	Impl* impl;
 };
 
 namespace render

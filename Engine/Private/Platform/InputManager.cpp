@@ -5,11 +5,6 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 
-bool InputManager::initialize()
-{
-	return true;
-}
-
 void InputManager::shutdown()
 {
 	keyCallbacks.clear();
