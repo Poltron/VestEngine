@@ -14,6 +14,7 @@ protected:
 
 public:
 	void shutdown();
+
 	void* createWindow(unsigned int width, unsigned int height);
 	void closeWindow();
 

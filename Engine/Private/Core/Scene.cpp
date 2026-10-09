@@ -96,10 +96,8 @@ bool Scene::raycast(const glm::vec3& inStart, const glm::vec3& inDirection, Enti
 
 		const glm::mat4 offsetModel = glm::translate(worldTransform->model, sphereCollider->offset);
 		const glm::vec3 spherePosition = maths::getMatrixTranslation(offsetModel);
-		render::getRenderer()->getDebugShapeSubRenderer().addPoint(spherePosition, 5.0f, color::red);
-		
 		const glm::vec3 sphereSquaredScale = maths::getMatrixSquaredScale(worldTransform->model);
-		float maxScaleAxis = glm::sqrt(std::max({ sphereSquaredScale.x, sphereSquaredScale.y, sphereSquaredScale.z }));
+		const float maxScaleAxis = glm::sqrt(std::max({ sphereSquaredScale.x, sphereSquaredScale.y, sphereSquaredScale.z }));
 		const float sphereSquaredRadius = (maxScaleAxis * sphereCollider->radius) * (maxScaleAxis * sphereCollider->radius);
 
 		float intersectionDistance = 0;

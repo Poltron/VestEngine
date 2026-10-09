@@ -2,7 +2,7 @@
 
 #include "RenderBackend/RenderBackend.h"
 
-#if RENDER_OPENGL
+#ifdef RENDER_OPENGL
 #include "UI/GLFW_OpenGL3/GLFW_OpenGL_UIManager.inl"
 #else
 #error Platform not supported

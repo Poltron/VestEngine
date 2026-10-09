@@ -178,6 +178,7 @@ namespace
 
 RenderBackend::RenderBackend()
 {
+	// needs to be located following the renderbackend instance
 	impl = new Impl();
 }
 
@@ -301,6 +302,8 @@ GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::strin
 
 void RenderBackend::useShaderProgram(GPUHandle inHandle)
 {
+	ZoneScoped;
+
 	if (impl->currentShaderProgram == inHandle.id)
 	{
 		return;

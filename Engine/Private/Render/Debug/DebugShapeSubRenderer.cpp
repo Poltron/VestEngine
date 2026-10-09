@@ -10,6 +10,7 @@
 #include "Core/ResourcesManager.h"
 #include "Render/Debug/DebugShapeMeshGenerationHelper.h"
 #include "Render/Renderer.h"
+#include "RenderBackend/RenderBackend.h"
 
 void DebugShapeSubRenderer::loadShaders()
 {

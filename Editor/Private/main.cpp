@@ -5,6 +5,7 @@
 #include "Core/Engine.h"
 #include "Platform/Platform.h"
 #include "Render/Renderer.h"
+#include "RenderBackend/RenderBackend.h"
 #include "UI/UIManager.h"
 #include "UnitTest.h"
 

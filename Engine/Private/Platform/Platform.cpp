@@ -1,7 +1,6 @@
 #include "Platform/Platform.h"
 
-// todo: have a define or smth
-#if true
+#ifdef PLATFORM_GLFW
 #include "Platform/GLFW/GLFWPlatform.inl"
 #else
 #error Platform not supported

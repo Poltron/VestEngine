@@ -6,7 +6,6 @@
 #include "Render/GraphicResourceHandle.h"
 #include "Render/FrameInfo.h"
 #include "Render/ShaderParameterCollection.h"
-#include "RenderBackend/RenderBackend.h"
 #include "Core/ResourceHandle.h"
 
 #define MAX_POINT_LIGHTS 3

@@ -53,6 +53,7 @@ class InputManager
 // ~Platform specific 
 	friend class InputHandler;
 
+	// todo: allocate next to the inputmanager ?
 	struct Impl;
 	Impl* impl;
 

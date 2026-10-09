@@ -1,5 +1,7 @@
 #pragma once
 
+#define PLATFORM_GLFW
+
 class InputManager;
 class WindowManager;
 

@@ -6,7 +6,7 @@
 #include "Platform/WindowHints.h"
 #include "Render/GraphicResourceHandle.h"
 
-#define RENDER_OPENGL 1
+#define RENDER_OPENGL
 
 class RenderBackend
 {
