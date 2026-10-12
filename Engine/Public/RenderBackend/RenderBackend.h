@@ -5,8 +5,7 @@
 
 #include "Platform/WindowHints.h"
 #include "Render/GraphicResourceHandle.h"
-
-#define RENDER_OPENGL
+#include "RenderBackend/RenderBackendDef.h"
 
 class RenderBackend
 {
@@ -16,7 +15,7 @@ class RenderBackend
 public:
 	RenderBackend();
 
-	void initialize();
+	bool initialize();
 	void shutdown();
 
 	//

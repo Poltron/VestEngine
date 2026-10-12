@@ -9,6 +9,7 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Renderer.h"
+#include "RenderBackend/RenderBackendDef.h"
 #include "UI/UIManager.h"
 
 class VestEngine final : public Engine
@@ -61,9 +62,11 @@ void VestEngine::launch()
 		scene->getCamera().update(deltaTime);
 		scene->getCameraDebug().update(deltaTime);
 
+#ifdef RENDER_OPENGL
 		scene->getHierarchyComponents().drawDebug(50, 50);
 		scene->getLocalTransformComponents().drawDebug(300, 50);
 		scene->getWorldTransformComponents().drawDebug(550, 50);
+#endif
 
 		respawnSystem.update(*scene);
 		killZoneSystem.update(*scene);

@@ -587,12 +587,10 @@ void* WindowManager::createWindow(unsigned int width, unsigned int height)
 
 	glfwMakeContextCurrent(g_GLFWWindow);
 
-#ifdef RENDER_OPENGL
 	if (!RenderBackend::initWindowGraphicLibrary(glfwGetProcAddress, width, height))
 	{
 		return nullptr;
 	}
-#endif
 
 	glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
 	glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);

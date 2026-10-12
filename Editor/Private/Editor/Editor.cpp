@@ -9,6 +9,7 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Renderer.h"
+#include "RenderBackend/RenderBackendDef.h"
 
 class VestEditor final : public Editor
 {
@@ -57,9 +58,11 @@ bool VestEditor::initialize()
 {
 	ZoneScoped;
 
+#ifdef RENDER_OPENGL
 	getInspector().initialize();
 	getEntitySelector().initialize();
 	getRendererInfo().initialize();
+#endif
 
 	platform::getWindowManager().registerWindowCloseRequestCallback(
 		[]()
@@ -146,12 +149,16 @@ void VestEditor::update()
 {
 	ZoneScoped;
 
+#ifdef RENDER_OPENGL
 	getInspector().update();
 	getEntitySelector().update();
 	getRendererInfo().update();
+#endif
 }
 
 void VestEditor::shutdown()
 {
+#ifdef RENDER_OPENGL
 	getInspector().shutdown();
+#endif
 }

@@ -204,7 +204,7 @@ bool RenderBackend::initWindowGraphicLibrary(void* inProcAddress, size_t inWidth
 	return true;
 }
 
-void RenderBackend::initialize()
+bool RenderBackend::initialize()
 {
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -217,6 +217,8 @@ void RenderBackend::initialize()
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0x00);
+
+	return true;
 }
 
 void RenderBackend::shutdown()

@@ -30,15 +30,19 @@ file(GLOB_RECURSE ENGINE_FILES CONFIGURE_DEPENDS
 	
 add_library(Engine STATIC ${ENGINE_FILES})
 
-target_link_libraries(Engine PRIVATE 	glad)
 target_link_libraries(Engine PRIVATE 	glfw)
+target_link_libraries(Engine PUBLIC 	glm)
+target_link_libraries(Engine PRIVATE 	glad)
 target_link_libraries(Engine PRIVATE 	stb)
 target_link_libraries(Engine PRIVATE 	assimp)
-target_link_libraries(Engine PUBLIC 	glm)
 target_link_libraries(Engine PUBLIC 	imgui)
 target_link_libraries(Engine PUBLIC		Tracy::TracyClient)
 
-target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
+target_include_directories(Engine PUBLIC 	"${CMAKE_CURRENT_SOURCE_DIR}/Engine/Public")
+
+find_package(Vulkan REQUIRED)
+target_include_directories(Engine PUBLIC 	${Vulkan_INCLUDE_DIRS})
+target_link_libraries(Engine PRIVATE Vulkan::Vulkan)
 
 # =====
 # UNIT TEST TARGET - STATIC LIB

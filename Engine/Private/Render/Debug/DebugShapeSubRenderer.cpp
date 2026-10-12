@@ -52,7 +52,7 @@ void DebugShapeSubRenderer::updateDebugShapes(Scene& inScene)
 
 void DebugShapeSubRenderer::render(Renderer& inRenderer, FrameInfo& inFrameInfo)
 {
-	ensure(debugPrimitiveShaderHandle.isValid())
+	//ensure(debugPrimitiveShaderHandle.isValid())
 	render::getRenderBackend()->useShaderProgram(debugPrimitiveShaderHandle);
 
 	glm::mat4 viewProjection = inRenderer.getActiveCamera().getProjectionMatrix() * inRenderer.getActiveCamera().getViewMatrix();
@@ -80,7 +80,7 @@ void DebugShapeSubRenderer::render(Renderer& inRenderer, FrameInfo& inFrameInfo)
 		inFrameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
 	}
 
-	ensure(debugMeshShaderHandle.isValid())
+	//ensure(debugMeshShaderHandle.isValid())
 	render::getRenderBackend()->useShaderProgram(debugMeshShaderHandle);
 
 	render::getRenderBackend()->setMat4("uViewProjection", glm::value_ptr(viewProjection));

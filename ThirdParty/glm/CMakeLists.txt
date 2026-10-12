@@ -8,3 +8,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 set_target_properties(glm PROPERTIES FOLDER "ThirdParty")
+
+target_compile_definitions(glm PUBLIC GLM_FORCE_RADIANS)
+target_compile_definitions(glm PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)

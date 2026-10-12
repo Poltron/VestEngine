@@ -25,9 +25,9 @@ int main(int argc, char* argv[])
 	test::run();
 
 	if (platform::initialize()
-		&& engine::initialize()
 		&& render::initializeBackend()
 		&& render::initialize()
+		&& engine::initialize()
 		&& ui::initialize())
 	{
 		if (editor::initialize())
