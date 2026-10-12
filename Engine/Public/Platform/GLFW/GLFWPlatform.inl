@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 #include "tracy/Tracy.hpp"
 
@@ -610,9 +612,19 @@ void WindowManager::closeWindow()
 	glfwSetWindowShouldClose(g_GLFWWindow, true);
 }
 
+void WindowManager::getRequiredInstanceExtensions(uint32_t* outExtensionCount, const char**& outExtensions)
+{
+	outExtensions = glfwGetRequiredInstanceExtensions(outExtensionCount);
+}
+
 void WindowManager::swapBuffers()
 {
 	glfwSwapBuffers(g_GLFWWindow);
+}
+
+void WindowManager::getFramebufferSize(int& outWidth, int& outHeight)
+{
+	glfwGetFramebufferSize(g_GLFWWindow, &outWidth, &outHeight);
 }
 
 void WindowManager::resize(unsigned int inWidth, unsigned int inHeight)

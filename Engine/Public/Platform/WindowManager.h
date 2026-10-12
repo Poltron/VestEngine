@@ -22,7 +22,10 @@ public:
 	const void* getWindow() const { return window; }
 
 public:
+	void getRequiredInstanceExtensions(uint32_t* outExtensionCount, const char**& outExtensions);
+
 	void swapBuffers();
+	void getFramebufferSize(int& outWidth, int& outHeight);
 	void resize(unsigned int inWidth, unsigned int inHeight);
 
 	const glm::vec2& getSize() const { return size; }
