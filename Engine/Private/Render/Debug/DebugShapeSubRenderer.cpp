@@ -6,6 +6,7 @@
 
 #include "Core/Engine.h"
 #include "Core/Ensure.h"
+#include "Core/FileSystem.h"
 #include "Core/Maths.h"
 #include "Core/ResourcesManager.h"
 #include "Render/Debug/DebugShapeMeshGenerationHelper.h"
@@ -14,12 +15,11 @@
 
 void DebugShapeSubRenderer::loadShaders()
 {
-	const std::string WorkDirTMP = WORKDIR;
-	const std::string debugMeshVertexPath = WorkDirTMP + "/Resources/Shaders/debug_mesh.vert";
-	const std::string debugFragmentPath = WorkDirTMP + "/Resources/Shaders/debug.frag";
+	const std::string debugMeshVertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug_mesh.vert";
+	const std::string debugFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug.frag";
 	debugMeshShaderHandle = render::getRenderBackend()->compileShader(debugMeshVertexPath, debugFragmentPath);
 
-	const std::string debugPrimitiveVertexPath = WorkDirTMP + "/Resources/Shaders/debug_primitive.vert";
+	const std::string debugPrimitiveVertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug_primitive.vert";
 	debugPrimitiveShaderHandle = render::getRenderBackend()->compileShader(debugPrimitiveVertexPath, debugFragmentPath);
 }
 

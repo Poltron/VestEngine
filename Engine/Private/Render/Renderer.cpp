@@ -8,6 +8,7 @@
 
 #include "Camera.h"
 #include "Core/Engine.h"
+#include "Core/FileSystem.h"
 #include "Core/Maths.h"
 #include "Core/Scene.h"
 #include "Core/ResourcesManager.h"
@@ -223,18 +224,16 @@ void Renderer::loadDefaultShaders()
 	debugShapeSubRenderer.loadShaders();
 	debugShapeSubRenderer.loadDebugShapes();
 
-	const std::string WorkDirTMP = WORKDIR;
-
-	const std::string vertexPath = WorkDirTMP + "/Resources/Shaders/default.vert";
-	const std::string litFragmentPath = WorkDirTMP + "/Resources/Shaders/lit.frag";
+	const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/default.vert";
+	const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/lit.frag";
 	GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
 	g_Renderer->setLitShader(litShader);
 
-	const std::string unlitFragmentPath = WorkDirTMP + "/Resources/Shaders/unlit.frag";
+	const std::string unlitFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/unlit.frag";
 	GPUHandle unlitShader = render::getRenderBackend()->compileShader(vertexPath, unlitFragmentPath);
 	g_Renderer->setUnlitShader(unlitShader);
 
-	const std::string solidColorFragmentPath = WorkDirTMP + "/Resources/Shaders/color.frag";
+	const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/color.frag";
 	GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
 }

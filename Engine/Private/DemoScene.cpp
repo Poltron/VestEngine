@@ -4,6 +4,7 @@
 #include "ECS/Entity.h"
 #include "ECS/HierarchyHelper.h"
 #include "Core/Engine.h"
+#include "Core/FileSystem.h"
 #include "Core/ResourceHandle.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Scene.h"
@@ -17,16 +18,16 @@ namespace
 {
 	const std::string animals[] =
 	{
-		"/Resources/Models/kenney-cube-pets/animal-bee.obj",
-		"/Resources/Models/kenney-cube-pets/animal-caterpillar.obj",
-		"/Resources/Models/kenney-cube-pets/animal-crab.obj",
-		"/Resources/Models/kenney-cube-pets/animal-koala.obj",
-		"/Resources/Models/kenney-cube-pets/animal-pig.obj",
-		"/Resources/Models/kenney-cube-pets/animal-beaver.obj",
-		"/Resources/Models/kenney-cube-pets/animal-elephant.obj",
-		"/Resources/Models/kenney-cube-pets/animal-panda.obj",
-		"/Resources/Models/kenney-cube-pets/animal-polar.obj",
-		"/Resources/Models/kenney-cube-pets/animal-tiger.obj"
+		"Resources/Models/kenney-cube-pets/animal-bee.obj",
+		"Resources/Models/kenney-cube-pets/animal-caterpillar.obj",
+		"Resources/Models/kenney-cube-pets/animal-crab.obj",
+		"Resources/Models/kenney-cube-pets/animal-koala.obj",
+		"Resources/Models/kenney-cube-pets/animal-pig.obj",
+		"Resources/Models/kenney-cube-pets/animal-beaver.obj",
+		"Resources/Models/kenney-cube-pets/animal-elephant.obj",
+		"Resources/Models/kenney-cube-pets/animal-panda.obj",
+		"Resources/Models/kenney-cube-pets/animal-polar.obj",
+		"Resources/Models/kenney-cube-pets/animal-tiger.obj"
 	};
 
 	const size_t animalModelsTotal = 10;
@@ -40,7 +41,7 @@ namespace
 	ResourceHandle getRandomAnimalModel()
 	{
 		const size_t index = rand() % animalModelsTotal;
-		const std::string animalModel = WORKDIR + animals[index];
+		const std::string animalModel = File::getProjectDir() + animals[index];
 		return engine::getResources()->loadModel(animalModel);
 	}
 
@@ -264,10 +265,8 @@ namespace demoScene
 	{
 		ZoneScoped;
 
-		const std::string WorkDirTMP = WORKDIR;
-
-		const std::string containerPath = WorkDirTMP + "/Resources/Textures/container2.png";
-		const std::string containerSpecularPath = WorkDirTMP + "/Resources/Textures/container2_specular.png";
+		const std::string containerPath = File::getProjectDir() + "Resources/Textures/container2.png";
+		const std::string containerSpecularPath = File::getProjectDir() + "Resources/Textures/container2_specular.png";
 		ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
 		ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
 
@@ -374,8 +373,6 @@ namespace demoScene
 		inScene.getCamera().setPosition(glm::vec3(6.508f, 5.24268f, 3.30692f));
 		inScene.getCamera().setRotation(-154.026f, -42.2807f);
 
-		const std::string WorkDirTMP = WORKDIR;
-
 		if (inTotal % animalModelsTotal != 0 && inTotal <= 0 && inRowSize <= 0 )
 		{
 			std::cerr << "AnimalTotal must be a multiple of 10 and RowSize > 0" << std::endl;
@@ -389,7 +386,7 @@ namespace demoScene
 
 		for (size_t i = 0; i < animalModelsTotal; ++i)
 		{
-			ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[i]);
+			ResourceHandle model = engine::getResources()->loadModel(File::getProjectDir() + animals[i]);
 
 			for (size_t j = 0; j < totalPerMesh; ++j)
 			{
@@ -399,7 +396,7 @@ namespace demoScene
 		}
 
 		Renderer* renderer = render::getRenderer();
-		ResourceHandle model = engine::getResources()->loadModel(WorkDirTMP + animals[0]);
+		ResourceHandle model = engine::getResources()->loadModel(File::getProjectDir() + animals[0]);
 		createSceneLights(inScene, model, renderer->getSolidColorShader());
 
 		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);

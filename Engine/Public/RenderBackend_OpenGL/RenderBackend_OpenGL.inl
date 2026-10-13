@@ -10,6 +10,7 @@
 #include "tracy/TracyOpenGL.hpp"
 
 #include "Core/Ensure.h"
+#include "Core/FileSystem.h"
 #include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
 #include "RenderBackend/RenderBackend.h"
@@ -22,24 +23,6 @@ struct RenderBackend::Impl
 
 namespace
 {
-	std::string readFile(const char* inFileName)
-	{
-		std::string line, text;
-
-		std::ifstream in(inFileName);
-		if (in.fail())
-		{
-			std::cout << "ERROR: Could not read file " << inFileName << std::endl;
-			return text;
-		}
-
-		while (std::getline(in, line))
-		{
-			text += line + "\n";
-		}
-		return text;
-	}
-
 	GLuint createAndCompileShader(GLenum type, const char* shaderSource)
 	{
 		GLuint shaderID;
@@ -258,7 +241,8 @@ void RenderBackend::setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned
 
 GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
 {
-	std::string content = readFile(inVertexPath.data());
+	std::string content;
+	File::readFile(inVertexPath.data(), content);
 	if (content.size() == 0)
 	{
 		std::cout << "ERROR: Shader " << inVertexPath << " is empty." << std::endl;
@@ -271,7 +255,7 @@ GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::strin
 		return {};
 	}
 
-	content = readFile(inFragmentPath.data());
+	File::readFile(inFragmentPath.data(), content);
 	if (content.size() == 0)
 	{
 		std::cout << "ERROR: FragmentShader " << inFragmentPath << " is empty." << std::endl;

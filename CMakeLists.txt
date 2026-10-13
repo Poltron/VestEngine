@@ -79,7 +79,7 @@ target_include_directories(Editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Editor/Pub
 # DEFINES
 # =====
 
-target_compile_definitions(Engine PUBLIC WORKDIR="${CMAKE_SOURCE_DIR}")
+target_compile_definitions(Engine PUBLIC WORKDIR="${CMAKE_SOURCE_DIR}/")
 
 # =====
 # COMPILATION
