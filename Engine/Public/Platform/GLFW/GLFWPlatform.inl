@@ -589,11 +589,6 @@ void* WindowManager::createWindow(unsigned int width, unsigned int height)
 
 	glfwMakeContextCurrent(g_GLFWWindow);
 
-	if (!RenderBackend::initWindowGraphicLibrary(glfwGetProcAddress, width, height))
-	{
-		return nullptr;
-	}
-
 	glfwSetWindowCloseCallback(g_GLFWWindow, WindowEvents::windows_close_callback);
 	glfwSetFramebufferSizeCallback(g_GLFWWindow, WindowEvents::framebuffer_size_callback);
 
@@ -615,6 +610,11 @@ void WindowManager::closeWindow()
 void WindowManager::getRequiredInstanceExtensions(uint32_t* outExtensionCount, const char**& outExtensions)
 {
 	outExtensions = glfwGetRequiredInstanceExtensions(outExtensionCount);
+}
+
+void* WindowManager::getProcAdress()
+{
+	return glfwGetProcAddress;
 }
 
 void WindowManager::swapBuffers()

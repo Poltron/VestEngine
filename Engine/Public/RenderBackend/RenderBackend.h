@@ -19,7 +19,6 @@ public:
 	void shutdown();
 
 	//
-	static bool initWindowGraphicLibrary(void* inProcAddress, size_t inWidth, size_t inHeight);
 	static void getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints);
 
 	//

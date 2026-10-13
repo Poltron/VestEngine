@@ -11,6 +11,7 @@
 
 #include "Core/Ensure.h"
 #include "Core/FileSystem.h"
+#include "Platform/Platform.h"
 #include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
 #include "RenderBackend/RenderBackend.h"
@@ -173,22 +174,20 @@ void RenderBackend::getContextRequirements(std::vector<std::pair<contextHints::R
 	outHints.push_back({ contextHints::Requirements::MinorVersion, 3 });
 }
 
-bool RenderBackend::initWindowGraphicLibrary(void* inProcAddress, size_t inWidth, size_t inHeight)
+bool RenderBackend::initialize()
 {
-	if (!gladLoadGLLoader((GLADloadproc)inProcAddress))
+	void* windowProcAdress = platform::getWindowManager().getProcAdress();
+	if (!gladLoadGLLoader((GLADloadproc)windowProcAdress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return false;
 	}
 
 	TracyGpuContext;
-	glViewport(0, 0, (GLsizei)inWidth, (GLsizei)inHeight);
 
-	return true;
-}
+	const glm::vec2 size = platform::getWindowManager().getSize();
+	glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
 
-bool RenderBackend::initialize()
-{
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	// depth test

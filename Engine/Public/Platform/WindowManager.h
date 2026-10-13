@@ -23,6 +23,7 @@ public:
 
 public:
 	void getRequiredInstanceExtensions(uint32_t* outExtensionCount, const char**& outExtensions);
+	void* getProcAdress();
 
 	void swapBuffers();
 	void getFramebufferSize(int& outWidth, int& outHeight);
