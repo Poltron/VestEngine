@@ -642,7 +642,6 @@ void WindowEvents::framebuffer_size_callback(GLFWwindow* inWindow, int inWidth, 
 {
 	InputHandler* handler = static_cast<InputHandler*>(glfwGetWindowUserPointer(inWindow));
 	handler->addResizeRequest(inWidth, inHeight);
-	g_GLFWWindowManager->resize(inWidth, inHeight);
 }
 
 namespace
