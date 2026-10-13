@@ -7,10 +7,14 @@
 #include "Render/GraphicResourceHandle.h"
 #include "RenderBackend/RenderBackendDef.h"
 
+const int MAX_FRAMES_IN_FLIGHT = 2;
+
 class RenderBackend
 {
 	struct Impl;
 	Impl* impl;
+
+	uint32_t frameNumber = 0;
 
 public:
 	RenderBackend();
@@ -24,6 +28,7 @@ public:
 	//
 	void tracyGPUCollect();
 
+	void drawFrame();
 	void resizeViewport(int inX, int inY, int inWidth, int inHeight);
 	void clear();
 

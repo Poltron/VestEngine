@@ -65,6 +65,8 @@ void Renderer::render(Scene& inScene)
 		return;
 	}
 
+	render::getRenderBackend()->drawFrame();
+
 	renderMainPass(inScene);
 	renderDebugPass(inScene);
 }
