@@ -130,7 +130,6 @@ struct RenderBackend::Impl
 	VkDeviceMemory vertexBufferMemory;
 
 	VkCommandPool transferCommandPool;
-	std::vector<VkCommandBuffer> transferCommandBuffers;
 };
 
 
@@ -442,12 +441,12 @@ namespace
 		return false;
 	}
 
-	bool createVertexBuffer(const std::vector<MyVertex>& inVertices, VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
+	bool createBuffer(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, VkDeviceSize inSize, VkBufferUsageFlags inUsage, VkMemoryPropertyFlags inProperties, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = sizeof(inVertices[0]) * inVertices.size();
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.size = inSize;
+		bufferInfo.usage = inUsage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
 		RenderDevice::QueueFamilyIndices indices = RenderDevice::findQueueFamilies(inPhysicalDevice, inSurface);
@@ -472,7 +471,7 @@ namespace
 		uint32_t memoryType = 0;
 		if (!findMemoryType(inPhysicalDevice
 			, memRequirements.memoryTypeBits
-			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			, inProperties
 			, memoryType))
 		{
 			return false;
@@ -486,22 +485,92 @@ namespace
 			return false;
 		}
 
-		return true;
-	}
-
-	bool fillBuffer(VkDevice inDevice, VkBuffer inBuffer, VkDeviceMemory inMemory, void* inData, size_t inDataSize)
-	{
-		VkResult result = vkBindBufferMemory(inDevice, inBuffer, inMemory, 0);
+		result = vkBindBufferMemory(inDevice, outBuffer, outMemory, 0);
 		if (result != VK_SUCCESS)
 		{
 			std::cerr << "Error: vkBindBufferMemory failed" << std::endl;
 			return false;
 		}
 
+		return true;
+	}
+
+	bool fillBuffer(VkDevice inDevice, VkBuffer inBuffer, VkDeviceMemory inMemory, void* inData, size_t inDataSize)
+	{
 		void* data;
 		vkMapMemory(inDevice, inMemory, 0, inDataSize, 0, &data);
 		memcpy(data, inData, inDataSize);
 		vkUnmapMemory(inDevice, inMemory);
+		return true;
+	}
+
+	void copyBuffer(VkDevice inDevice, VkCommandPool inCommandPool, VkQueue inTransferQueue, VkBuffer inSrcBuffer, VkBuffer inDstBuffer, VkDeviceSize inSize)
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = inCommandPool;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(inDevice, &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		VkBufferCopy copyRegion{};
+		copyRegion.srcOffset = 0;
+		copyRegion.dstOffset = 0;
+		copyRegion.size = inSize;
+		vkCmdCopyBuffer(commandBuffer, inSrcBuffer, inDstBuffer, 1, &copyRegion);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(inTransferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(inTransferQueue);
+
+		vkFreeCommandBuffers(inDevice, inCommandPool, 1, &commandBuffer);
+	}
+
+	bool createVertexBuffer(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, VkCommandPool inCommandPool, VkQueue inTransferQueue, const std::vector<MyVertex>& inVertices, VkBuffer& outVertexBuffer, VkDeviceMemory& outVertexMemory)
+	{
+		size_t dataSize = sizeof(inVertices[0]) * inVertices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingMemory;
+
+		VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		if (!createBuffer(inDevice, inPhysicalDevice, inSurface, dataSize, usage, propertyFlags, stagingBuffer, stagingMemory))
+		{
+			return false;
+		}
+
+		void* data = (void*)inVertices.data();
+		if (!fillBuffer(inDevice, stagingBuffer, stagingMemory, data, dataSize))
+		{
+			return false;
+		}
+
+		usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		if (!createBuffer(inDevice, inPhysicalDevice, inSurface, dataSize, usage, propertyFlags, outVertexBuffer, outVertexMemory))
+		{
+			return false;
+		}
+
+		copyBuffer(inDevice, inCommandPool, inTransferQueue, stagingBuffer, outVertexBuffer, dataSize);
+
+		vkDestroyBuffer(inDevice, stagingBuffer, nullptr);
+		vkFreeMemory(inDevice, stagingMemory, nullptr);
+
 		return true;
 	}
 
@@ -1015,25 +1084,13 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	// Buffer
-	if (!createVertexBuffer(impl->vertices, impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->vertexBuffer, impl->vertexBufferMemory))
-	{
-		return false;
-	}
-
-	size_t dataSize = sizeof(impl->vertices[0]) * impl->vertices.size();
-	if (!fillBuffer(impl->device.getDevice(), impl->vertexBuffer, impl->vertexBufferMemory, (void*)impl->vertices.data(), dataSize))
+	if (!createVertexBuffer(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandPool, impl->device.getTransferQueue(), impl->vertices, impl->vertexBuffer, impl->vertexBufferMemory))
 	{
 		return false;
 	}
 
 	// Commands
 	if (!createCommandBuffers(impl->device.getDevice(), impl->graphicsCommandPool, impl->graphicsCommandBuffers))
-	{
-		return false;
-	}
-
-	if (!createCommandBuffers(impl->device.getDevice(), impl->transferCommandPool, impl->transferCommandBuffers))
 	{
 		return false;
 	}
