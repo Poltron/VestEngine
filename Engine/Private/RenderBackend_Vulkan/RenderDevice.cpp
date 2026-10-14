@@ -43,6 +43,12 @@ RenderDevice::QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevic
 			indices.graphicsFamily = i;
 		}
 
+		if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT
+			&& !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+		{
+			indices.transferFamily = i;
+		}
+
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(inDevice, i, inSurface, &presentSupport);
 		if (presentSupport)
@@ -160,7 +166,7 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, inSurface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -183,7 +189,6 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 	VkPhysicalDeviceFeatures deviceFeatures{};
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
-
 	VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
 	if (result != VK_SUCCESS)
 	{
@@ -193,5 +198,6 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 
 	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
 	return true;
 }

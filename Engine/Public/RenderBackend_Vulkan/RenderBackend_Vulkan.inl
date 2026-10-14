@@ -107,11 +107,11 @@ struct RenderBackend::Impl
 	VkRenderPass renderPass;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
-	VkCommandPool commandPool;
+	VkCommandPool graphicsCommandPool;
 
 	uint32_t currentFrameId = 0;
 
-	std::vector<VkCommandBuffer> commandBuffers;
+	std::vector<VkCommandBuffer> graphicsCommandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
@@ -128,6 +128,9 @@ struct RenderBackend::Impl
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+
+	VkCommandPool transferCommandPool;
+	std::vector<VkCommandBuffer> transferCommandBuffers;
 };
 
 
@@ -439,13 +442,18 @@ namespace
 		return false;
 	}
 
-	bool createVertexBuffer(const std::vector<MyVertex>& inVertices, VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
+	bool createVertexBuffer(const std::vector<MyVertex>& inVertices, VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = sizeof(inVertices[0]) * inVertices.size();
 		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+
+		RenderDevice::QueueFamilyIndices indices = RenderDevice::findQueueFamilies(inPhysicalDevice, inSurface);
+		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.transferFamily.value() };
+		bufferInfo.queueFamilyIndexCount = 2;
+		bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
 
 		VkResult result = vkCreateBuffer(inDevice, &bufferInfo, nullptr, &outBuffer);
 		if (result != VK_SUCCESS)
@@ -453,13 +461,9 @@ namespace
 			std::cerr << "Error: vkCreateBuffer Vertex failed" << std::endl;
 			return false;
 		}
-		return true;
-	}
 
-	bool allocateBufferMemory(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkBuffer inBuffer, VkDeviceMemory& outMemory)
-	{
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(inDevice, inBuffer, &memRequirements);
+		vkGetBufferMemoryRequirements(inDevice, outBuffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -475,7 +479,7 @@ namespace
 		}
 		allocInfo.memoryTypeIndex = memoryType;
 
-		VkResult result = vkAllocateMemory(inDevice, &allocInfo, nullptr, &outMemory);
+		result = vkAllocateMemory(inDevice, &allocInfo, nullptr, &outMemory);
 		if (result != VK_SUCCESS)
 		{
 			std::cerr << "Error: vkAllocateMemory failed" << std::endl;
@@ -1000,18 +1004,19 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->commandPool))
+	// Command pools
+	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->graphicsCommandPool))
+	{
+		return false;
+	}
+
+	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandPool))
 	{
 		return false;
 	}
 
 	// Buffer
-	if (!createVertexBuffer(impl->vertices, impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->vertexBuffer, impl->vertexBufferMemory))
-	{
-		return false;
-	}
-
-	if (!allocateBufferMemory(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->vertexBuffer, impl->vertexBufferMemory))
+	if (!createVertexBuffer(impl->vertices, impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->vertexBuffer, impl->vertexBufferMemory))
 	{
 		return false;
 	}
@@ -1023,7 +1028,12 @@ bool RenderBackend::initialize()
 	}
 
 	// Commands
-	if (!createCommandBuffers(impl->device.getDevice(), impl->commandPool, impl->commandBuffers))
+	if (!createCommandBuffers(impl->device.getDevice(), impl->graphicsCommandPool, impl->graphicsCommandBuffers))
+	{
+		return false;
+	}
+
+	if (!createCommandBuffers(impl->device.getDevice(), impl->transferCommandPool, impl->transferCommandBuffers))
 	{
 		return false;
 	}
@@ -1057,7 +1067,8 @@ void RenderBackend::shutdown()
 		vkDestroyFence(impl->device.getDevice(), impl->inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(impl->device.getDevice(), impl->commandPool, nullptr);
+	vkDestroyCommandPool(impl->device.getDevice(), impl->graphicsCommandPool, nullptr);
+	vkDestroyCommandPool(impl->device.getDevice(), impl->transferCommandPool, nullptr);
 
 	impl->device.shutdown();
 
@@ -1093,8 +1104,8 @@ void RenderBackend::drawFrame()
 
 	vkResetFences(impl->device.getDevice(), 1, &impl->inFlightFences[impl->currentFrameId]);
 
-	vkResetCommandBuffer(impl->commandBuffers[impl->currentFrameId], 0);
-	recordCommandBuffer(impl->commandBuffers[impl->currentFrameId], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), imageIndex, impl->vertexBuffer, (uint32_t)impl->vertices.size());
+	vkResetCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], 0);
+	recordCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), imageIndex, impl->vertexBuffer, (uint32_t)impl->vertices.size());
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1106,7 +1117,7 @@ void RenderBackend::drawFrame()
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &impl->commandBuffers[impl->currentFrameId];
+	submitInfo.pCommandBuffers = &impl->graphicsCommandBuffers[impl->currentFrameId];
 
 	VkSemaphore signalSemaphores[] = { impl->renderFinishedSemaphores[impl->currentFrameId] };
 	submitInfo.signalSemaphoreCount = 1;
