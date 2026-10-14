@@ -183,11 +183,6 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 	VkPhysicalDeviceFeatures deviceFeatures{};
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
-	if (bInEnableValidationLayers)
-	{
-		createInfo.enabledLayerCount = (uint32_t)inValidationLayers.size();
-		createInfo.ppEnabledLayerNames = inValidationLayers.data();
-	}
 
 	VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
 	if (result != VK_SUCCESS)

@@ -36,6 +36,8 @@ bool VestEngine::initialize()
 
 void VestEngine::launch()
 {
+	std::cout << "Engine launching..." << std::endl;
+
 	setState(EState::RUNNING);
 
 	double lastFrame = platform::getTime();
@@ -68,23 +70,23 @@ void VestEngine::launch()
 		scene->getWorldTransformComponents().drawDebug(550, 50);
 #endif
 
-		respawnSystem.update(*scene);
-		killZoneSystem.update(*scene);
+		//respawnSystem.update(*scene);
+		//killZoneSystem.update(*scene);
 
 		hierarchySystem.update(*scene);
 		physicsSystem.update(*scene, deltaTime);
 		transformSystem.update(*scene);
 		frustumCullingSystem.update(*scene);
 
-		render::getRenderer()->updateDebugShapes(*scene);
+		//render::getRenderer()->updateDebugShapes(*scene);
 
 		render::getRenderer()->clear();
 		render::getRenderer()->render(*scene);
-		if (uiUpdateCallback)
-		{
-			uiUpdateCallback();
-		}
-		ui::render();
+		//if (uiUpdateCallback)
+		//{
+		//	uiUpdateCallback();
+		//}
+		//ui::render();
 		render::getRenderer()->swap();
 
 		FrameMark;
@@ -132,8 +134,10 @@ Scene* engine::createScene()
 
 		delete g_Scene;
 		g_Scene = nullptr;
+		return nullptr;
 	}
 
+	std::cout << "Scene created successfully" << std::endl;
 	return g_Scene;
 }
 

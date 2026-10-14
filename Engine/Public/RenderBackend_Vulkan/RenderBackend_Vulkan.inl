@@ -12,6 +12,7 @@
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include "vulkan/vulkan.h"
 #include "tracy/Tracy.hpp"
 #include "tracy/TracyVulkan.hpp"
@@ -35,6 +36,37 @@
 const std::vector<const char*> validationLayers =
 {
 	"VK_LAYER_KHRONOS_validation"
+};
+
+struct MyVertex
+{
+	glm::vec2 pos;
+	glm::vec3 color;
+
+	static VkVertexInputBindingDescription getBindingDescription() 
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(MyVertex);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		return bindingDescription;
+	}
+
+	static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+	{
+		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(MyVertex, pos);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(MyVertex, color);
+
+		return attributeDescriptions;
+	}
 };
 
 namespace VkFunctionsEXT
@@ -85,6 +117,17 @@ struct RenderBackend::Impl
 	std::vector<VkFence> inFlightFences;
 
 	bool bFramebufferResized = false;
+
+	const std::vector<MyVertex> vertices =
+	{
+		// pos			// color
+		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{0.5f, 0.5f},	{0.0f, 1.0f, 0.0f}},
+		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+	};
+
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
 };
 
 
@@ -378,7 +421,94 @@ namespace
 		return true;
 	}
 
-	bool createGraphicsPipeline(VkDevice inDevice, VkExtent2D inSwapchainExtent, VkRenderPass inRenderPass, VkPipelineLayout& outPipelineLayout, VkPipeline& outGraphicsPipeline)
+	bool findMemoryType(VkPhysicalDevice& inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(inPhysicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if (inTypeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & inProperties) == inProperties)
+			{
+				outMemoryType = i;
+				return true;
+			}
+		}
+
+		std::cerr << "Error: findMemoryType failed" << std::endl;
+		return false;
+	}
+
+	bool createVertexBuffer(const std::vector<MyVertex>& inVertices, VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = sizeof(inVertices[0]) * inVertices.size();
+		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VkResult result = vkCreateBuffer(inDevice, &bufferInfo, nullptr, &outBuffer);
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkCreateBuffer Vertex failed" << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	bool allocateBufferMemory(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkBuffer inBuffer, VkDeviceMemory& outMemory)
+	{
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(inDevice, inBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+
+		uint32_t memoryType = 0;
+		if (!findMemoryType(inPhysicalDevice
+			, memRequirements.memoryTypeBits
+			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			, memoryType))
+		{
+			return false;
+		}
+		allocInfo.memoryTypeIndex = memoryType;
+
+		VkResult result = vkAllocateMemory(inDevice, &allocInfo, nullptr, &outMemory);
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkAllocateMemory failed" << std::endl;
+			return false;
+		}
+
+		return true;
+	}
+
+	bool fillBuffer(VkDevice inDevice, VkBuffer inBuffer, VkDeviceMemory inMemory, void* inData, size_t inDataSize)
+	{
+		VkResult result = vkBindBufferMemory(inDevice, inBuffer, inMemory, 0);
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkBindBufferMemory failed" << std::endl;
+			return false;
+		}
+
+		void* data;
+		vkMapMemory(inDevice, inMemory, 0, inDataSize, 0, &data);
+		memcpy(data, inData, inDataSize);
+		vkUnmapMemory(inDevice, inMemory);
+		return true;
+	}
+
+	bool createGraphicsPipeline(VkDevice inDevice
+		, VkPhysicalDevice inPhysicalDevice
+		, VkExtent2D inSwapchainExtent
+		, VkRenderPass inRenderPass
+		, VkPipelineLayout& outPipelineLayout
+		, VkPipeline& outGraphicsPipeline
+		, VkBuffer& outVertexBuffer
+		, VkDeviceMemory& outVertexBufferMemory)
 	{
 		std::vector<char> vertShader;
 		File::readFile(File::getProjectDir() + "Resources/Shaders/Vulkan/default.vert.spv", vertShader);
@@ -406,10 +536,14 @@ namespace
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+
+		auto bindingDescription = MyVertex::getBindingDescription();
+		auto attributeDescriptions = MyVertex::getAttributeDescriptions();
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)attributeDescriptions.size();
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 		
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -573,7 +707,7 @@ namespace
 		return true;
 	}
 
-	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer, VkPipeline inPipeline, VkRenderPass inRenderPass, const std::vector<VkFramebuffer>& inFramebuffers, VkExtent2D inSwapchainExtent, uint32_t imageIndex)
+	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer, VkPipeline inPipeline, VkRenderPass inRenderPass, const std::vector<VkFramebuffer>& inFramebuffers, VkExtent2D inSwapchainExtent, uint32_t imageIndex, VkBuffer inVertexBuffer, uint32_t inVertexCount)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -599,23 +733,27 @@ namespace
 		renderPassInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(inCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
 
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(inSwapchainExtent.width);
-		viewport.height = static_cast<float>(inSwapchainExtent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(inCommandBuffer, 0, 1, &viewport);
+			vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
 
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = inSwapchainExtent;
-		vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = static_cast<float>(inSwapchainExtent.width);
+			viewport.height = static_cast<float>(inSwapchainExtent.height);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(inCommandBuffer, 0, 1, &viewport);
 
-		vkCmdDraw(inCommandBuffer, 3, 1, 0, 0);
+			VkRect2D scissor{};
+			scissor.offset = { 0, 0 };
+			scissor.extent = inSwapchainExtent;
+			vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
+
+			VkBuffer vertexBuffers[] = { inVertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
+			vkCmdDraw(inCommandBuffer, inVertexCount, 1, 0, 0);
 
 		vkCmdEndRenderPass(inCommandBuffer);
 
@@ -819,9 +957,12 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createVkDebugMessenger(impl->instance, &impl->debugMessenger))
+	if (enableValidationLayers)
 	{
-		return false;
+		if (!createVkDebugMessenger(impl->instance, &impl->debugMessenger))
+		{
+			return false;
+		}
 	}
 
 	if (!createSurface(impl->instance, &impl->surface))
@@ -849,7 +990,7 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createGraphicsPipeline(impl->device.getDevice(), impl->swapchain.getExtent(), impl->renderPass, impl->pipelineLayout, impl->graphicsPipeline))
+	if (!createGraphicsPipeline(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->swapchain.getExtent(), impl->renderPass, impl->pipelineLayout, impl->graphicsPipeline, impl->vertexBuffer, impl->vertexBufferMemory))
 	{
 		return false;
 	}
@@ -864,12 +1005,25 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createCommandBuffers(impl->device.getDevice(), impl->commandPool, impl->commandBuffers))
+	// Buffer
+	if (!createVertexBuffer(impl->vertices, impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->vertexBuffer, impl->vertexBufferMemory))
 	{
 		return false;
 	}
 
-	if (!recordCommandBuffer(impl->commandBuffers[0], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), 0))
+	if (!allocateBufferMemory(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->vertexBuffer, impl->vertexBufferMemory))
+	{
+		return false;
+	}
+
+	size_t dataSize = sizeof(impl->vertices[0]) * impl->vertices.size();
+	if (!fillBuffer(impl->device.getDevice(), impl->vertexBuffer, impl->vertexBufferMemory, (void*)impl->vertices.data(), dataSize))
+	{
+		return false;
+	}
+
+	// Commands
+	if (!createCommandBuffers(impl->device.getDevice(), impl->commandPool, impl->commandBuffers))
 	{
 		return false;
 	}
@@ -887,6 +1041,9 @@ void RenderBackend::shutdown()
 	vkDeviceWaitIdle(impl->device.getDevice());
 
 	impl->swapchain.shutdown(impl->device);
+
+	vkDestroyBuffer(impl->device.getDevice(), impl->vertexBuffer, nullptr);
+	vkFreeMemory(impl->device.getDevice(), impl->vertexBufferMemory, nullptr);
 
 	vkDestroyPipeline(impl->device.getDevice(), impl->graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(impl->device.getDevice(), impl->pipelineLayout, nullptr);
@@ -937,7 +1094,7 @@ void RenderBackend::drawFrame()
 	vkResetFences(impl->device.getDevice(), 1, &impl->inFlightFences[impl->currentFrameId]);
 
 	vkResetCommandBuffer(impl->commandBuffers[impl->currentFrameId], 0);
-	recordCommandBuffer(impl->commandBuffers[impl->currentFrameId], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), imageIndex);
+	recordCommandBuffer(impl->commandBuffers[impl->currentFrameId], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), imageIndex, impl->vertexBuffer, (uint32_t)impl->vertices.size());
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

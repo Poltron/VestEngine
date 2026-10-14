@@ -222,7 +222,7 @@ void Renderer::drawModel(const Model& inModel)
 void Renderer::loadDefaultShaders()
 {
 	ZoneScoped;
-
+	std::cout << "Loading default shaders.." << std::endl;
 	debugShapeSubRenderer.loadShaders();
 	debugShapeSubRenderer.loadDebugShapes();
 
@@ -238,6 +238,7 @@ void Renderer::loadDefaultShaders()
 	const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/color.frag";
 	GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
+	std::cout << "Loaded default shaders successfully." << std::endl;
 }
 
 void Renderer::updateDebugShapes(Scene& inScene)
