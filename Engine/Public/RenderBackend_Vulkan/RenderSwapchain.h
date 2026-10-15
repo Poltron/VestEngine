@@ -36,6 +36,7 @@ public:
 	};
 
 	static SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface);
+	static bool createImageView(VkDevice inDevice, VkImage inImage, VkFormat inFormat, VkImageView& outImageView);
 
 private:
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& inAvailableFormats);

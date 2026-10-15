@@ -1,7 +1,7 @@
 #include "Render/Resources/Texture.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+//#define STB_IMAGE_IMPLEMENTATION
+//#include "stb_image.h"
 
 #include "Core/Ensure.h"
 #include "RenderBackend/RenderBackend.h"
@@ -44,10 +44,10 @@ Texture& Texture::operator=(Texture&& inOther) noexcept
 
 void Texture::loadTexture()
 {
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 
 	int width, height, nrChannels;
-	uint8_t* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+	uint8_t* data = nullptr;//stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 	if (!data)
 	{
 		std::cout << "ERROR: Failed to load texture: " << path << std::endl;
@@ -70,5 +70,5 @@ void Texture::loadTexture()
 
 	handle = render::getRenderBackend()->createTexture(data, width, height, textureFormat);
 
-	stbi_image_free(data);
+	//stbi_image_free(data);
 }

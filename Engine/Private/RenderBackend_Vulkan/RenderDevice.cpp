@@ -99,10 +99,9 @@ int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfac
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(inPhysicalDevice, &deviceProperties);
 
-	VkPhysicalDeviceFeatures deviceFeatures;
-	vkGetPhysicalDeviceFeatures(inPhysicalDevice, &deviceFeatures);
-
-	if (!deviceFeatures.geometryShader)
+	VkPhysicalDeviceFeatures supportedFeatures;
+	vkGetPhysicalDeviceFeatures(inPhysicalDevice, &supportedFeatures);
+	if (!supportedFeatures.geometryShader || !supportedFeatures.samplerAnisotropy)
 	{
 		return 0;
 	}
@@ -114,7 +113,7 @@ int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfac
 		score += 1000;
 	}
 
-	if (!deviceFeatures.geometryShader)
+	if (!supportedFeatures.geometryShader)
 	{
 		score += deviceProperties.limits.maxImageDimension2D;
 	}
@@ -187,6 +186,7 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	VkPhysicalDeviceFeatures deviceFeatures{};
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
 	VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
