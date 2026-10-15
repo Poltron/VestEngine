@@ -13,6 +13,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "vulkan/vulkan.h"
 #include "tracy/Tracy.hpp"
 #include "tracy/TracyVulkan.hpp"
@@ -69,6 +70,13 @@ struct MyVertex
 	}
 };
 
+struct UniformBufferObject
+{
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+};
+
 namespace VkFunctionsEXT
 {
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
@@ -105,16 +113,30 @@ struct RenderBackend::Impl
 	RenderSwapchain swapchain;
 
 	VkRenderPass renderPass;
+	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
-	VkCommandPool graphicsCommandPool;
 
-	uint32_t currentFrameId = 0;
+	VkCommandPool graphicsCommandPool;
+	VkCommandPool transferCommandPool;
+
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<void*> uniformBuffersMapped;
+
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
 
 	std::vector<VkCommandBuffer> graphicsCommandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
+	uint32_t currentFrameId = 0;
 
 	bool bFramebufferResized = false;
 
@@ -130,15 +152,7 @@ struct RenderBackend::Impl
 	{
 		0, 1, 2, 2, 3, 0
 	};
-
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-
-	VkCommandPool transferCommandPool;
 };
-
 
 
 namespace
@@ -511,12 +525,12 @@ namespace
 		return true;
 	}
 
-	void copyBuffer(VkDevice inDevice, VkCommandPool inCommandPool, VkQueue inTransferQueue, VkBuffer inSrcBuffer, VkBuffer inDstBuffer, VkDeviceSize inSize)
+	void copyBuffer(VkDevice inDevice, VkCommandPool inTransferCommandPool, VkQueue inTransferQueue, VkBuffer inSrcBuffer, VkBuffer inDstBuffer, VkDeviceSize inSize)
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = inCommandPool;
+		allocInfo.commandPool = inTransferCommandPool;
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer commandBuffer;
@@ -543,13 +557,13 @@ namespace
 		vkQueueSubmit(inTransferQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(inTransferQueue);
 
-		vkFreeCommandBuffers(inDevice, inCommandPool, 1, &commandBuffer);
+		vkFreeCommandBuffers(inDevice, inTransferCommandPool, 1, &commandBuffer);
 	}
 
 	bool createVertexBuffer(VkDevice inDevice
 		, VkPhysicalDevice inPhysicalDevice
 		, VkSurfaceKHR inSurface
-		, VkCommandPool inCommandPool
+		, VkCommandPool inTransferCommandPool
 		, VkQueue inTransferQueue
 		, const std::vector<MyVertex>& inVertices
 		, VkBuffer& outVertexBuffer
@@ -580,7 +594,7 @@ namespace
 			return false;
 		}
 
-		copyBuffer(inDevice, inCommandPool, inTransferQueue, stagingBuffer, outVertexBuffer, dataSize);
+		copyBuffer(inDevice, inTransferCommandPool, inTransferQueue, stagingBuffer, outVertexBuffer, dataSize);
 
 		vkDestroyBuffer(inDevice, stagingBuffer, nullptr);
 		vkFreeMemory(inDevice, stagingMemory, nullptr);
@@ -591,7 +605,7 @@ namespace
 	bool createIndexBuffer(VkDevice inDevice
 		, VkPhysicalDevice inPhysicalDevice
 		, VkSurfaceKHR inSurface
-		, VkCommandPool inCommandPool
+		, VkCommandPool inTransferCommandPool
 		, VkQueue inTransferQueue
 		, const std::vector<uint16_t>& inIndices
 		, VkBuffer& outBuffer
@@ -609,10 +623,114 @@ namespace
 		usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		createBuffer(inDevice, inPhysicalDevice, inSurface, bufferSize, usage, propertyFlags, outBuffer, outMemory);
-		copyBuffer(inDevice, inCommandPool, inTransferQueue, stagingBuffer, outBuffer, bufferSize);
+		copyBuffer(inDevice, inTransferCommandPool, inTransferQueue, stagingBuffer, outBuffer, bufferSize);
 
 		vkDestroyBuffer(inDevice, stagingBuffer, nullptr);
 		vkFreeMemory(inDevice, stagingMemoryBuffer, nullptr);
+
+		return true;
+	}
+
+	bool createDescriptorSetLayout(VkDevice inDevice, VkDescriptorSetLayout& outDescriptorSetLayout)
+	{
+		VkDescriptorSetLayoutBinding uboLayoutBinding{};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &uboLayoutBinding;
+
+		VkResult result = vkCreateDescriptorSetLayout(inDevice, &layoutInfo, nullptr, &outDescriptorSetLayout);
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkCreateDescriptorSetLayout failed" << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	bool createUniformBuffers(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, std::vector<VkBuffer>& outBuffers, std::vector<VkDeviceMemory>& outMemories, std::vector<void*>& outMappedMemories)
+	{
+		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+		outBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		outMemories.resize(MAX_FRAMES_IN_FLIGHT);
+		outMappedMemories.resize(MAX_FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+		{
+			constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			constexpr VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			createBuffer(inDevice, inPhysicalDevice, inSurface, bufferSize, usageFlags, memoryFlags, outBuffers[i], outMemories[i]);
+			vkMapMemory(inDevice, outMemories[i], 0, bufferSize, 0, &outMappedMemories[i]);
+		}
+
+		return true;
+	}
+
+	bool createDescriptorPool(VkDevice inDevice, VkDescriptorPool& outDescriptorPool)
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = (uint32_t)MAX_FRAMES_IN_FLIGHT;
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = (uint32_t)MAX_FRAMES_IN_FLIGHT;
+
+		VkResult result = vkCreateDescriptorPool(inDevice, &poolInfo, nullptr, &outDescriptorPool);
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkCreateDescriptorPool failed" << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	bool createDescriptorSets(VkDevice inDevice, VkDescriptorSetLayout inDescriptorSetLayout, VkDescriptorPool inDescriptorPool, const std::vector<VkBuffer>& inBuffers, std::vector<VkDescriptorSet>& outDescriptorSets)
+	{
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, inDescriptorSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = inDescriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		outDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		VkResult result = vkAllocateDescriptorSets(inDevice, &allocInfo, outDescriptorSets.data());
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkAllocateDescriptorSets failed" << std::endl;
+			return false;
+		}
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = inBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
+
+			VkWriteDescriptorSet descriptorWrite{};
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = outDescriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pImageInfo = nullptr; // Optional
+			descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+			vkUpdateDescriptorSets(inDevice, 1, &descriptorWrite, 0, nullptr);
+		}
 
 		return true;
 	}
@@ -621,6 +739,7 @@ namespace
 		, VkPhysicalDevice inPhysicalDevice
 		, VkExtent2D inSwapchainExtent
 		, VkRenderPass inRenderPass
+		, VkDescriptorSetLayout inDescriptorSetLayout
 		, VkPipelineLayout& outPipelineLayout
 		, VkPipeline& outGraphicsPipeline
 		, VkBuffer& outVertexBuffer
@@ -703,7 +822,7 @@ namespace
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -745,6 +864,8 @@ namespace
 		pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &inDescriptorSetLayout;
 
 		VkResult result = vkCreatePipelineLayout(inDevice, &pipelineLayoutInfo, nullptr, &outPipelineLayout);
 		if (result != VK_SUCCESS)
@@ -786,14 +907,12 @@ namespace
 		return true;
 	}
 
-	bool createCommandPool(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, VkCommandPool& outCommandPool)
+	bool createCommandPool(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, uint32_t inQueueFamily, VkCommandPool& outCommandPool)
 	{
-		RenderDevice::QueueFamilyIndices queueFamilyIndices = RenderDevice::findQueueFamilies(inPhysicalDevice, inSurface);
-
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+		poolInfo.queueFamilyIndex = inQueueFamily;
 
 		VkResult result = vkCreateCommandPool(inDevice, &poolInfo, nullptr, &outCommandPool);
 		if (result != VK_SUCCESS)
@@ -804,13 +923,13 @@ namespace
 		return true;
 	}
 
-	bool createCommandBuffers(VkDevice inDevice, VkCommandPool inCommandPool, std::vector<VkCommandBuffer>& outCommandBuffers)
+	bool createCommandBuffers(VkDevice inDevice, VkCommandPool inGraphicsCommandPool, std::vector<VkCommandBuffer>& outCommandBuffers)
 	{
 		outCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = inCommandPool;
+		allocInfo.commandPool = inGraphicsCommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = (uint32_t)outCommandBuffers.size();
 
@@ -823,7 +942,18 @@ namespace
 		return true;
 	}
 
-	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer, VkPipeline inPipeline, VkRenderPass inRenderPass, const std::vector<VkFramebuffer>& inFramebuffers, VkExtent2D inSwapchainExtent, uint32_t imageIndex, VkBuffer inVertexBuffer, uint32_t inIndexCount, VkBuffer inIndexBuffer)
+	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer
+		, VkPipeline inPipeline
+		, VkRenderPass inRenderPass
+		, const std::vector<VkFramebuffer>& inFramebuffers
+		, VkExtent2D inSwapchainExtent
+		, uint32_t imageIndex
+		, VkBuffer inVertexBuffer
+		, uint32_t inIndexCount
+		, VkBuffer inIndexBuffer
+		, VkPipelineLayout inPipelineLayout
+		, const std::vector<VkDescriptorSet>& inDescriptorSets
+		, uint32_t inCurrentFrame)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -871,6 +1001,8 @@ namespace
 			vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
 
 			vkCmdBindIndexBuffer(inCommandBuffer, inIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+			vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineLayout, 0, 1, &inDescriptorSets[inCurrentFrame], 0, nullptr);
 
 			vkCmdDrawIndexed(inCommandBuffer, inIndexCount, 1, 0, 0, 0);
 
@@ -1051,6 +1183,18 @@ namespace
 		inSwapchain.createImageViews(inDevice.getPhysicalDevice(), inDevice.getDevice(), inSurface);
 		inSwapchain.createFramebuffers(inDevice.getDevice(), inRenderPass);
 	}
+
+	void updateUniformBuffer(VkExtent2D inExtent, void* inMapped)
+	{
+		UniformBufferObject ubo{};
+		ubo.model = glm::rotate(glm::mat4(1), (float)platform::getTime() * glm::radians(90.0f), glm::vec3(0, 0, 1));
+		ubo.view = glm::lookAt(glm::vec3(2,2,2), glm::vec3(0,0,0), glm::vec3(0,0,1));
+		ubo.proj = glm::perspective(glm::radians(45.0f), inExtent.width / (float)inExtent.height, 0.1f, 10.0f);
+
+		ubo.proj[1][1] *= -1;
+
+		memcpy(inMapped, &ubo, sizeof(ubo));
+	}
 }
 
 RenderBackend::RenderBackend()
@@ -1109,7 +1253,12 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createGraphicsPipeline(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->swapchain.getExtent(), impl->renderPass, impl->pipelineLayout, impl->graphicsPipeline, impl->vertexBuffer, impl->vertexBufferMemory))
+	if (!createDescriptorSetLayout(impl->device.getDevice(), impl->descriptorSetLayout))
+	{
+		return false;
+	}
+
+	if (!createGraphicsPipeline(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->swapchain.getExtent(), impl->renderPass, impl->descriptorSetLayout, impl->pipelineLayout, impl->graphicsPipeline, impl->vertexBuffer, impl->vertexBufferMemory))
 	{
 		return false;
 	}
@@ -1120,12 +1269,16 @@ bool RenderBackend::initialize()
 	}
 
 	// Command pools
-	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->graphicsCommandPool))
+
+	RenderDevice::QueueFamilyIndices queueFamilyIndices = RenderDevice::findQueueFamilies(impl->device.getPhysicalDevice(), impl->surface);
+	uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
+	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, graphicsFamily, impl->graphicsCommandPool))
 	{
 		return false;
 	}
 
-	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandPool))
+	uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
+	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, transferFamily, impl->transferCommandPool))
 	{
 		return false;
 	}
@@ -1136,6 +1289,21 @@ bool RenderBackend::initialize()
 	}
 
 	if (!createIndexBuffer(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandPool, impl->device.getTransferQueue(), impl->indices, impl->indexBuffer, impl->indexBufferMemory))
+	{
+		return false;
+	}
+
+	if (!createUniformBuffers(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->uniformBuffers, impl->uniformBuffersMemory, impl->uniformBuffersMapped))
+	{
+		return false;
+	}
+
+	if (!createDescriptorPool(impl->device.getDevice(), impl->descriptorPool))
+	{
+		return false;
+	}
+
+	if (!createDescriptorSets(impl->device.getDevice(), impl->descriptorSetLayout, impl->descriptorPool, impl->uniformBuffers, impl->descriptorSets))
 	{
 		return false;
 	}
@@ -1164,6 +1332,15 @@ void RenderBackend::shutdown()
 	vkFreeMemory(impl->device.getDevice(), impl->vertexBufferMemory, nullptr);
 	vkDestroyBuffer(impl->device.getDevice(), impl->indexBuffer, nullptr);
 	vkFreeMemory(impl->device.getDevice(), impl->indexBufferMemory, nullptr);
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		vkDestroyBuffer(impl->device.getDevice(), impl->uniformBuffers[i], nullptr);
+		vkFreeMemory(impl->device.getDevice(), impl->uniformBuffersMemory[i], nullptr);
+	}
+
+	vkDestroyDescriptorPool(impl->device.getDevice(), impl->descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(impl->device.getDevice(), impl->descriptorSetLayout, nullptr);
 
 	vkDestroyPipeline(impl->device.getDevice(), impl->graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(impl->device.getDevice(), impl->pipelineLayout, nullptr);
@@ -1214,8 +1391,10 @@ void RenderBackend::drawFrame()
 
 	vkResetFences(impl->device.getDevice(), 1, &impl->inFlightFences[impl->currentFrameId]);
 
+	updateUniformBuffer(impl->swapchain.getExtent(), impl->uniformBuffersMapped[impl->currentFrameId]);
+
 	vkResetCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], 0);
-	recordCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), imageIndex, impl->vertexBuffer, (uint32_t)impl->indices.size(), impl->indexBuffer);
+	recordCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], impl->graphicsPipeline, impl->renderPass, impl->swapchain.getFramebuffers(), impl->swapchain.getExtent(), imageIndex, impl->vertexBuffer, (uint32_t)impl->indices.size(), impl->indexBuffer, impl->pipelineLayout, impl->descriptorSets, impl->currentFrameId);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
