@@ -1,11 +1,14 @@
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "RenderBackend_Vulkan/RenderDevice.h"
+#include "RenderBackend_Vulkan/RenderImage.h"
+#include "RenderBackend_Vulkan/RenderQueueFamily.h"
 
 bool RenderSwapchain::initialize(RenderDevice& inDevice, VkSurfaceKHR inSurface)
 {
@@ -70,6 +73,10 @@ bool RenderSwapchain::initialize(RenderDevice& inDevice, VkSurfaceKHR inSurface)
 
 void RenderSwapchain::shutdown(RenderDevice& inDevice)
 {
+	vkDestroyImageView(inDevice.getDevice(), depthImageView, nullptr);
+	vkDestroyImage(inDevice.getDevice(), depthImage, nullptr);
+	vkFreeMemory(inDevice.getDevice(), depthImageMemory, nullptr);
+
 	for (auto framebuffer : getFramebuffers())
 	{
 		vkDestroyFramebuffer(inDevice.getDevice(), framebuffer, nullptr);
@@ -88,11 +95,30 @@ bool RenderSwapchain::createImageViews(VkPhysicalDevice inPhysicalDevice, VkDevi
 	imageViews.resize(images.size());
 	for (size_t i = 0; i < images.size(); ++i)
 	{
-		if (!createImageView(inDevice, images[i], imageFormat, imageViews[i]))
+		if (!RenderImage::createImageView(inDevice, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, imageViews[i]))
 		{
 			return false;
 		}
 	}
+
+	return true;
+}
+
+bool RenderSwapchain::createDepthResources(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkCommandPool inCommandPool, VkQueue inQueue)
+{
+	VkFormat depthFormat;
+	findDepthFormat(inPhysicalDevice, depthFormat);
+
+	if (!RenderImage::createImage(inDevice, inPhysicalDevice, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, {}, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory))
+	{
+		return false;
+	}
+	if (!RenderImage::createImageView(inDevice, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView))
+	{
+		return false;
+	}
+
+	RenderQueueFamily::transitionImageLayoutCommand(inDevice, inCommandPool, inQueue, depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	return true;
 }
@@ -102,15 +128,17 @@ bool RenderSwapchain::createFramebuffers(VkDevice inDevice, VkRenderPass inRende
 	framebuffers.resize(imageViews.size());
 
 	for (size_t i = 0; i < imageViews.size(); i++) {
-		VkImageView attachments[] = {
-			imageViews[i]
+		std::array<VkImageView, 2> attachments = 
+		{
+			imageViews[i],
+			depthImageView
 		};
-
+		
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = inRenderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.attachmentCount = (uint32_t)attachments.size();
+		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = extent.width;
 		framebufferInfo.height = extent.height;
 		framebufferInfo.layers = 1;
@@ -148,32 +176,6 @@ RenderSwapchain::SwapchainSupportDetails RenderSwapchain::querySwapchainSupport(
 	}
 
 	return details;
-}
-
-bool RenderSwapchain::createImageView(VkDevice inDevice, VkImage inTextureImage, VkFormat inFormat, VkImageView& outImageView)
-{
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = inTextureImage;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = inFormat;
-	viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	VkResult result = vkCreateImageView(inDevice, &viewInfo, nullptr, &outImageView);
-	if (result != VK_SUCCESS)
-	{
-		std::cerr << "Error: vkCreateImageView failed" << std::endl;
-		return false;
-	}
-	return true;
 }
 
 VkSurfaceFormatKHR RenderSwapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& inAvailableFormats)
@@ -221,4 +223,36 @@ VkExtent2D RenderSwapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& inC
 
 		return actualExtent;
 	}
+}
+
+bool RenderSwapchain::findSupportedFormat(VkPhysicalDevice inPhysicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkFormat& outFormat)
+{
+	for (VkFormat format : candidates)
+	{
+		VkFormatProperties props;
+		vkGetPhysicalDeviceFormatProperties(inPhysicalDevice, format, &props);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+		{
+			outFormat = format;
+			return true;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+		{
+			outFormat = format;
+			return true;
+		}
+	}
+
+	std::cerr << "Error: failed to find supported VkFormat" << std::endl;
+	return false;
+}
+
+bool RenderSwapchain::findDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat& outFormat)
+{
+	return findSupportedFormat(inPhysicalDevice
+		, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }
+		, VK_IMAGE_TILING_OPTIMAL
+		, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+		, outFormat);
 }

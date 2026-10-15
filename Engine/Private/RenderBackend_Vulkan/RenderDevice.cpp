@@ -60,6 +60,24 @@ RenderDevice::QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevic
 	return indices;
 }
 
+bool RenderDevice::findMemoryType(VkPhysicalDevice& inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(inPhysicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if (inTypeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & inProperties) == inProperties)
+		{
+			outMemoryType = i;
+			return true;
+		}
+	}
+
+	std::cerr << "Error: findMemoryType failed" << std::endl;
+	return false;
+}
+
 bool RenderDevice::checkDeviceExtensionSupport(VkPhysicalDevice inPhysicalDevice)
 {
 	uint32_t extensionCount;

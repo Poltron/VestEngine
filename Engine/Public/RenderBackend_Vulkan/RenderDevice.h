@@ -37,6 +37,7 @@ public:
 	};
 
 	static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface);
+	static bool findMemoryType(VkPhysicalDevice& inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType);
 
 private:
 	bool checkDeviceExtensionSupport(VkPhysicalDevice inPhysicalDevice);
