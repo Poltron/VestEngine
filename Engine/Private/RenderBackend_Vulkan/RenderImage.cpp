@@ -4,8 +4,7 @@
 
 #include "RenderBackend_Vulkan/RenderDevice.h"
 
-bool RenderImage::createImage(VkDevice inDevice
-	, VkPhysicalDevice inPhysicalDevice
+bool RenderImage::createImage(const RenderDevice& inDevice
 	, uint32_t inWidth
 	, uint32_t inHeight
 	, VkFormat inFormat
@@ -42,7 +41,7 @@ bool RenderImage::createImage(VkDevice inDevice
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
 
-	VkResult result = vkCreateImage(inDevice, &imageInfo, nullptr, &outTextureImage);
+	VkResult result = vkCreateImage(inDevice.getDevice(), &imageInfo, nullptr, &outTextureImage);
 	if (result != VK_SUCCESS)
 	{
 		std::cerr << "Error: vkCreateImage failed" << std::endl;
@@ -50,24 +49,24 @@ bool RenderImage::createImage(VkDevice inDevice
 	}
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(inDevice, outTextureImage, &memRequirements);
+	vkGetImageMemoryRequirements(inDevice.getDevice(), outTextureImage, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 
 	uint32_t memoryType;
-	RenderDevice::findMemoryType(inPhysicalDevice, memRequirements.memoryTypeBits, inProperties, memoryType);
+	RenderDevice::findMemoryType(inDevice.getPhysicalDevice(), memRequirements.memoryTypeBits, inProperties, memoryType);
 	allocInfo.memoryTypeIndex = memoryType;
 
-	result = vkAllocateMemory(inDevice, &allocInfo, nullptr, &outTextureMemory);
+	result = vkAllocateMemory(inDevice.getDevice(), &allocInfo, nullptr, &outTextureMemory);
 	if (result != VK_SUCCESS)
 	{
 		std::cerr << "Error: vkAllocateMemory failed" << std::endl;
 		return false;
 	}
 
-	vkBindImageMemory(inDevice, outTextureImage, outTextureMemory, 0);
+	vkBindImageMemory(inDevice.getDevice(), outTextureImage, outTextureMemory, 0);
 	return true;
 }
 

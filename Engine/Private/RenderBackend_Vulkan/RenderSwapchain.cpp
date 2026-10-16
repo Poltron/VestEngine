@@ -10,8 +10,10 @@
 #include "RenderBackend_Vulkan/RenderImage.h"
 #include "RenderBackend_Vulkan/RenderQueueFamily.h"
 
-bool RenderSwapchain::initialize(RenderDevice& inDevice, VkSurfaceKHR inSurface)
+bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSurface)
 {
+	device = inDevice.getDevice();
+
 	SwapchainSupportDetails swapchainSupport = querySwapchainSupport(inDevice.getPhysicalDevice(), inSurface);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
@@ -35,13 +37,14 @@ bool RenderSwapchain::initialize(RenderDevice& inDevice, VkSurfaceKHR inSurface)
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	RenderDevice::QueueFamilyIndices indices = RenderDevice::findQueueFamilies(inDevice.getPhysicalDevice(), inSurface);
-	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-	if (indices.graphicsFamily != indices.presentFamily)
+	
+	QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
+	uint32_t imageHandlingQueueFamilyIndices[] = { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.presentFamily.value() };
+	if (queueFamilyIndices.graphicsFamily != queueFamilyIndices.presentFamily)
 	{
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		swapchainCreateInfo.queueFamilyIndexCount = 2;
-		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		swapchainCreateInfo.pQueueFamilyIndices = imageHandlingQueueFamilyIndices;
 	}
 	else
 	{
@@ -71,31 +74,31 @@ bool RenderSwapchain::initialize(RenderDevice& inDevice, VkSurfaceKHR inSurface)
 	return true;
 }
 
-void RenderSwapchain::shutdown(RenderDevice& inDevice)
+void RenderSwapchain::shutdown()
 {
-	vkDestroyImageView(inDevice.getDevice(), depthImageView, nullptr);
-	vkDestroyImage(inDevice.getDevice(), depthImage, nullptr);
-	vkFreeMemory(inDevice.getDevice(), depthImageMemory, nullptr);
+	vkDestroyImageView(device, depthImageView, nullptr);
+	vkDestroyImage(device, depthImage, nullptr);
+	vkFreeMemory(device, depthImageMemory, nullptr);
 
 	for (auto framebuffer : getFramebuffers())
 	{
-		vkDestroyFramebuffer(inDevice.getDevice(), framebuffer, nullptr);
+		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
 
 	for (auto imageView : getImageViews())
 	{
-		vkDestroyImageView(inDevice.getDevice(), imageView, nullptr);
+		vkDestroyImageView(device, imageView, nullptr);
 	}
 
-	vkDestroySwapchainKHR(inDevice.getDevice(), swapchain, nullptr);
+	vkDestroySwapchainKHR(device, swapchain, nullptr);
 }
 
-bool RenderSwapchain::createImageViews(VkPhysicalDevice inPhysicalDevice, VkDevice inDevice, VkSurfaceKHR inSurface)
+bool RenderSwapchain::createImageViews(VkSurfaceKHR inSurface)
 {
 	imageViews.resize(images.size());
 	for (size_t i = 0; i < images.size(); ++i)
 	{
-		if (!RenderImage::createImageView(inDevice, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, imageViews[i]))
+		if (!RenderImage::createImageView(device, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, imageViews[i]))
 		{
 			return false;
 		}
@@ -104,26 +107,27 @@ bool RenderSwapchain::createImageViews(VkPhysicalDevice inPhysicalDevice, VkDevi
 	return true;
 }
 
-bool RenderSwapchain::createDepthResources(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkCommandPool inCommandPool, VkQueue inQueue)
+bool RenderSwapchain::createDepthResources(const RenderDevice& inDevice, CommandContext& inCommandContext)
 {
 	VkFormat depthFormat;
-	findDepthFormat(inPhysicalDevice, depthFormat);
+	findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
 
-	if (!RenderImage::createImage(inDevice, inPhysicalDevice, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, {}, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory))
+	QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
+	if (!RenderImage::createImage(inDevice, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() }, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory))
 	{
 		return false;
 	}
-	if (!RenderImage::createImageView(inDevice, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView))
+	if (!RenderImage::createImageView(inDevice.getDevice(), depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView))
 	{
 		return false;
 	}
 
-	RenderQueueFamily::transitionImageLayoutCommand(inDevice, inCommandPool, inQueue, depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	inCommandContext.executeTransitionImageLayoutCommand(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	return true;
 }
 
-bool RenderSwapchain::createFramebuffers(VkDevice inDevice, VkRenderPass inRenderPass)
+bool RenderSwapchain::createFramebuffers(VkRenderPass inRenderPass)
 {
 	framebuffers.resize(imageViews.size());
 
@@ -143,7 +147,7 @@ bool RenderSwapchain::createFramebuffers(VkDevice inDevice, VkRenderPass inRende
 		framebufferInfo.height = extent.height;
 		framebufferInfo.layers = 1;
 
-		VkResult result = vkCreateFramebuffer(inDevice, &framebufferInfo, nullptr, &framebuffers[i]);
+		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
 		if (result != VK_SUCCESS)
 		{
 			std::cerr << "Error: vkCreateFramebuffer failed" << std::endl;

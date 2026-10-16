@@ -3,10 +3,13 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+class CommandContext;
 class RenderDevice;
 
 class RenderSwapchain
 {
+	VkDevice device;
+
 	VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 	VkFormat imageFormat;
 	VkExtent2D extent;
@@ -26,12 +29,12 @@ public:
 	std::vector<VkImageView>& getImageViews() { return imageViews; }
 	std::vector<VkFramebuffer>& getFramebuffers() { return framebuffers; }
 
-	bool initialize(RenderDevice& inDevice, VkSurfaceKHR inSurface);
-	void shutdown(RenderDevice& inDevice);
+	bool initialize(const RenderDevice& inDevice, VkSurfaceKHR inSurface);
+	void shutdown();
 
-	bool createImageViews(VkPhysicalDevice inPhysicalDevice, VkDevice inDevice, VkSurfaceKHR inSurface);
-	bool createDepthResources(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkCommandPool inCommandPool, VkQueue inQueue);
-	bool createFramebuffers(VkDevice inDevice, VkRenderPass inRenderPass);
+	bool createImageViews(VkSurfaceKHR inSurface);
+	bool createDepthResources(const RenderDevice& inDevice, CommandContext& inCommandContext);
+	bool createFramebuffers(VkRenderPass inRenderPass);
 
 	struct SwapchainSupportDetails
 	{

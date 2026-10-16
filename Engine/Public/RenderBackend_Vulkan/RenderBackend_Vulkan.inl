@@ -127,8 +127,9 @@ struct RenderBackend::Impl
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
 
-	VkCommandPool graphicsCommandPool;
-	VkCommandPool transferCommandPool;
+	CommandContext graphicsCommandContext;
+	CommandContext transferCommandContext;
+	CommandContext presentCommandContext;
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
@@ -458,7 +459,7 @@ namespace
 		bufferInfo.usage = inUsage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
-		RenderDevice::QueueFamilyIndices indices = RenderDevice::findQueueFamilies(inPhysicalDevice, inSurface);
+		QueueFamilyIndices indices = RenderDevice::findQueueFamilies(inPhysicalDevice, inSurface);
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.transferFamily.value() };
 		bufferInfo.queueFamilyIndexCount = 2;
 		bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -513,46 +514,10 @@ namespace
 		return true;
 	}
 
-	void copyBufferCommand(VkDevice inDevice, VkCommandPool inTransferCommandPool, VkQueue inTransferQueue, VkBuffer inSrcBuffer, VkBuffer inDstBuffer, VkDeviceSize inSize)
-	{
-		VkCommandBuffer commandBuffer = RenderQueueFamily::beginSingleTimeCommands(inDevice, inTransferCommandPool);
-
-		VkBufferCopy copyRegion{};
-		copyRegion.srcOffset = 0;
-		copyRegion.dstOffset = 0;
-		copyRegion.size = inSize;
-		vkCmdCopyBuffer(commandBuffer, inSrcBuffer, inDstBuffer, 1, &copyRegion);
-
-		RenderQueueFamily::endSingleTimeCommands(inDevice, inTransferCommandPool, commandBuffer, inTransferQueue);
-	}
-
-	void copyBufferToImageCommand(VkDevice inDevice, VkCommandPool inCommandPool, VkQueue inQueue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
-	{
-		VkCommandBuffer commandBuffer = RenderQueueFamily::beginSingleTimeCommands(inDevice, inCommandPool);
-
-		VkBufferImageCopy region{};
-		region.bufferOffset = 0;
-		region.bufferRowLength = 0;
-		region.bufferImageHeight = 0;
-
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
-
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { width, height, 1 };
-
-		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-		RenderQueueFamily::endSingleTimeCommands(inDevice, inCommandPool, commandBuffer, inQueue);
-	}
-
 	bool createVertexBuffer(VkDevice inDevice
 		, VkPhysicalDevice inPhysicalDevice
 		, VkSurfaceKHR inSurface
-		, VkCommandPool inTransferCommandPool
-		, VkQueue inTransferQueue
+		, CommandContext& inCommandContext
 		, const std::vector<MyVertex>& inVertices
 		, VkBuffer& outVertexBuffer
 		, VkDeviceMemory& outVertexMemory)
@@ -582,7 +547,7 @@ namespace
 			return false;
 		}
 
-		copyBufferCommand(inDevice, inTransferCommandPool, inTransferQueue, stagingBuffer, outVertexBuffer, dataSize);
+		inCommandContext.executeCopyBufferCommand(stagingBuffer, outVertexBuffer, dataSize);
 
 		vkDestroyBuffer(inDevice, stagingBuffer, nullptr);
 		vkFreeMemory(inDevice, stagingMemory, nullptr);
@@ -593,8 +558,7 @@ namespace
 	bool createIndexBuffer(VkDevice inDevice
 		, VkPhysicalDevice inPhysicalDevice
 		, VkSurfaceKHR inSurface
-		, VkCommandPool inTransferCommandPool
-		, VkQueue inTransferQueue
+		, CommandContext& inCommandContext
 		, const std::vector<uint16_t>& inIndices
 		, VkBuffer& outBuffer
 		, VkDeviceMemory& outMemory)
@@ -611,7 +575,7 @@ namespace
 		usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		createBuffer(inDevice, inPhysicalDevice, inSurface, bufferSize, usage, propertyFlags, outBuffer, outMemory);
-		copyBufferCommand(inDevice, inTransferCommandPool, inTransferQueue, stagingBuffer, outBuffer, bufferSize);
+		inCommandContext.executeCopyBufferCommand(stagingBuffer, outBuffer, bufferSize);
 
 		vkDestroyBuffer(inDevice, stagingBuffer, nullptr);
 		vkFreeMemory(inDevice, stagingMemoryBuffer, nullptr);
@@ -924,7 +888,7 @@ namespace
 		return true;
 	}
 	
-	bool createTextureImage(RenderDevice& inRenderDevice, VkCommandPool inGraphicsCommandPool, VkQueue inGraphicsQueue, VkCommandPool inTransferCommandPool, VkQueue inTransferQueue, VkSurfaceKHR inSurface, VkImage& outTextureImage, VkDeviceMemory& outTextureMemory)
+	bool createTextureImage(RenderDevice& inRenderDevice, VkSurfaceKHR inSurface, CommandContext& inGraphicsCommandCtx, CommandContext& inTransferCommandCtx, VkImage& outTextureImage, VkDeviceMemory& outTextureMemory)
 	{
 		VkDevice device = inRenderDevice.getDevice();
 		VkPhysicalDevice physicalDevice = inRenderDevice.getPhysicalDevice();
@@ -948,25 +912,25 @@ namespace
 
 		stbi_image_free(pixels);
 
-		RenderDevice::QueueFamilyIndices indices = inRenderDevice.findQueueFamilies(inRenderDevice.getPhysicalDevice(), inSurface);
+		QueueFamilyIndices indices = inRenderDevice.findQueueFamilies(inRenderDevice.getPhysicalDevice(), inSurface);
 		
 		VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 		VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
 		usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		if (!RenderImage::createImage(inRenderDevice.getDevice(), inRenderDevice.getPhysicalDevice(), width, height, format, tiling, usage, {indices.graphicsFamily.value(), indices.transferFamily.value()}, properties, outTextureImage, outTextureMemory))
+		if (!RenderImage::createImage(inRenderDevice, width, height, format, tiling, usage, {indices.graphicsFamily.value(), indices.transferFamily.value()}, properties, outTextureImage, outTextureMemory))
 		{
 			return false;
 		}
 
 		VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		RenderQueueFamily::transitionImageLayoutCommand(device, inTransferCommandPool, inTransferQueue, outTextureImage, format, oldLayout, newLayout);
-		copyBufferToImageCommand(device, inTransferCommandPool, inTransferQueue, stagingBuffer, outTextureImage, width, height);
+		inTransferCommandCtx.executeTransitionImageLayoutCommand(outTextureImage, format, oldLayout, newLayout);
+		inTransferCommandCtx.executeCopyBufferToImageCommand(stagingBuffer, outTextureImage, width, height);
 
 		oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		RenderQueueFamily::transitionImageLayoutCommand(device, inGraphicsCommandPool, inGraphicsQueue, outTextureImage, format, oldLayout, newLayout);
+		inGraphicsCommandCtx.executeTransitionImageLayoutCommand(outTextureImage, format, oldLayout, newLayout);
 
 		vkDestroyBuffer(device, stagingBuffer, nullptr);
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1009,41 +973,6 @@ namespace
 			return false;
 		}
 
-		return true;
-	}
-
-	bool createCommandPool(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface, uint32_t inQueueFamily, VkCommandPool& outCommandPool)
-	{
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = inQueueFamily;
-
-		VkResult result = vkCreateCommandPool(inDevice, &poolInfo, nullptr, &outCommandPool);
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkCreateCommandPool failed" << std::endl;
-			return false;
-		}
-		return true;
-	}
-
-	bool createCommandBuffers(VkDevice inDevice, VkCommandPool inGraphicsCommandPool, std::vector<VkCommandBuffer>& outCommandBuffers)
-	{
-		outCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = inGraphicsCommandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t)outCommandBuffers.size();
-
-		VkResult result = vkAllocateCommandBuffers(inDevice, &allocInfo, outCommandBuffers.data());
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkAllocateCommandBuffers failed" << std::endl;
-			return false;
-		}
 		return true;
 	}
 
@@ -1281,16 +1210,16 @@ namespace
 		vkDestroySwapchainKHR(inDevice, inSwapchain.get(), nullptr);
 	}
 
-	void recreateSwapchain(RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, VkRenderPass inRenderPass, VkCommandPool inTransferCommandPool, VkQueue inTransferQueue)
+	void recreateSwapchain(const RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, VkRenderPass inRenderPass, CommandContext& inTransferCommandContext)
 	{
 		vkDeviceWaitIdle(inDevice.getDevice());
 
-		inSwapchain.shutdown(inDevice);
+		inSwapchain.shutdown();
 
 		inSwapchain.initialize(inDevice, inSurface);
-		inSwapchain.createImageViews(inDevice.getPhysicalDevice(), inDevice.getDevice(), inSurface);
-		inSwapchain.createDepthResources(inDevice.getDevice(), inDevice.getPhysicalDevice(), inTransferCommandPool, inTransferQueue);
-		inSwapchain.createFramebuffers(inDevice.getDevice(), inRenderPass);
+		inSwapchain.createImageViews(inSurface);
+		inSwapchain.createDepthResources(inDevice, inTransferCommandContext);
+		inSwapchain.createFramebuffers(inRenderPass);
 	}
 
 	void updateUniformBuffer(VkExtent2D inExtent, void* inMapped)
@@ -1353,11 +1282,12 @@ bool RenderBackend::initialize()
 	}
 
 	// move lower with the rest of swapchain initialization ??
-	if (!impl->swapchain.createImageViews(impl->device.getPhysicalDevice(), impl->device.getDevice(), impl->surface))
+	if (!impl->swapchain.createImageViews(impl->surface))
 	{
 		return false;
 	}
 
+	// pipeline building
 	if (!createRenderPass(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->swapchain.getImageFormat(), impl->renderPass))
 	{
 		return false;
@@ -1374,30 +1304,32 @@ bool RenderBackend::initialize()
 	}
 
 	// Command pools
-	RenderDevice::QueueFamilyIndices queueFamilyIndices = RenderDevice::findQueueFamilies(impl->device.getPhysicalDevice(), impl->surface);
-	uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
-	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, graphicsFamily, impl->graphicsCommandPool))
+	const QueueFamilyIndices queueFamilyIndices = RenderDevice::findQueueFamilies(impl->device.getPhysicalDevice(), impl->surface);
+
+	const uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
+	impl->graphicsCommandContext.create(impl->device.getDevice(), graphicsFamily);
+	if (!impl->graphicsCommandContext.createCommandBuffers(MAX_FRAMES_IN_FLIGHT, impl->graphicsCommandBuffers))
 	{
 		return false;
 	}
 
-	uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
-	if (!createCommandPool(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, transferFamily, impl->transferCommandPool))
+	const uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
+	impl->transferCommandContext.create(impl->device.getDevice(), transferFamily);
+
+	const uint32_t presentFamily = queueFamilyIndices.presentFamily.value();
+	impl->presentCommandContext.create(impl->device.getDevice(), presentFamily);
+
+	if (!impl->swapchain.createDepthResources(impl->device, impl->graphicsCommandContext))
 	{
 		return false;
 	}
 
-	if (!impl->swapchain.createDepthResources(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->transferCommandPool, impl->device.getTransferQueue()))
+	if (!impl->swapchain.createFramebuffers(impl->renderPass))
 	{
 		return false;
 	}
 
-	if (!impl->swapchain.createFramebuffers(impl->device.getDevice(), impl->renderPass))
-	{
-		return false;
-	}
-
-	if (!createTextureImage(impl->device, impl->graphicsCommandPool, impl->device.getGraphicsQueue(), impl->transferCommandPool, impl->device.getTransferQueue(), impl->surface, impl->textureImage, impl->textureImageMemory))
+	if (!createTextureImage(impl->device, impl->surface, impl->graphicsCommandContext, impl->transferCommandContext, impl->textureImage, impl->textureImageMemory))
 	{
 		return false;
 	}
@@ -1412,12 +1344,12 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createVertexBuffer(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandPool, impl->device.getTransferQueue(), impl->vertices, impl->vertexBuffer, impl->vertexBufferMemory))
+	if (!createVertexBuffer(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandContext, impl->vertices, impl->vertexBuffer, impl->vertexBufferMemory))
 	{
 		return false;
 	}
 
-	if (!createIndexBuffer(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandPool, impl->device.getTransferQueue(), impl->indices, impl->indexBuffer, impl->indexBufferMemory))
+	if (!createIndexBuffer(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->surface, impl->transferCommandContext, impl->indices, impl->indexBuffer, impl->indexBufferMemory))
 	{
 		return false;
 	}
@@ -1438,10 +1370,6 @@ bool RenderBackend::initialize()
 	}
 
 	// Commands
-	if (!createCommandBuffers(impl->device.getDevice(), impl->graphicsCommandPool, impl->graphicsCommandBuffers))
-	{
-		return false;
-	}
 
 	if (!createSyncObjects(impl->device.getDevice(), impl->imageAvailableSemaphores, impl->renderFinishedSemaphores, impl->inFlightFences))
 	{
@@ -1455,7 +1383,7 @@ void RenderBackend::shutdown()
 {
 	vkDeviceWaitIdle(impl->device.getDevice());
 
-	impl->swapchain.shutdown(impl->device);
+	impl->swapchain.shutdown();
 
 	vkDestroySampler(impl->device.getDevice(), impl->textureSampler, nullptr);
 	vkDestroyImageView(impl->device.getDevice(), impl->textureImageView, nullptr);
@@ -1488,8 +1416,9 @@ void RenderBackend::shutdown()
 		vkDestroyFence(impl->device.getDevice(), impl->inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(impl->device.getDevice(), impl->graphicsCommandPool, nullptr);
-	vkDestroyCommandPool(impl->device.getDevice(), impl->transferCommandPool, nullptr);
+	impl->graphicsCommandContext.free();
+	impl->transferCommandContext.free();
+	impl->presentCommandContext.free();
 
 	impl->device.shutdown();
 
@@ -1514,7 +1443,7 @@ void RenderBackend::drawFrame()
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		recreateSwapchain(impl->device, impl->surface, impl->swapchain, impl->renderPass, impl->transferCommandPool, impl->device.getTransferQueue());
+		recreateSwapchain(impl->device, impl->surface, impl->swapchain, impl->renderPass, impl->transferCommandContext);
 		return;
 	}
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -1546,7 +1475,7 @@ void RenderBackend::drawFrame()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	result = vkQueueSubmit(impl->device.getGraphicsQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
+	result = vkQueueSubmit(impl->graphicsCommandContext.getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
 	if (result != VK_SUCCESS)
 	{
 		return;
@@ -1563,12 +1492,12 @@ void RenderBackend::drawFrame()
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(impl->device.getPresentQueue(), &presentInfo);
+	vkQueuePresentKHR(impl->presentCommandContext.getQueue(), &presentInfo);
 	
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || impl->bFramebufferResized)
 	{
 		impl->bFramebufferResized = false;
-		recreateSwapchain(impl->device, impl->surface, impl->swapchain, impl->renderPass, impl->transferCommandPool, impl->device.getTransferQueue());
+		recreateSwapchain(impl->device, impl->surface, impl->swapchain, impl->renderPass, impl->transferCommandContext);
 	}
 	else if (result != VK_SUCCESS)
 	{

@@ -13,7 +13,7 @@ const std::vector<const char*> deviceExtensions =
 
 bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers)
 {
-	if (!pickPhysicalDevice(inInstance, inSurface))
+	if (!pickPhysicalDevice(inInstance, inSurface, physicalDevice))
 	{
 		return false;
 	}
@@ -25,7 +25,7 @@ void RenderDevice::shutdown()
 	vkDestroyDevice(device, nullptr);
 }
 
-RenderDevice::QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface)
+QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface)
 {
 	QueueFamilyIndices indices;
 
@@ -60,7 +60,7 @@ RenderDevice::QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevic
 	return indices;
 }
 
-bool RenderDevice::findMemoryType(VkPhysicalDevice& inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType)
+bool RenderDevice::findMemoryType(VkPhysicalDevice inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(inPhysicalDevice, &memProperties);
@@ -139,7 +139,7 @@ int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfac
 	return score;
 }
 
-bool RenderDevice::pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface)
+bool RenderDevice::pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice)
 {
 	uint32_t physicalDeviceCount = 0;
 	vkEnumeratePhysicalDevices(inInstance, &physicalDeviceCount, nullptr);
@@ -174,18 +174,18 @@ bool RenderDevice::pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurf
 			return inA.first < inB.first;
 		});
 
-	physicalDevice = ratedDevices[0].second;
+	outPhysicalDevice = ratedDevices[0].second;
 	return true;
 }
 
 bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers)
 {
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, inSurface);
+	queueFamilyIndices = findQueueFamilies(physicalDevice, inSurface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
-
 	float queuePriority = 1.0f;
+	
+	std::set<uint32_t> uniqueQueueFamilies = queueFamilyIndices.getIndicesSet();
 	for (uint32_t queueFamily : uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -214,8 +214,5 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 		return false;
 	}
 
-	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
-	vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
 	return true;
 }
