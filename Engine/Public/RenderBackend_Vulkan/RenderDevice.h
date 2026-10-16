@@ -11,14 +11,14 @@ struct QueueFamilyIndices
 	std::optional<uint32_t> presentFamily;
 	std::optional<uint32_t> transferFamily;
 
-	bool isComplete()
+	bool isComplete() const
 	{
 		return graphicsFamily.has_value()
 			&& presentFamily.has_value()
 			&& transferFamily.has_value();
 	}
 
-	std::set<uint32_t> getIndicesSet()
+	std::set<uint32_t> getIndicesSet() const
 	{ 
 		return std::set<uint32_t>({ graphicsFamily.value(), presentFamily.value(), transferFamily.value() });
 	}
@@ -33,7 +33,7 @@ class RenderDevice
 public:
 	VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
 	VkDevice getDevice() const { return device; }
-	QueueFamilyIndices getQueueFamilyIndices() const { return queueFamilyIndices; }
+	const QueueFamilyIndices& getQueueFamilyIndices() const { return queueFamilyIndices; }
 
 	bool initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers);
 	void shutdown();

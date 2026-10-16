@@ -1,7 +1,6 @@
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
 
 #include <algorithm>
-#include <array>
 #include <iostream>
 
 #include "Platform/Platform.h"
@@ -37,7 +36,6 @@ bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSu
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	
 	QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
 	uint32_t imageHandlingQueueFamilyIndices[] = { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.presentFamily.value() };
 	if (queueFamilyIndices.graphicsFamily != queueFamilyIndices.presentFamily)
@@ -67,24 +65,16 @@ bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSu
 		return false;
 	}
 
-	vkGetSwapchainImagesKHR(inDevice.getDevice(), swapchain, &imageCount, nullptr);
+	// note: unnecessary ? we already have image count. can vkcreateswapchain change the imagecount ?
+	//vkGetSwapchainImagesKHR(inDevice.getDevice(), swapchain, &imageCount, nullptr);
 	images.resize(imageCount);
 	vkGetSwapchainImagesKHR(inDevice.getDevice(), swapchain, &imageCount, images.data());
 
-	return true;
+	return createImageViews(inSurface);
 }
 
 void RenderSwapchain::shutdown()
 {
-	vkDestroyImageView(device, depthImageView, nullptr);
-	vkDestroyImage(device, depthImage, nullptr);
-	vkFreeMemory(device, depthImageMemory, nullptr);
-
-	for (auto framebuffer : getFramebuffers())
-	{
-		vkDestroyFramebuffer(device, framebuffer, nullptr);
-	}
-
 	for (auto imageView : getImageViews())
 	{
 		vkDestroyImageView(device, imageView, nullptr);
@@ -100,57 +90,6 @@ bool RenderSwapchain::createImageViews(VkSurfaceKHR inSurface)
 	{
 		if (!RenderImage::createImageView(device, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, imageViews[i]))
 		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool RenderSwapchain::createDepthResources(const RenderDevice& inDevice, CommandContext& inCommandContext)
-{
-	VkFormat depthFormat;
-	findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
-
-	QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
-	if (!RenderImage::createImage(inDevice, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() }, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory))
-	{
-		return false;
-	}
-	if (!RenderImage::createImageView(inDevice.getDevice(), depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView))
-	{
-		return false;
-	}
-
-	inCommandContext.executeTransitionImageLayoutCommand(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-	return true;
-}
-
-bool RenderSwapchain::createFramebuffers(VkRenderPass inRenderPass)
-{
-	framebuffers.resize(imageViews.size());
-
-	for (size_t i = 0; i < imageViews.size(); i++) {
-		std::array<VkImageView, 2> attachments = 
-		{
-			imageViews[i],
-			depthImageView
-		};
-		
-		VkFramebufferCreateInfo framebufferInfo{};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = inRenderPass;
-		framebufferInfo.attachmentCount = (uint32_t)attachments.size();
-		framebufferInfo.pAttachments = attachments.data();
-		framebufferInfo.width = extent.width;
-		framebufferInfo.height = extent.height;
-		framebufferInfo.layers = 1;
-
-		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkCreateFramebuffer failed" << std::endl;
 			return false;
 		}
 	}
@@ -227,36 +166,4 @@ VkExtent2D RenderSwapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& inC
 
 		return actualExtent;
 	}
-}
-
-bool RenderSwapchain::findSupportedFormat(VkPhysicalDevice inPhysicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkFormat& outFormat)
-{
-	for (VkFormat format : candidates)
-	{
-		VkFormatProperties props;
-		vkGetPhysicalDeviceFormatProperties(inPhysicalDevice, format, &props);
-
-		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-		{
-			outFormat = format;
-			return true;
-		}
-		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-		{
-			outFormat = format;
-			return true;
-		}
-	}
-
-	std::cerr << "Error: failed to find supported VkFormat" << std::endl;
-	return false;
-}
-
-bool RenderSwapchain::findDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat& outFormat)
-{
-	return findSupportedFormat(inPhysicalDevice
-		, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }
-		, VK_IMAGE_TILING_OPTIMAL
-		, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-		, outFormat);
 }

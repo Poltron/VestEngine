@@ -3,7 +3,6 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-class CommandContext;
 class RenderDevice;
 
 class RenderSwapchain
@@ -15,26 +14,16 @@ class RenderSwapchain
 	VkExtent2D extent;
 	std::vector<VkImage> images;
 	std::vector<VkImageView> imageViews;
-	std::vector<VkFramebuffer> framebuffers;
-
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
 
 public:
-	VkSwapchainKHR get() { return swapchain; };
-	VkFormat getImageFormat() { return imageFormat; };
-	VkExtent2D getExtent() { return extent; };
-	std::vector<VkImage> getImages() { return images; }
-	std::vector<VkImageView>& getImageViews() { return imageViews; }
-	std::vector<VkFramebuffer>& getFramebuffers() { return framebuffers; }
+	VkSwapchainKHR get() const { return swapchain; };
+	VkFormat getImageFormat() const { return imageFormat; };
+	VkExtent2D getExtent() const { return extent; };
+	const std::vector<VkImage> getImages() const { return images; }
+	const std::vector<VkImageView>& getImageViews() const { return imageViews; }
 
 	bool initialize(const RenderDevice& inDevice, VkSurfaceKHR inSurface);
 	void shutdown();
-
-	bool createImageViews(VkSurfaceKHR inSurface);
-	bool createDepthResources(const RenderDevice& inDevice, CommandContext& inCommandContext);
-	bool createFramebuffers(VkRenderPass inRenderPass);
 
 	struct SwapchainSupportDetails
 	{
@@ -45,11 +34,10 @@ public:
 
 	static SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface);
 
-	static bool findSupportedFormat(VkPhysicalDevice inPhysicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkFormat& outFormat);
-	static bool findDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat& outFormat);
-
 private:
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& inAvailableFormats);
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& inAvailablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& inCapabilities);
+
+	bool createImageViews(VkSurfaceKHR inSurface);
 };
