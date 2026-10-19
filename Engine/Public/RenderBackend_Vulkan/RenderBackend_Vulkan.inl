@@ -24,6 +24,7 @@
 #include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
 #include "Render/GraphicResourceHandle.h"
+#include "Render/Renderer.h"
 #include "RenderBackend/RenderBackend.h"
 #include "RenderBackend_Vulkan/CommandContext.h"
 #include "RenderBackend_Vulkan/RenderBuffer.h"
@@ -525,8 +526,8 @@ namespace
 	{
 		vkDeviceWaitIdle(inDevice.getDevice());
 
-		inSwapchain.shutdown();
 		inRenderPass.free(inDevice);
+		inSwapchain.shutdown();
 
 		inSwapchain.initialize(inDevice, inSurface);
 		inRenderPass.createDepthResources(inDevice, inSwapchain.getExtent(), inTransferCommandContext);
@@ -537,11 +538,9 @@ namespace
 	{
 		UniformBufferObject ubo{};
 		ubo.model = glm::rotate(glm::mat4(1), (float)platform::getTime() * glm::radians(90.0f), glm::vec3(0, 0, 1));
-		ubo.view = glm::lookAt(glm::vec3(2,2,2), glm::vec3(0,0,0), glm::vec3(0,0,1));
-		ubo.proj = glm::perspective(glm::radians(45.0f), inExtent.width / (float)inExtent.height, 0.1f, 10.0f);
-
+		ubo.view = render::getRenderer()->getActiveCamera().getViewMatrix();
+		ubo.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
 		ubo.proj[1][1] *= -1;
-
 		memcpy(inMapped, &ubo, sizeof(ubo));
 	}
 }
@@ -618,7 +617,7 @@ bool RenderBackend::initialize()
 	
 	std::vector<ShaderStageInfo> shaderStageInfos;
 	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/default.vert.spv", ShaderStageFlagBits::VERTEX });
-	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/default.frag.spv", ShaderStageFlagBits::FRAGMENT });
+	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/unlit.frag.spv", ShaderStageFlagBits::FRAGMENT });
 	uint32_t vertexSize = sizeof(MyVertex);
 	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc;
 	vertexInputAttributeDesc.push_back({ DataFormat::R32G32B32, offsetof(MyVertex, pos) }); // pos
@@ -932,6 +931,7 @@ void RenderBackend::bindTexture(GPUHandle inHandle, std::string_view inType, siz
 
 void RenderBackend::deleteTexture(GPUHandle inHandle)
 {
+	impl->device.destroyImage(inHandle);
 }
 
 //

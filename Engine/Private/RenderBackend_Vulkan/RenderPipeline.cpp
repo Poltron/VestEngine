@@ -10,6 +10,11 @@ namespace
 {
 	bool createShaderModule(VkDevice inDevice, const std::vector<char>& inCode, VkShaderModule& outShaderModule)
 	{
+		if (inCode.size() == 0)
+		{
+			return false;
+		}
+
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = inCode.size();

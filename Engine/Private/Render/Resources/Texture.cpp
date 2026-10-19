@@ -16,7 +16,10 @@ Texture::Texture(std::string inPath, std::string inType)
 
 Texture::~Texture()
 {
-	render::getRenderBackend()->deleteTexture(handle);
+	if (handle.isValid())
+	{
+		render::getRenderBackend()->deleteTexture(handle);
+	}
 }
 
 Texture::Texture(Texture&& inOther) noexcept
