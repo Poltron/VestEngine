@@ -54,7 +54,7 @@ public:
 	void setTexture(std::string_view name, GPUHandle value);
 
 	//
-	GPUHandle createTexture(uint8_t* inData, size_t inWidth, size_t inHeight, ETextureFormat inInternalFormat);
+	GPUHandle createTexture(uint8_t* inData, size_t inWidth, size_t inHeight);
 	void bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex);
 	void deleteTexture(GPUHandle inHandle);
 

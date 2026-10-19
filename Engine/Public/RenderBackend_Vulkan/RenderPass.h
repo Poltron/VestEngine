@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "RenderBackend_Vulkan/RenderQueueFamily.h"
+#include "RenderBackend_Vulkan/CommandContext.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
 
 class RenderPass
@@ -11,10 +11,7 @@ class RenderPass
 
 	VkRenderPass pass;
 	std::vector<VkFramebuffer> framebuffers;
-
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
+	GPUHandle depthBufferHandle;
 
 public:
 	VkRenderPass getPass() const { return pass; }
@@ -83,11 +80,9 @@ public:
 		return true;
 	}
 
-	void free()
+	void free(RenderDevice& inDevice)
 	{
-		vkDestroyImageView(device, depthImageView, nullptr);
-		vkDestroyImage(device, depthImage, nullptr);
-		vkFreeMemory(device, depthImageMemory, nullptr);
+		inDevice.destroyImage(depthBufferHandle);
 
 		for (auto framebuffer : getFramebuffers())
 		{
@@ -97,16 +92,19 @@ public:
 		vkDestroyRenderPass(device, pass, nullptr);
 	}
 
-	bool createFramebuffers(const RenderSwapchain& inSwapchain)
+	bool createFramebuffers(RenderDevice& inDevice, const RenderSwapchain& inSwapchain)
 	{
 		const std::vector<VkImageView>& swapchainImageViews = inSwapchain.getImageViews();
 		framebuffers.resize(swapchainImageViews.size());
 
-		for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+		RenderImage& depthBufferImage = inDevice.getImage(depthBufferHandle);
+
+		for (size_t i = 0; i < swapchainImageViews.size(); i++)
+		{
 			std::array<VkImageView, 2> attachments =
 			{
 				swapchainImageViews[i],
-				depthImageView
+				depthBufferImage.getView()
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};
@@ -129,22 +127,27 @@ public:
 		return true;
 	}
 
-	bool createDepthResources(const RenderDevice& inDevice, const RenderSwapchain& inSwapchain, CommandContext& inCommandContext)
+	bool createDepthResources(RenderDevice& inDevice, const VkExtent2D& inExtent, CommandContext& inCommandContext)
 	{
 		VkFormat depthFormat;
 		RenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
 
 		QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
-		if (!RenderImage::createImage(inDevice, inSwapchain.getExtent().width, inSwapchain.getExtent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() }, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory))
-		{
-			return false;
-		}
-		if (!RenderImage::createImageView(inDevice.getDevice(), depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView))
+		depthBufferHandle = inDevice.createImage(inExtent.width, inExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() }, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		if (!depthBufferHandle.isValid())
 		{
 			return false;
 		}
 
-		inCommandContext.executeTransitionImageLayoutCommand(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		RenderImage& depthBufferImage = inDevice.getImage(depthBufferHandle);
+		VkImageView view = RenderImage::createImageView(inDevice.getDevice(), depthBufferImage.getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		if (view == VK_NULL_HANDLE)
+		{
+			return false;
+		}
+		depthBufferImage.setTextureView(view);
+
+		inCommandContext.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		return true;
 	}

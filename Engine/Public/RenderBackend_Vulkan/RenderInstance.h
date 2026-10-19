@@ -78,7 +78,7 @@ class RenderInstance
 	
 public:
 	VkInstance getInstance() const { return instance; }
-	const std::vector<VkExtensionProperties>& const getSupportedExtensions() { return supportedExtensions; }
+	const std::vector<VkExtensionProperties>& getSupportedExtensions() const { return supportedExtensions; }
 	bool isValidationEnabled()
 	{
 #if NDEBUG

@@ -25,12 +25,12 @@ struct GPUHandle
 	{}
 
 	GPUHandle()
-		: GPUHandle(0)
+		: GPUHandle(UINT32_MAX)
 	{}
 
 	bool isValid() const
 	{
-		return id > 0;
+		return id != UINT32_MAX;
 	}
 };
 

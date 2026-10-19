@@ -7,11 +7,26 @@ class RenderDevice;
 
 class RenderImage
 {
-	VkImage image;
-	VkDeviceMemory imageMemory;
-	VkImageView imageView;
+	VkDevice device = VK_NULL_HANDLE;
+
+	VkImage image = VK_NULL_HANDLE;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
+	VkImageView view = VK_NULL_HANDLE;
 
 public:
-	static bool createImage(const RenderDevice& inDevice, uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties, VkImage& outTextureImage, VkDeviceMemory& outTextureMemory);
-	static bool createImageView(VkDevice inDevice, VkImage inTextureImage, VkFormat inFormat, VkImageAspectFlags inAspectFlags, VkImageView& outImageView);
+	VkDevice getDevice() const { return device; }
+	VkImage getImage() const { return image; }
+	VkDeviceMemory getMemory() const { return memory; }
+	VkImageView getView() const { return view; }
+
+	RenderImage(VkDevice inDevice, VkImage inImage, VkDeviceMemory inMemory)
+		: device(inDevice), image(inImage), memory(inMemory)
+	{ }
+
+	void setTextureView(VkImageView inView)
+	{
+		view = inView;
+	}
+
+	static VkImageView createImageView(VkDevice inDevice, VkImage inTextureImage, VkFormat inFormat, VkImageAspectFlags inAspectFlags);
 };

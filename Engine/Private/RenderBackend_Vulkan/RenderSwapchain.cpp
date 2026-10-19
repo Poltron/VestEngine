@@ -5,9 +5,9 @@
 
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
+#include "RenderBackend_Vulkan/CommandContext.h"
 #include "RenderBackend_Vulkan/RenderDevice.h"
 #include "RenderBackend_Vulkan/RenderImage.h"
-#include "RenderBackend_Vulkan/RenderQueueFamily.h"
 
 bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSurface)
 {
@@ -88,7 +88,8 @@ bool RenderSwapchain::createImageViews(VkSurfaceKHR inSurface)
 	imageViews.resize(images.size());
 	for (size_t i = 0; i < images.size(); ++i)
 	{
-		if (!RenderImage::createImageView(device, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, imageViews[i]))
+		imageViews[i] = RenderImage::createImageView(device, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		if (imageViews[i] == VK_NULL_HANDLE)
 		{
 			return false;
 		}

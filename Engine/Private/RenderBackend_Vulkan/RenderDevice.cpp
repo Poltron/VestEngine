@@ -4,6 +4,8 @@
 #include <iostream>
 #include <set>
 
+#include "RenderBackend_Vulkan/RenderBuffer.h"
+#include "RenderBackend_Vulkan/RenderImage.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
 
 const std::vector<const char*> deviceExtensions =
@@ -11,18 +13,227 @@ const std::vector<const char*> deviceExtensions =
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers)
+bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers, uint32_t inFrameCount)
 {
 	if (!pickPhysicalDevice(inInstance, inSurface, physicalDevice))
 	{
 		return false;
 	}
-	return createLogicalDevice(inInstance, inSurface, bInEnableValidationLayers, inValidationLayers);
+	if (!createLogicalDevice(inInstance, inSurface, bInEnableValidationLayers, inValidationLayers))
+	{
+		return false;
+	}
+
+	std::vector<DescriptorPoolElement> descriptorPoolElements;
+
+	DescriptorPoolElement uniformPoolElement;
+	uniformPoolElement.count = inFrameCount;
+	uniformPoolElement.type = DescriptorType::UNIFORM_BUFFER;
+	descriptorPoolElements.push_back(uniformPoolElement);
+
+	DescriptorPoolElement textureSamplerPoolElement;
+	textureSamplerPoolElement.count = inFrameCount;
+	textureSamplerPoolElement.type = DescriptorType::TEXTURE_SAMPLER;
+	descriptorPoolElements.push_back(textureSamplerPoolElement);
+
+	return createMainDescriptorPool(descriptorPoolElements, inFrameCount);
 }
 
 void RenderDevice::shutdown()
 {
+	vkDestroyDescriptorPool(device, mainDescriptorPool, nullptr);
 	vkDestroyDevice(device, nullptr);
+}
+
+GPUHandle RenderDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = inSize;
+	bufferInfo.usage = inUsage;
+
+	if (inQueueIndices.size() >= 2)
+	{
+		bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+	}
+	else
+	{
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	}
+
+	bufferInfo.queueFamilyIndexCount = (uint32_t)inQueueIndices.size();
+	bufferInfo.pQueueFamilyIndices = inQueueIndices.data();
+
+	VkBuffer buffer;
+	VkDeviceMemory memory;
+
+	VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, &buffer);
+	if (result != VK_SUCCESS)
+	{
+		std::cerr << "Error: vkCreateBuffer Vertex failed" << std::endl;
+		return false;
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+
+	uint32_t memoryType = 0;
+	RenderDevice::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, inProperties, memoryType);
+	allocInfo.memoryTypeIndex = memoryType;
+
+	result = vkAllocateMemory(device, &allocInfo, nullptr, &memory);
+	if (result != VK_SUCCESS)
+	{
+		std::cerr << "Error: vkAllocateMemory failed" << std::endl;
+		return GPUHandle();
+	}
+
+	result = vkBindBufferMemory(device, buffer, memory, 0);
+	if (result != VK_SUCCESS)
+	{
+		std::cerr << "Error: vkBindBufferMemory failed" << std::endl;
+		return GPUHandle();
+	}
+
+	renderBuffers.push_back(RenderBuffer(device, buffer, memory));
+	return GPUHandle((uint32_t)(renderBuffers.size() - 1));
+}
+
+const RenderBuffer& RenderDevice::getBuffer(GPUHandle inHandle) const
+{
+	return renderBuffers.at(inHandle.id);
+}
+
+
+bool RenderDevice::fillBuffer(GPUHandle inHandle, void* inData, size_t inDataSize)
+{
+	const RenderBuffer& buffer = getBuffer(inHandle);
+
+	void* data;
+	vkMapMemory(buffer.getDevice(), buffer.getMemory(), 0, inDataSize, 0, &data);
+	memcpy(data, inData, inDataSize);
+	vkUnmapMemory(buffer.getDevice(), buffer.getMemory());
+	return true;
+}
+
+void RenderDevice::destroyBuffer(GPUHandle handle)
+{
+	RenderBuffer& renderBuffer = renderBuffers.at(handle.id);
+	vkDestroyBuffer(device, renderBuffer.getBuffer(), nullptr);
+	vkFreeMemory(device, renderBuffer.getMemory(), nullptr);
+}
+
+GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
+{
+	VkImage image;
+	VkDeviceMemory memory;
+
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = (uint32_t)inWidth;
+	imageInfo.extent.height = (uint32_t)inHeight;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = inFormat;
+	imageInfo.tiling = inTiling;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = inUsage;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+	if (inQueueIndices.size() >= 2)
+	{
+		imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+	}
+	else
+	{
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	}
+
+	imageInfo.queueFamilyIndexCount = (uint32_t)inQueueIndices.size();
+	imageInfo.pQueueFamilyIndices = inQueueIndices.data();
+
+	VkResult result = vkCreateImage(getDevice(), &imageInfo, nullptr, &image);
+	if (result != VK_SUCCESS)
+	{
+		std::cerr << "Error: vkCreateImage failed" << std::endl;
+		return false;
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(getDevice(), image, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+
+	uint32_t memoryType;
+	RenderDevice::findMemoryType(getPhysicalDevice(), memRequirements.memoryTypeBits, inProperties, memoryType);
+	allocInfo.memoryTypeIndex = memoryType;
+
+	result = vkAllocateMemory(getDevice(), &allocInfo, nullptr, &memory);
+	if (result != VK_SUCCESS)
+	{
+		std::cerr << "Error: vkAllocateMemory failed" << std::endl;
+		return false;
+	}
+	vkBindImageMemory(getDevice(), image, memory, 0);
+
+	renderImages.push_back(RenderImage(device, image, memory));
+	return GPUHandle((uint32_t)(renderImages.size() - 1));
+}
+
+RenderImage& RenderDevice::getImage(GPUHandle inHandle)
+{
+	return renderImages.at(inHandle.id);
+}
+
+const RenderImage& RenderDevice::getImage(GPUHandle inHandle) const
+{
+	return renderImages.at(inHandle.id);
+}
+
+void RenderDevice::destroyImage(GPUHandle inHandle)
+{
+	RenderImage& renderImage = renderImages.at(inHandle.id);
+
+	vkDestroyImage(device, renderImage.getImage(), nullptr);
+	vkDestroyImageView(device, renderImage.getView(), nullptr);
+	vkFreeMemory(device, renderImage.getMemory(), nullptr);
+
+	renderImage = RenderImage(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+}
+
+bool RenderDevice::createMainDescriptorPool(const std::vector<DescriptorPoolElement>& inDescriptorPoolElements, uint32_t inMaxSets)
+{
+	std::vector<VkDescriptorPoolSize> poolSizes;
+	for (size_t i = 0; i < inDescriptorPoolElements.size(); ++i)
+	{
+		const auto& poolElement = inDescriptorPoolElements[i];
+
+		VkDescriptorPoolSize poolSize;
+		poolSize.type = getDescriptorType(poolElement.type);
+		poolSize.descriptorCount = poolElement.count;
+		poolSizes.push_back(poolSize);
+	}
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
+	poolInfo.pPoolSizes = poolSizes.data();
+	poolInfo.maxSets = inMaxSets;
+	VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &mainDescriptorPool);
+	if (result != VK_SUCCESS)
+	{
+		std::cerr << "Error: vkCreateDescriptorPool failed" << std::endl;
+		return false;
+	}
+	return true;
 }
 
 QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface)

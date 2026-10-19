@@ -1,6 +1,6 @@
 #pragma once
 
-#define PLATFORM_GLFW
+#include "Platform/PlatformDef.h"
 
 class InputManager;
 class WindowManager;
