@@ -716,6 +716,11 @@ void RenderBackend::shutdown()
 	impl->instance.shutdown();
 }
 
+std::string RenderBackend::getName()
+{
+	return "Vulkan";
+}
+
 void RenderBackend::tracyGPUCollect()
 {}
 

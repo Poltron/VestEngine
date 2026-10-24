@@ -225,19 +225,21 @@ void Renderer::loadDefaultShaders()
 	std::cout << "Loading default shaders.." << std::endl;
 	debugShapeSubRenderer.loadShaders();
 	debugShapeSubRenderer.loadDebugShapes();
-
-	const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/default.vert";
-	const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/lit.frag";
+	
+	std::string renderBackendName = render::getRenderBackend()->getName();
+	const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/default.vert";
+	const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/lit.frag";
 	GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
 	g_Renderer->setLitShader(litShader);
 
-	const std::string unlitFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/unlit.frag";
+	const std::string unlitFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/unlit.frag";
 	GPUHandle unlitShader = render::getRenderBackend()->compileShader(vertexPath, unlitFragmentPath);
 	g_Renderer->setUnlitShader(unlitShader);
 
-	const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/color.frag";
+	const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/color.frag";
 	GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
 	g_Renderer->setSolidColorShader(solidColorShader);
+
 	std::cout << "Loaded default shaders successfully." << std::endl;
 }
 

@@ -49,10 +49,10 @@ int main(int argc, char* argv[])
 			//}
 			//else if (loadedScene.compare("animals") == 0)
 			//{
-			//	int totalAnimal = atoi(argv[2]);
-			//	int rowSize = atoi(argv[3]);
+				int totalAnimal = atoi(argv[2]);
+				int rowSize = atoi(argv[3]);
 
-			//	demoScene::loadAnimals(*scene, totalAnimal, rowSize);
+				demoScene::loadAnimals(*scene, totalAnimal, rowSize);
 			//}
 
 			engine::launch();

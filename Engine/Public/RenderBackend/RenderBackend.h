@@ -21,6 +21,7 @@ public:
 
 	bool initialize();
 	void shutdown();
+	std::string getName();
 
 	//
 	static void getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints);

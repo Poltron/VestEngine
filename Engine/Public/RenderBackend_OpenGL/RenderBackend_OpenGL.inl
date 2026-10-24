@@ -206,6 +206,11 @@ bool RenderBackend::initialize()
 void RenderBackend::shutdown()
 { }
 
+std::string RenderBackend::getName()
+{
+	return "OpenGL";
+}
+
 void RenderBackend::tracyGPUCollect()
 {
 	TracyGpuCollect;
