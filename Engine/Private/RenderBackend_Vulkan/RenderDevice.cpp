@@ -4,9 +4,29 @@
 #include <iostream>
 #include <set>
 
+#include "RenderBackend_Vulkan/CommandContext.h"
 #include "RenderBackend_Vulkan/RenderBuffer.h"
 #include "RenderBackend_Vulkan/RenderImage.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
+
+uint32_t getVkBufferType(EBufferType inType)
+{
+	switch (inType)
+	{
+	case EBufferType::VERTEX_ARRAY:
+		ensure(false);
+		return 0; // should not be needed
+		break;
+	case EBufferType::VERTICES:
+		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		break;
+	case EBufferType::INDICES:
+		return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		break;
+	}
+	ensure(false);
+	return 0;
+}
 
 const std::vector<const char*> deviceExtensions =
 {
@@ -19,6 +39,7 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 	{
 		return false;
 	}
+
 	if (!createLogicalDevice(inInstance, inSurface, bInEnableValidationLayers, inValidationLayers))
 	{
 		return false;
@@ -41,8 +62,69 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 
 void RenderDevice::shutdown()
 {
+	for (size_t i = 0; i < commandContexts.size(); ++i)
+	{
+		commandContexts[i].free();
+	}
+
 	vkDestroyDescriptorPool(device, mainDescriptorPool, nullptr);
 	vkDestroyDevice(device, nullptr);
+}
+
+void RenderDevice::createCommandContexts(const QueueFamilyIndices& inQueueFamilyIndices)
+{
+	commandContexts.resize((uint8_t)EQueueFamily::COUNT);
+
+	const uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
+	CommandContext& graphicsCommandContext = commandContexts[(uint8_t)EQueueFamily::GRAPHICS];
+	graphicsCommandContext.create(device, graphicsFamily);
+
+	const uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
+	CommandContext& transferCommandContext = commandContexts[(uint8_t)EQueueFamily::TRANSFER];
+	transferCommandContext.create(device, transferFamily);
+
+	const uint32_t presentFamily = queueFamilyIndices.presentFamily.value();
+	CommandContext& presentCommandContext = commandContexts[(uint8_t)EQueueFamily::PRESENT];
+	presentCommandContext.create(device, presentFamily);
+}
+
+GPUHandle RenderDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
+{
+	const QueueFamilyIndices& indices = getQueueFamilyIndices();
+	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
+	VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	GPUHandle stagingBufferHandle = createBuffer(inSize, usage, queueFamilyIndices, propertyFlags);
+	if (!stagingBufferHandle.isValid())
+	{
+		return false;
+	}
+
+	if (!fillBuffer(stagingBufferHandle, inData, inSize))
+	{
+		return false;
+	}
+
+	usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | getVkBufferType(inType);
+	propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	queueFamilyIndices.push_back(indices.graphicsFamily.value());
+	GPUHandle vertexBufferHandle = createBuffer(inSize, usage, queueFamilyIndices, propertyFlags);
+	if (!vertexBufferHandle.isValid())
+	{
+		return false;
+	}
+
+	const RenderBuffer& stagingBuffer = getBuffer(stagingBufferHandle);
+	const RenderBuffer& vertexBuffer = getBuffer(vertexBufferHandle);
+	CommandContext commandContext = getTransferCommandContext();
+	if (!commandContext.isValid())
+	{
+		commandContext = getGraphicsCommandContext();
+	}
+	commandContext.executeCopyBufferCommand(stagingBuffer.getBuffer(), vertexBuffer.getBuffer(), inSize);
+	destroyBuffer(stagingBufferHandle);
+
+	return vertexBufferHandle;
 }
 
 GPUHandle RenderDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
@@ -107,7 +189,6 @@ const RenderBuffer& RenderDevice::getBuffer(GPUHandle inHandle) const
 {
 	return renderBuffers.at(inHandle.id);
 }
-
 
 bool RenderDevice::fillBuffer(GPUHandle inHandle, void* inData, size_t inDataSize)
 {

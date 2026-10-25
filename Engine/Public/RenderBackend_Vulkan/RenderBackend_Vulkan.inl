@@ -44,13 +44,6 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 };
 
-struct MyVertex
-{
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-};
-
 struct RenderBackend::Impl
 {
 	RenderInstance instance;
@@ -60,12 +53,7 @@ struct RenderBackend::Impl
 	RenderSwapchain swapchain;
 
 	GeometryRenderPass geometryRenderPass;
-
-	RenderPipeline graphicsPipeline;
-
-	CommandContext graphicsCommandContext;
-	CommandContext transferCommandContext;
-	CommandContext presentCommandContext;
+	RenderPipeline geometryPipeline;
 
 	// scene
 	GPUHandle vertexBuffer;
@@ -87,108 +75,11 @@ struct RenderBackend::Impl
 	uint32_t currentFrameId = 0;
 
 	bool bFramebufferResized = false;
-
-	const std::vector<MyVertex> vertices =
-	{
-		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	};
-
-	const std::vector<uint16_t> indices =
-	{
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-	};
 };
 
 
 namespace
 {
-	bool createVertexBuffer(RenderDevice& inRenderDevice
-		, CommandContext& inCommandContext
-		, const std::vector<MyVertex>& inVertices
-		, GPUHandle& outBufferHandle)
-	{
-		size_t dataSize = sizeof(inVertices[0]) * inVertices.size();
-
-		const QueueFamilyIndices& indices = inRenderDevice.getQueueFamilyIndices();
-		std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
-		VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		GPUHandle stagingBufferHandle = inRenderDevice.createBuffer(dataSize, usage, queueFamilyIndices, propertyFlags);
-		if (!stagingBufferHandle.isValid())
-		{
-			return false;
-		}
-
-		void* data = (void*)inVertices.data();
-		if (!inRenderDevice.fillBuffer(stagingBufferHandle, data, dataSize))
-		{
-			return false;
-		}
-
-		usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		queueFamilyIndices.push_back(indices.graphicsFamily.value());
-		GPUHandle vertexBufferHandle = inRenderDevice.createBuffer(dataSize, usage, queueFamilyIndices, propertyFlags);
-		if (!vertexBufferHandle.isValid())
-		{
-			return false;
-		}
-
-		const RenderBuffer& stagingBuffer = inRenderDevice.getBuffer(stagingBufferHandle);
-		const RenderBuffer& vertexBuffer = inRenderDevice.getBuffer(vertexBufferHandle);
-		inCommandContext.executeCopyBufferCommand(stagingBuffer.getBuffer(), vertexBuffer.getBuffer(), dataSize);
-		inRenderDevice.destroyBuffer(stagingBufferHandle);
-
-		outBufferHandle = vertexBufferHandle;
-		return true;
-	}
-
-	bool createIndexBuffer(RenderDevice& inRenderDevice
-		, CommandContext& inCommandContext
-		, const std::vector<uint16_t>& inIndices
-		, GPUHandle& outBufferHandle)
-	{
-		VkDeviceSize bufferSize = sizeof(inIndices[0]) * inIndices.size();
-		
-		const QueueFamilyIndices& indices = inRenderDevice.getQueueFamilyIndices();
-		std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
-		VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		GPUHandle stagingBufferHandle = inRenderDevice.createBuffer(bufferSize, usageFlags, queueFamilyIndices, propertyFlags);
-		if (!stagingBufferHandle.isValid())
-		{
-			return false;
-		}
-		
-		inRenderDevice.fillBuffer(stagingBufferHandle, (void*)inIndices.data(), bufferSize);
-
-		usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		queueFamilyIndices.push_back(indices.graphicsFamily.value());
-		GPUHandle indexBufferHandle = inRenderDevice.createBuffer(bufferSize, usageFlags, queueFamilyIndices, propertyFlags);
-		if (!indexBufferHandle.isValid())
-		{
-			return false;
-		}
-
-		const RenderBuffer& stagingBuffer = inRenderDevice.getBuffer(stagingBufferHandle);
-		const RenderBuffer& indexBuffer = inRenderDevice.getBuffer(indexBufferHandle);
-		inCommandContext.executeCopyBufferCommand(stagingBuffer.getBuffer(), indexBuffer.getBuffer(), bufferSize);
-		inRenderDevice.destroyBuffer(stagingBufferHandle);
-		
-		outBufferHandle = indexBufferHandle;
-		return true;
-	}
-
 	bool createUniformBuffers(RenderDevice& inRenderDevice
 		, std::vector<GPUHandle>& outBufferHandles
 		, std::vector<void*>& outMappedMemories)
@@ -305,7 +196,7 @@ namespace
 	}
 
 	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer
-		, RenderPipeline inPipeline
+		, RenderPipeline inGeometryPipeline
 		, GeometryRenderPass inGeometryRenderPass
 		, VkExtent2D inSwapchainExtent
 		, uint32_t inImageIndex
@@ -329,7 +220,7 @@ namespace
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = inGeometryRenderPass.getPass();
+		renderPassInfo.renderPass = inGeometryRenderPass.getRenderPass();
 		renderPassInfo.framebuffer = inGeometryRenderPass.getFramebuffers()[inImageIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = inSwapchainExtent;
@@ -343,7 +234,7 @@ namespace
 
 		vkCmdBeginRenderPass(inCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline.getPipeline());
+			vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inGeometryPipeline.getPipeline());
 
 			VkViewport viewport{};
 			viewport.x = 0.0f;
@@ -371,7 +262,7 @@ namespace
 
 				vkCmdBindIndexBuffer(inCommandBuffer, inIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-				vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline.getPipelineLayout(), 0, 1, &inDescriptorSets[inCurrentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inGeometryPipeline.getPipelineLayout(), 0, 1, &inDescriptorSets[inCurrentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(inCommandBuffer, inIndexCount, 1, 0, 0, 0);
 			}
@@ -445,25 +336,6 @@ namespace
 		return 0;
 	}
 
-	unsigned int getVkBufferType(EBufferType inType)
-	{
-		switch (inType)
-		{
-		case EBufferType::VERTEX_ARRAY:
-			ensure(false);
-			return 0; // should not be needed
-			break;
-		case EBufferType::VERTICES:
-			return 0;
-			break;
-		case EBufferType::INDICES:
-			return 0;
-			break;
-		}
-		ensure(false);
-		return 0;
-	}
-
 	unsigned int getVkBufferUsage(EBufferUsage inUsage)
 	{
 		switch (inUsage)
@@ -530,7 +402,7 @@ namespace
 		return 0;
 	}
 
-	void recreateSwapchain(RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, GeometryRenderPass& inRenderPass, CommandContext& inTransferCommandContext)
+	void recreateSwapchain(RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, GeometryRenderPass& inRenderPass)
 	{
 		vkDeviceWaitIdle(inDevice.getDevice());
 
@@ -538,8 +410,7 @@ namespace
 		inSwapchain.shutdown();
 
 		inSwapchain.initialize(inDevice, inSurface);
-		inRenderPass.createDepthResources(inDevice, inSwapchain.getExtent(), inTransferCommandContext);
-		inRenderPass.createFramebuffers(inDevice, inSwapchain);
+		inRenderPass.initialize(inDevice, inSwapchain);
 	}
 
 	void updateUniformBuffer(VkExtent2D inExtent, void* inMapped)
@@ -562,6 +433,11 @@ RenderBackend::RenderBackend()
 void RenderBackend::getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints)
 {
 	outHints.push_back({ contextHints::Requirements::ClientAPI, (uint8_t)contextHints::EClientAPI::NONE });
+}
+
+RenderDevice& RenderBackend::getDevice()
+{
+	return impl->device;
 }
 
 bool RenderBackend::initialize()
@@ -587,21 +463,13 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	// Command contexts
 	const QueueFamilyIndices queueFamilyIndices = impl->device.getQueueFamilyIndices();
+	impl->device.createCommandContexts(queueFamilyIndices);
 
-	const uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
-	impl->graphicsCommandContext.create(impl->device.getDevice(), graphicsFamily);
-	if (!impl->graphicsCommandContext.createCommandBuffers(MAX_FRAMES_IN_FLIGHT, impl->graphicsCommandBuffers))
+	if (!impl->device.getGraphicsCommandContext().createCommandBuffers(MAX_FRAMES_IN_FLIGHT, impl->graphicsCommandBuffers))
 	{
 		return false;
 	}
-
-	const uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
-	impl->transferCommandContext.create(impl->device.getDevice(), transferFamily);
-
-	const uint32_t presentFamily = queueFamilyIndices.presentFamily.value();
-	impl->presentCommandContext.create(impl->device.getDevice(), presentFamily);
 
 	// render pass creation
 	if (!impl->geometryRenderPass.initialize(impl->device, impl->swapchain))
@@ -609,31 +477,22 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!impl->geometryRenderPass.createDepthResources(impl->device, impl->swapchain.getExtent(), impl->graphicsCommandContext))
-	{
-		return false;
-	}
-
-	if (!impl->geometryRenderPass.createFramebuffers(impl->device, impl->swapchain))
-	{
-		return false;
-	}
-
 	std::vector<DescriptorSetLayoutBindingDesc> descriptorSetLayoutBindings;
-	descriptorSetLayoutBindings.push_back({ 0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::VERTEX });
-	descriptorSetLayoutBindings.push_back({ 1, DescriptorType::TEXTURE_SAMPLER, ShaderStageFlagBits::FRAGMENT });
+	descriptorSetLayoutBindings.push_back({ 0, DescriptorType::UNIFORM_BUFFER, EShaderStageFlagBits::VERTEX });
+	descriptorSetLayoutBindings.push_back({ 1, DescriptorType::TEXTURE_SAMPLER, EShaderStageFlagBits::FRAGMENT });
 	
 	std::vector<ShaderStageInfo> shaderStageInfos;
-	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/default.vert.spv", ShaderStageFlagBits::VERTEX });
-	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/unlit.frag.spv", ShaderStageFlagBits::FRAGMENT });
-	uint32_t vertexSize = sizeof(MyVertex);
-	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc;
-	vertexInputAttributeDesc.push_back({ DataFormat::R32G32B32, offsetof(MyVertex, pos) }); // pos
-	vertexInputAttributeDesc.push_back({ DataFormat::R32G32B32, offsetof(MyVertex, color) }); // color
-	vertexInputAttributeDesc.push_back({ DataFormat::R32G32, offsetof(MyVertex, texCoord) }); // tex
+	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/default.vert.spv", EShaderStageFlagBits::VERTEX });
+	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/unlit.frag.spv", EShaderStageFlagBits::FRAGMENT });
 
-	if (!impl->graphicsPipeline.initialize(impl->device.getDevice()
-		, impl->geometryRenderPass.getPass()
+	uint32_t vertexSize = sizeof(Vertex);
+	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc;
+	vertexInputAttributeDesc.push_back({ EDataFormat::R32G32B32, offsetof(Vertex, position) }); // pos
+	vertexInputAttributeDesc.push_back({ EDataFormat::R32G32B32, offsetof(Vertex, normal) }); // normal
+	vertexInputAttributeDesc.push_back({ EDataFormat::R32G32, offsetof(Vertex, texCoords) }); // tex
+
+	if (!impl->geometryPipeline.initialize(impl->device.getDevice()
+		, impl->geometryRenderPass.getRenderPass()
 		, impl->swapchain.getExtent()
 		, descriptorSetLayoutBindings
 		, shaderStageInfos
@@ -657,12 +516,18 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!createVertexBuffer(impl->device, impl->transferCommandContext, impl->vertices, impl->vertexBuffer))
+	std::vector<Vertex> vertices = static_mesh::getPlaneVertices();
+	size_t verticesSize = sizeof(Vertex) * vertices.size();
+	impl->vertexBuffer = impl->device.createAndFillBuffer(verticesSize, vertices.data(), EBufferType::VERTICES);
+	if (!impl->vertexBuffer.isValid())
 	{
 		return false;
 	}
 
-	if (!createIndexBuffer(impl->device, impl->transferCommandContext, impl->indices, impl->indexBuffer))
+	std::vector<uint16_t> indices = static_mesh::getPlaneIndices();
+	size_t indicesSize = sizeof(uint16_t) * indices.size();
+	impl->indexBuffer = impl->device.createAndFillBuffer(indicesSize, indices.data(), EBufferType::INDICES);
+	if (!impl->indexBuffer.isValid())
 	{
 		return false;
 	}
@@ -673,7 +538,7 @@ bool RenderBackend::initialize()
 	}
 
 	const RenderImage& image = impl->device.getImage(impl->texture);
-	if (!createDescriptorSets(impl->device, impl->graphicsPipeline.getDescriptorSetLayout(), maxDescriptorSets, impl->uniformBuffers, image.getView(), impl->textureSampler, impl->descriptorSets))
+	if (!createDescriptorSets(impl->device, impl->geometryPipeline.getDescriptorSetLayout(), maxDescriptorSets, impl->uniformBuffers, image.getView(), impl->textureSampler, impl->descriptorSets))
 	{
 		return false;
 	}
@@ -710,13 +575,8 @@ void RenderBackend::shutdown()
 		impl->device.destroyBuffer(impl->uniformBuffers[i]);
 	}
 
-	impl->graphicsPipeline.destroy();
-
+	impl->geometryPipeline.destroy();
 	impl->geometryRenderPass.free(impl->device);
-
-	impl->graphicsCommandContext.free();
-	impl->transferCommandContext.free();
-	impl->presentCommandContext.free();
 
 	impl->device.shutdown();
 
@@ -741,7 +601,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		recreateSwapchain(impl->device, impl->surface.getSurface(), impl->swapchain, impl->geometryRenderPass, impl->transferCommandContext);
+		recreateSwapchain(impl->device, impl->surface.getSurface(), impl->swapchain, impl->geometryRenderPass);
 		return;
 	}
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -759,12 +619,12 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	const RenderBuffer& vertexBuffer = impl->device.getBuffer(impl->vertexBuffer);
 	const RenderBuffer& indexBuffer = impl->device.getBuffer(impl->indexBuffer);
 	recordCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId]
-		, impl->graphicsPipeline
+		, impl->geometryPipeline
 		, impl->geometryRenderPass
 		, impl->swapchain.getExtent()
 		, imageIndex
 		, vertexBuffer.getBuffer()
-		, (uint32_t)impl->indices.size()
+		, static_mesh::getPlaneIndicesCount()
 		, indexBuffer.getBuffer()
 		, impl->descriptorSets
 		, impl->currentFrameId);
@@ -785,7 +645,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	result = vkQueueSubmit(impl->graphicsCommandContext.getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
+	result = vkQueueSubmit(impl->device.getGraphicsCommandContext().getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
 	if (result != VK_SUCCESS)
 	{
 		return;
@@ -802,12 +662,12 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(impl->presentCommandContext.getQueue(), &presentInfo);
+	vkQueuePresentKHR(impl->device.getPresentCommandContext().getQueue(), &presentInfo);
 	
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || impl->bFramebufferResized)
 	{
 		impl->bFramebufferResized = false;
-		recreateSwapchain(impl->device, impl->surface.getSurface(), impl->swapchain, impl->geometryRenderPass, impl->transferCommandContext);
+		recreateSwapchain(impl->device, impl->surface.getSurface(), impl->swapchain, impl->geometryRenderPass);
 	}
 	else if (result != VK_SUCCESS)
 	{
@@ -892,7 +752,6 @@ void RenderBackend::drawMesh(const Mesh& inMesh)
 {
 }
 
-
 //
 GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t inHeight)
 {
@@ -927,12 +786,12 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 	VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	const RenderBuffer& renderBuffer = impl->device.getBuffer(dataBufferHandle);
 	RenderImage& renderImage = impl->device.getImage(imageHandle);
-	impl->transferCommandContext.executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
-	impl->transferCommandContext.executeCopyBufferToImageCommand(renderBuffer.getBuffer(), renderImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
+	impl->device.getTransferCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
+	impl->device.getTransferCommandContext().executeCopyBufferToImageCommand(renderBuffer.getBuffer(), renderImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
 
 	oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	impl->graphicsCommandContext.executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
+	impl->device.getTransferCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
 	impl->device.destroyBuffer(dataBufferHandle);
 
 	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;

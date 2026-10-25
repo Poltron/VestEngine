@@ -7,7 +7,7 @@
 
 #include "RenderBackend_Vulkan/RenderStructs.h"
 
-enum class DataFormat : uint8_t
+enum class EDataFormat : uint8_t
 {
 	R32G32B32A32,
 	R32G32B32,
@@ -17,11 +17,11 @@ enum class DataFormat : uint8_t
 
 struct VertexInputAttributeDesc
 {
-	DataFormat format;
+	EDataFormat format;
 	uint32_t offset;
 };
 
-enum ShaderStageFlagBits : uint8_t
+enum EShaderStageFlagBits : uint8_t
 {
 	NONE = 0x00,
 	VERTEX = 0x01,
@@ -31,7 +31,7 @@ enum ShaderStageFlagBits : uint8_t
 struct ShaderStageInfo
 {
 	std::string relativePath;
-	ShaderStageFlagBits stage;
+	EShaderStageFlagBits stage;
 };
 typedef uint8_t ShaderStageFlags;
 

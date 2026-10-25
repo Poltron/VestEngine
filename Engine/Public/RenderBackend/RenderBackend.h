@@ -10,6 +10,7 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
+class RenderDevice;
 class Scene;
 
 class RenderBackend
@@ -25,6 +26,7 @@ public:
 	bool initialize();
 	void shutdown();
 	std::string getName();
+	RenderDevice& getDevice();
 
 	//
 	static void getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints);

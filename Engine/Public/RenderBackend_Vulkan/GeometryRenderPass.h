@@ -13,15 +13,15 @@ class GeometryRenderPass
 {
 	VkDevice device;
 
-	VkRenderPass pass;
+	VkRenderPass renderPass;
 	std::vector<VkFramebuffer> framebuffers;
 	GPUHandle depthBufferHandle;
 
 public:
-	VkRenderPass getPass() const { return pass; }
+	VkRenderPass getRenderPass() const { return renderPass; }
 	const std::vector<VkFramebuffer>& getFramebuffers() const { return framebuffers; }
 
-	bool initialize(const RenderDevice& inDevice, const RenderSwapchain& inSwapchain)
+	bool initialize(RenderDevice& inDevice, const RenderSwapchain& inSwapchain)
 	{ 
 		device = inDevice.getDevice();
 
@@ -75,12 +75,23 @@ public:
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VkResult result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &pass);
+		VkResult result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
 		if (result != VK_SUCCESS)
 		{
 			std::cerr << "Error: vkCreateRenderPass failed" << std::endl;
 			return false;
 		}
+
+		if (!createDepthResources(inDevice, inSwapchain.getExtent()))
+		{
+			return false;
+		}
+
+		if (!createFramebuffers(inDevice, inSwapchain))
+		{
+			return false;
+		}
+
 		return true;
 	}
 
@@ -93,9 +104,10 @@ public:
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 		}
 
-		vkDestroyRenderPass(device, pass, nullptr);
+		vkDestroyRenderPass(device, renderPass, nullptr);
 	}
 
+private:
 	bool createFramebuffers(RenderDevice& inDevice, const RenderSwapchain& inSwapchain)
 	{
 		const std::vector<VkImageView>& swapchainImageViews = inSwapchain.getImageViews();
@@ -113,7 +125,7 @@ public:
 
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = pass;
+			framebufferInfo.renderPass = renderPass;
 			framebufferInfo.attachmentCount = (uint32_t)attachments.size();
 			framebufferInfo.pAttachments = attachments.data();
 			framebufferInfo.width = inSwapchain.getExtent().width;
@@ -131,7 +143,7 @@ public:
 		return true;
 	}
 
-	bool createDepthResources(RenderDevice& inDevice, const VkExtent2D& inExtent, CommandContext& inCommandContext)
+	bool createDepthResources(RenderDevice& inDevice, const VkExtent2D& inExtent)
 	{
 		VkFormat depthFormat;
 		GeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
@@ -151,12 +163,12 @@ public:
 		}
 		depthBufferImage.setTextureView(view);
 
-		inCommandContext.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		CommandContext& graphicsCommandContext = inDevice.getGraphicsCommandContext();
+		graphicsCommandContext.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		return true;
 	}
 
-private:
 	bool findSupportedFormat(VkPhysicalDevice inPhysicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkFormat& outFormat)
 	{
 		for (VkFormat format : candidates)

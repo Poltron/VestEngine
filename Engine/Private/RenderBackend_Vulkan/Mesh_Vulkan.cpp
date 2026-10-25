@@ -4,6 +4,7 @@
 
 #include "Core/ResourcesManager.h"
 #include "RenderBackend/RenderBackend.h"
+#include "RenderBackend_Vulkan/RenderDevice.h"
 
 Mesh_Vulkan::Mesh_Vulkan(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
 	: vertices(inVertices), indices(inIndices), textures(inTextures)
@@ -59,5 +60,11 @@ Mesh_Vulkan& Mesh_Vulkan::operator=(Mesh_Vulkan&& inOther) noexcept
 
 void Mesh_Vulkan::setupMesh()
 {
-	// todo
+	RenderDevice& renderDevice = render::getRenderBackend()->getDevice();
+	size_t verticesSize = sizeof(Vertex) * vertices.size();
+	vertexBuffer = renderDevice.createAndFillBuffer(verticesSize, vertices.data(), EBufferType::VERTICES);
+
+	std::vector<uint16_t> indices = static_mesh::getPlaneIndices();
+	size_t indicesSize = sizeof(uint16_t) * indices.size();
+	indexBuffer = renderDevice.createAndFillBuffer(indicesSize, indices.data(), EBufferType::INDICES);
 }

@@ -6,10 +6,19 @@
 #include <vulkan/vulkan.h>
 
 #include "Render/GPUHandle.h"
+#include "RenderBackend_Vulkan/CommandContext.h"
 #include "RenderBackend_Vulkan/RenderStructs.h"
 
 class RenderImage;
 class RenderBuffer;
+
+enum class EQueueFamily : uint8_t
+{
+	GRAPHICS = 0,
+	PRESENT,
+	TRANSFER,
+	COUNT
+};
 
 struct QueueFamilyIndices
 {
@@ -46,15 +55,23 @@ class RenderDevice
 	std::vector<RenderImage> renderImages;
 	VkDescriptorPool mainDescriptorPool;
 
+	std::vector<CommandContext> commandContexts;
+
 public:
 	VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
 	VkDevice getDevice() const { return device; }
 	const QueueFamilyIndices& getQueueFamilyIndices() const { return queueFamilyIndices; }
 	VkDescriptorPool getMainDescriptorPool() const { return mainDescriptorPool; }
 
+	CommandContext& getGraphicsCommandContext() { return commandContexts[(uint8_t)EQueueFamily::GRAPHICS]; }
+	CommandContext& getPresentCommandContext() { return commandContexts[(uint8_t)EQueueFamily::PRESENT]; }
+	CommandContext& getTransferCommandContext() { return commandContexts[(uint8_t)EQueueFamily::TRANSFER]; }
+
 	bool initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers, uint32_t inFrameCount);
 	void shutdown();
+	void createCommandContexts(const QueueFamilyIndices& inQueueFamilyIndices);
 
+	GPUHandle createAndFillBuffer(size_t inSize, void* inData, EBufferType inType);
 	GPUHandle createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
 	const RenderBuffer& getBuffer(GPUHandle inHandle) const;
 	bool fillBuffer(GPUHandle inHandle, void* inData, size_t inDataSize);

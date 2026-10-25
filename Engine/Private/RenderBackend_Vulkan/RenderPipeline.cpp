@@ -38,20 +38,20 @@ namespace
 		return bindingDescription;
 	}
 
-	VkFormat getFormat(DataFormat inFormat)
+	VkFormat getFormat(EDataFormat inFormat)
 	{
 		switch (inFormat)
 		{
-			case DataFormat::R32G32B32A32:
+			case EDataFormat::R32G32B32A32:
 				return VK_FORMAT_R32G32B32A32_SFLOAT;
 				break;
-			case DataFormat::R32G32B32:
+			case EDataFormat::R32G32B32:
 				return VK_FORMAT_R32G32B32_SFLOAT;
 				break;
-			case DataFormat::R32G32:
+			case EDataFormat::R32G32:
 				return VK_FORMAT_R32G32_SFLOAT;
 				break;
-			case DataFormat::R32:
+			case EDataFormat::R32:
 				return VK_FORMAT_R32_SFLOAT;
 				break;
 		}
@@ -60,20 +60,20 @@ namespace
 		return VkFormat::VK_FORMAT_UNDEFINED;
 	}
 
-	uint32_t getFormatSize(DataFormat inFormat)
+	uint32_t getFormatSize(EDataFormat inFormat)
 	{
 		switch (inFormat)
 		{
-		case DataFormat::R32G32B32A32:
+		case EDataFormat::R32G32B32A32:
 			return 4;
 			break;
-		case DataFormat::R32G32B32:
+		case EDataFormat::R32G32B32:
 			return 3;
 			break;
-		case DataFormat::R32G32:
+		case EDataFormat::R32G32:
 			return 2;
 			break;
-		case DataFormat::R32:
+		case EDataFormat::R32:
 			return 1;
 			break;
 		}
@@ -99,11 +99,11 @@ namespace
 	VkShaderStageFlags getShaderStageFlags(ShaderStageFlags inShaderStageFlags)
 	{
 		VkShaderStageFlags shader = 0;
-		if (inShaderStageFlags & ShaderStageFlagBits::FRAGMENT)
+		if (inShaderStageFlags & EShaderStageFlagBits::FRAGMENT)
 		{
 			shader = shader | VK_SHADER_STAGE_FRAGMENT_BIT;
 		}
-		if (inShaderStageFlags & ShaderStageFlagBits::VERTEX)
+		if (inShaderStageFlags & EShaderStageFlagBits::VERTEX)
 		{
 			shader = shader | VK_SHADER_STAGE_VERTEX_BIT;
 		}

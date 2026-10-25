@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <vulkan/vulkan.h>
 
 class CommandContext
@@ -13,6 +14,7 @@ class CommandContext
 public:
 	VkQueue getQueue() { return queue; }
 	VkCommandPool getCommandPool() { return commandPool; }
+	bool isValid() { return device != VK_NULL_HANDLE; }
 
 	void create(VkDevice inDevice, uint32_t inQueueFamilyIndex)
 	{

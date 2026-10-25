@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "Core/ResourceHandle.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 #include "Render/Vertex.h"
 
 class ResourcesManager;
