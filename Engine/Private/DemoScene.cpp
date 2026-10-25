@@ -270,7 +270,7 @@ namespace demoScene
 		ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
 		ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
 
-		std::vector<Vertex> vertices = Mesh::getNormalTextureCubeVertices();
+		std::vector<Vertex> vertices = static_mesh::getCube();
 		std::vector<unsigned int> indices;
 		std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
 		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));

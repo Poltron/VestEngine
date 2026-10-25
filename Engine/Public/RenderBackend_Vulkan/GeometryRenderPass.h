@@ -1,11 +1,15 @@
 #pragma once
 
+#include <array>
 #include <vulkan/vulkan.h>
 
+#include "Render/GPUHandle.h"
 #include "RenderBackend_Vulkan/CommandContext.h"
+#include "RenderBackend_Vulkan/RenderDevice.h"
+#include "RenderBackend_Vulkan/RenderImage.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
 
-class RenderPass
+class GeometryRenderPass
 {
 	VkDevice device;
 
@@ -34,7 +38,7 @@ public:
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depthAttachment{};
-		RenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthAttachment.format);
+		GeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthAttachment.format);
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -130,7 +134,7 @@ public:
 	bool createDepthResources(RenderDevice& inDevice, const VkExtent2D& inExtent, CommandContext& inCommandContext)
 	{
 		VkFormat depthFormat;
-		RenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
+		GeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
 
 		QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
 		depthBufferHandle = inDevice.createImage(inExtent.width, inExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() }, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -178,7 +182,7 @@ private:
 
 	bool findDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat& outFormat)
 	{
-		return RenderPass::findSupportedFormat(inPhysicalDevice
+		return GeometryRenderPass::findSupportedFormat(inPhysicalDevice
 			, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }
 			, VK_IMAGE_TILING_OPTIMAL
 			, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/ResourceHandle.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 #include "Render/ShaderParameterCollection.h"
 
 #include "ECS/Entity.h"

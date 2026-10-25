@@ -5,7 +5,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 #include "RenderBackend_Vulkan/RenderStructs.h"
 
 class RenderImage;

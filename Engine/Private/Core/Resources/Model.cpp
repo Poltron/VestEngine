@@ -7,7 +7,8 @@
 
 #include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
-#include "Core/Resources/Mesh.h"
+#include "Render/Resources/Mesh.h"
+#include "Render/Vertex.h"
 
 
 Model::Model(std::string inPath)
@@ -63,14 +64,6 @@ void Model::load(std::string inPath)
 	path = std::move(inPath);
 	directory = path.substr(0, path.find_last_of('/'));
 	processNode(scene->mRootNode, scene);
-}
-
-void Model::bindTextures(const ResourcesManager& inResourcesManager) const
-{
-	for (const Mesh& mesh : meshes)
-	{
-		mesh.bindTextures(inResourcesManager);
-	}
 }
 
 void Model::processNode(aiNode* node, const aiScene* scene)

@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 
 class Texture
 {

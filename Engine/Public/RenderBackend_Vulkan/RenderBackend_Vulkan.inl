@@ -18,20 +18,21 @@
 
 #include "Core/Ensure.h"
 #include "Core/Engine.h"
+#include "Core/Scene.h"
 #include "Core/FileSystem.h"
 #include "Core/ResourcesManager.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 #include "Render/Renderer.h"
 #include "RenderBackend/RenderBackend.h"
 #include "RenderBackend_Vulkan/CommandContext.h"
+#include "RenderBackend_Vulkan/GeometryRenderPass.h"
 #include "RenderBackend_Vulkan/RenderBuffer.h"
 #include "RenderBackend_Vulkan/RenderDevice.h"
 #include "RenderBackend_Vulkan/RenderImage.h"
 #include "RenderBackend_Vulkan/RenderInstance.h"
-#include "RenderBackend_Vulkan/RenderPass.h"
 #include "RenderBackend_Vulkan/RenderPipeline.h"
 #include "RenderBackend_Vulkan/RenderSurface.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
@@ -58,7 +59,7 @@ struct RenderBackend::Impl
 	RenderDevice device;
 	RenderSwapchain swapchain;
 
-	RenderPass geometryRenderPass;
+	GeometryRenderPass geometryRenderPass;
 
 	RenderPipeline graphicsPipeline;
 
@@ -305,7 +306,7 @@ namespace
 
 	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer
 		, RenderPipeline inPipeline
-		, RenderPass inRenderPass
+		, GeometryRenderPass inGeometryRenderPass
 		, VkExtent2D inSwapchainExtent
 		, uint32_t inImageIndex
 		, VkBuffer inVertexBuffer
@@ -328,8 +329,8 @@ namespace
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = inRenderPass.getPass();
-		renderPassInfo.framebuffer = inRenderPass.getFramebuffers()[inImageIndex];
+		renderPassInfo.renderPass = inGeometryRenderPass.getPass();
+		renderPassInfo.framebuffer = inGeometryRenderPass.getFramebuffers()[inImageIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = inSwapchainExtent;
 
@@ -358,15 +359,22 @@ namespace
 			scissor.extent = inSwapchainExtent;
 			vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
 
-			VkBuffer vertexBuffers[] = { inVertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
+			const ComponentManager<MeshRendererComponent>& meshes = engine::getScene()->getMeshRendererComponents();
+			for (size_t i = 0; i < meshes.size(); ++i)
+			{
+				const auto& mesh = meshes.at(i);
+				const Model* model = engine::getResources()->getModel(mesh->model);
 
-			vkCmdBindIndexBuffer(inCommandBuffer, inIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+				VkBuffer vertexBuffers[] = { inVertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
 
-			vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline.getPipelineLayout(), 0, 1, &inDescriptorSets[inCurrentFrame], 0, nullptr);
+				vkCmdBindIndexBuffer(inCommandBuffer, inIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-			vkCmdDrawIndexed(inCommandBuffer, inIndexCount, 1, 0, 0, 0);
+				vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline.getPipelineLayout(), 0, 1, &inDescriptorSets[inCurrentFrame], 0, nullptr);
+
+				vkCmdDrawIndexed(inCommandBuffer, inIndexCount, 1, 0, 0, 0);
+			}
 
 		vkCmdEndRenderPass(inCommandBuffer);
 
@@ -522,7 +530,7 @@ namespace
 		return 0;
 	}
 
-	void recreateSwapchain(RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, RenderPass& inRenderPass, CommandContext& inTransferCommandContext)
+	void recreateSwapchain(RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, GeometryRenderPass& inRenderPass, CommandContext& inTransferCommandContext)
 	{
 		vkDeviceWaitIdle(inDevice.getDevice());
 
@@ -724,7 +732,7 @@ std::string RenderBackend::getName()
 void RenderBackend::tracyGPUCollect()
 {}
 
-void RenderBackend::drawFrame()
+void RenderBackend::drawGeometry(Scene& inScene)
 {
 	vkWaitForFences(impl->device.getDevice(), 1, &impl->inFlightFences[impl->currentFrameId], VK_TRUE, UINT64_MAX);
 
@@ -877,6 +885,10 @@ void RenderBackend::drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimit
 }
 
 void RenderBackend::drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
+{
+}
+
+void RenderBackend::drawMesh(const Mesh& inMesh)
 {
 }
 

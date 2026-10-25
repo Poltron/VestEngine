@@ -3,7 +3,7 @@
 #include "glm/glm.hpp"
 
 #include "ECS/Entity.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 
 struct DebugShapePrimitiveInstance
 {

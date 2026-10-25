@@ -2,20 +2,6 @@
 
 #include <stdint.h>
 
-struct PipelineHandle
-{
-	uint32_t id;
-
-	PipelineHandle()
-		: id(UINT32_MAX)
-	{}
-
-	bool isValid() const
-	{
-		return id != UINT32_MAX;
-	}
-};
-
 struct GPUHandle
 {
 	uint32_t id;

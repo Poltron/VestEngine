@@ -4,10 +4,13 @@
 #include <string_view>
 
 #include "Platform/WindowHints.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
+#include "Render/Resources/Mesh.h"
 #include "RenderBackend/RenderBackendDef.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
+
+class Scene;
 
 class RenderBackend
 {
@@ -29,7 +32,7 @@ public:
 	//
 	void tracyGPUCollect();
 
-	void drawFrame();
+	void drawGeometry(Scene& inScene);
 	void resizeViewport(int inX, int inY, int inWidth, int inHeight);
 	void clear();
 
@@ -37,6 +40,7 @@ public:
 	void drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount);
 	void drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount);
 	void drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices);
+	void drawMesh(const Mesh& inMesh);
 
 	//
 	void setStencilMask(unsigned int inMask);

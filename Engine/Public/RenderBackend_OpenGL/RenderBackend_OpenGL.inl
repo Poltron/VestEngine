@@ -11,11 +11,13 @@
 
 #include "Core/Ensure.h"
 #include "Core/FileSystem.h"
+#include "Core/Scene.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
 #include "RenderBackend/RenderBackend.h"
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
+#include "Render/Resources/Mesh.h"
 
 struct RenderBackend::Impl
 {
@@ -443,6 +445,113 @@ void RenderBackend::drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode
 	}
 }
 
+void RenderBackend::drawMesh(const Mesh& inMesh)
+{
+	if (inMesh.getEBO().id)
+	{
+		render::getRenderBackend()->drawElements(inMesh.getVAO(), EPrimitiveMode::TRIANGLES, inMesh.getIndicesSize(), 0);
+	}
+	else
+	{
+		render::getRenderBackend()->drawArrays(inMesh.getVAO(), EPrimitiveMode::TRIANGLES, 0, inMesh.getVerticesSize());
+	}
+}
+
+void RenderBackend::drawGeometry(Scene& inScene)
+{
+	for (size_t i = 0; i < inScene.getMeshRendererComponents().size(); ++i)
+	{
+		ZoneScoped;
+
+		MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().at(i);
+		ensure(meshRenderer != nullptr);
+		if (!meshRenderer->shader.isValid())
+		{
+			std::cout << "WARNING: " << meshRenderer->entity << " has no shader" << std::endl;
+			continue;
+		}
+
+		SphereColliderComponent* sphere = inScene.getSphereColliderComponents().get(meshRenderer->entity);
+		ensure(sphere != nullptr);
+		if (!sphere->bInFrustum)
+		{
+			frameInfo.culledMeshTotal++;
+			continue;
+		}
+		else
+		{
+			frameInfo.renderedMeshTotal++;
+		}
+
+		Model* model = engine::getResources()->getModel(meshRenderer->model);
+		ensure(model != nullptr);
+
+		const std::string meshRendererName = "render " + model->getPath();
+		ZoneName(meshRendererName.c_str(), meshRendererName.size());
+
+		ensure(meshRenderer->shader.isValid());
+		render::getRenderBackend()->useShaderProgram(meshRenderer->shader);
+		frameInfo.shaderPrograms++;
+
+		globalShaderParameters.applyToShader();
+
+		WorldTransformComponent* worldTransform = nullptr;
+		{
+			render::getRenderBackend()->setVec3("viewPosition", activeCamera->getPosition());
+			render::getRenderBackend()->setMat4("viewProjection", glm::value_ptr(activeCamera->getViewProjectionMatrix()));
+
+			worldTransform = inScene.getWorldTransformComponents().get(meshRenderer->entity);
+			ensure(worldTransform != nullptr);
+
+			render::getRenderBackend()->setMat4("model", glm::value_ptr(worldTransform->model));
+		}
+
+		{
+			ensure(model != nullptr);
+			const auto& meshes = model->getMeshes();
+			for (const Mesh& mesh : meshes)
+			{
+				mesh.bindTextures(inResourcesManager);
+			}
+		}
+
+		}
+
+		{
+			meshRenderer->shaderParameters.applyToShader();
+			render::getRenderBackend()->setFloat("material.shininess", 32.0f);
+		}
+
+		{
+			if (meshRenderer->bOutline)
+			{
+				render::getRenderBackend()->setStencilMask(0xFF); // allow full writing to stencil
+			}
+
+			drawModel(*model);
+		}
+
+		if (meshRenderer->bOutline)
+		{
+			render::getRenderBackend()->setStencilFunc(EComparisonFunc::NOTEQUAL, 1, 0xFF);
+			render::getRenderBackend()->setStencilMask(0x00); // don't write to stencil
+
+			ensure(getSolidColorShader().isValid());
+			render::getRenderBackend()->useShaderProgram(getSolidColorShader());
+			frameInfo.shaderPrograms++;
+
+			glm::mat4 outlineMat = worldTransform->model;
+			outlineMat = glm::scale(outlineMat, glm::vec3(1.5f, 1.5f, 1.5f));
+
+			render::getRenderBackend()->setMat4("model", glm::value_ptr(outlineMat));
+			render::getRenderBackend()->setVec3("objectColor", color::yellow);
+
+			drawModel(*model);
+
+			render::getRenderBackend()->setStencilFunc(EComparisonFunc::ALWAYS, 1, 0xFF); // every fragment passes stencil
+		}
+	}
+}
 
 //
 GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t inHeight, ETextureFormat inInternalFormat)

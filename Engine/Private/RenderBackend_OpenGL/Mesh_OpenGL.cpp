@@ -1,59 +1,11 @@
-#include "Core/Resources/Mesh.h"
+#include "RenderBackend_OpenGL/Mesh_OpenGL.h"
 
 #include "glm/detail/type_vec3.hpp"
 
 #include "Core/ResourcesManager.h"
 #include "RenderBackend/RenderBackend.h"
 
-std::vector<Vertex> Mesh::getNormalTextureCubeVertices()
-{
-	return {
-		// positions          // normals           // texture coords
-		{ -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f },
-		{ 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f },
-		{ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f },
-		{  0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f },
-		{ -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f },
-		{ -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f },
-
-		{ -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f },
-		{ 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f },
-		{ 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f },
-		{ 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f },
-		{ -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f },
-		{ -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f },
-
-		{ -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f },
-		{ -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f },
-		{ -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f },
-		{ -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f },
-		{ -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f },
-		{ -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f },
-
-		{ 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f },
-		{ 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f },
-		{ 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f },
-		{ 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f },
-		{ 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f },
-		{ 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f },
-
-		{ -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f },
-		{ 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f },
-		{ 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f },
-		{ 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f },
-		{ -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f },
-		{ -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f },
-
-		{ -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f },
-		{ 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f },
-		{ 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f },
-		{ 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f },
-		{ -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f },
-		{ -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f }
-	};
-}
-
-Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
+Mesh_OpenGL::Mesh_OpenGL(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
 	: vertices(inVertices), indices(inIndices), textures(inTextures)
 {
 	VAO = {};
@@ -63,14 +15,14 @@ Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndic
 	setupMesh();
 }
 
-Mesh::~Mesh()
+Mesh_OpenGL::~Mesh_OpenGL()
 {
 	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
 	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTICES, VBO);
 	render::getRenderBackend()->deleteGPUBuffer(EBufferType::INDICES, EBO);
 }
 
-Mesh::Mesh(Mesh&& inOther) noexcept
+Mesh_OpenGL::Mesh_OpenGL(Mesh_OpenGL&& inOther) noexcept
 	: VAO(inOther.VAO), VBO(inOther.VBO), EBO(inOther.EBO)
 {
 	vertices.clear();
@@ -86,7 +38,7 @@ Mesh::Mesh(Mesh&& inOther) noexcept
 	inOther.EBO = {};
 }
 
-Mesh& Mesh::operator=(Mesh&& inOther) noexcept
+Mesh_OpenGL& Mesh_OpenGL::operator=(Mesh_OpenGL&& inOther) noexcept
 {
 	if (this != &inOther)
 	{
@@ -110,7 +62,7 @@ Mesh& Mesh::operator=(Mesh&& inOther) noexcept
 	return *this;
 }
 
-void Mesh::setupMesh()
+void Mesh_OpenGL::setupMesh()
 {
 	VAO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTEX_ARRAY);
 	VBO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTICES);
@@ -140,7 +92,7 @@ void Mesh::setupMesh()
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 }
 
-void Mesh::bindTextures(const ResourcesManager& inResourcesManager) const
+void Mesh_OpenGL::bindTextures(const ResourcesManager& inResourcesManager) const
 {
 	for (std::vector<ResourceHandle>::size_type i = 0; i < textures.size(); ++i)
 	{

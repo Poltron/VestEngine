@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "Render/Debug/DebugShapeSubRenderer.h"
-#include "Render/GraphicResourceHandle.h"
 #include "Render/FrameInfo.h"
+#include "Render/GPUHandle.h"
 #include "Render/ShaderParameterCollection.h"
 #include "Core/ResourceHandle.h"
 

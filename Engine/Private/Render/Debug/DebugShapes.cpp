@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "Render/GraphicResourceHandle.h"
+#include "Render/GPUHandle.h"
 #include "RenderBackend/RenderBackend.h"
 
 DebugShapePrimitive::DebugShapePrimitive(size_t inCapacity)

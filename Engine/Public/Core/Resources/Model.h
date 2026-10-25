@@ -6,14 +6,21 @@
 #include "assimp/scene.h"
 
 #include "Core/ResourceHandle.h"
-#include "Core/Resources/Mesh.h"
+#include "Render/Resources/Mesh.h"
 
 class ResourcesManager;
 class Shader;
 
 class Model
 {
+	std::vector<Mesh> meshes;
+	std::string directory;
+	std::string path;
+
 public:
+	const std::string& getPath() const { return path; }
+	const std::vector<Mesh>& getMeshes() const { return meshes; }
+
 	Model() = delete;
 	Model(std::string inPath);
 	Model(std::vector<Mesh>&& inMeshes, std::string inName);
@@ -25,16 +32,7 @@ public:
 	Model(Model&& inOther) noexcept;
 	Model& operator=(Model&& inOther) noexcept;
 
-	void bindTextures(const ResourcesManager& inResourcesManager) const;
-
-	const std::string& getPath() const { return path; }
-	const std::vector<Mesh>& getMeshes() const { return meshes; }
-
 private:
-	std::vector<Mesh> meshes;
-	std::string directory;
-	std::string path;
-
 	void load(std::string inPath);
 
 	void processNode(aiNode* inNode, const aiScene* inScene);
