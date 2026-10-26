@@ -44,6 +44,26 @@ ResourceHandle ResourcesManager::loadModel(std::string inPath)
 	return handle;
 }
 
+ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType)
+{
+	if (materialHandleCounter > MAX_RESOURCES)
+	{
+		std::cout << "ERROR : Max material resources reached" << std::endl;
+		return ResourceHandle();
+	}
+
+	Material material(inBlendMode, inType);
+	materials.push_back(material);
+
+	ResourceHandle handle(materialHandleCounter);
+	materialsLookup.insert({ handle, &materials.back() });
+	materialHandleCounter++;
+
+	std::cout << "INFO : Created material " << handle.handle << std::endl;
+
+	return handle;
+}
+
 ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, std::string inName)
 {
 	// note: what's the o() of iterating through an unordered_map ?

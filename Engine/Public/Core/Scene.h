@@ -76,7 +76,7 @@ public:
 
 	MeshRendererComponent* addMeshRendererTo(Entity inEntity
 		, ResourceHandle inModel
-		, GPUHandle inShader);
+		, ResourceHandle inMaterial);
 
 	SphereColliderComponent* addSphereColliderTo(Entity inEntity
 		, float inRadius
@@ -98,7 +98,7 @@ public:
 		, float inQuadratic);
 
 	Entity createRenderedModel(ResourceHandle inModel
-		, GPUHandle inShader
+		, ResourceHandle inMaterial
 		, const glm::vec3& inPosition
 		, const glm::quat& inRotation
 		, const glm::vec3& inScale

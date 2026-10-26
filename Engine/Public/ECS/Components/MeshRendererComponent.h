@@ -1,24 +1,32 @@
 #pragma once
 
-#include "Core/ResourceHandle.h"
-#include "Render/GPUHandle.h"
-#include "Render/ShaderParameterCollection.h"
+//#include "Render/ShaderParameterCollection.h"
 
+#include "Core/ResourceHandle.h"
 #include "ECS/Entity.h"
+#include "Render/GPUHandle.h"
 
 struct MeshRendererComponent 
 {
 	Entity entity;
 	
 	ResourceHandle model;
-	GPUHandle shader;
-	bool bOutline;
+	ResourceHandle materialInstance;
 
-	ShaderParameterCollection shaderParameters;
+	UBOHandle ubo;
+	DescriptorSetHandle descriptorSets;
 
-	MeshRendererComponent()
-		: entity(ENTITY_INVALID), model(RESOURCE_INVALID), shader({}), bOutline(false)
-	{
-		shaderParameters.clear();
-	}
+	//GPUHandle shader;
+	//bool bOutline;
+
+	//ShaderParameterCollection shaderParameters;
+
+	MeshRendererComponent();
+	~MeshRendererComponent();
+
+	MeshRendererComponent(const MeshRendererComponent& inOther) = delete;
+	MeshRendererComponent& operator=(const MeshRendererComponent& inOther) = delete;
+
+	MeshRendererComponent(MeshRendererComponent&& inOther) noexcept;
+	MeshRendererComponent& operator=(MeshRendererComponent&& inOther) noexcept;
 };

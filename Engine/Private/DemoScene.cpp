@@ -54,19 +54,20 @@ namespace
 		, ResourceHandle inModel
 		, GPUHandle inShader)
 	{
-		const float boundingSphereRadius = 1.0f;
+		//const float boundingSphereRadius = 1.0f;
 
-		Entity entity = inScene.createRenderedModel(inModel
-			, inShader
-			, glm::vec3(0.0f, 0.0f, -1.0f)
-			, glm::quat(glm::radians(glm::vec3(45, 45, 45)))
-			, glm::vec3(0.4f, 0.4f, 0.4f));
+		//Entity entity = inScene.createRenderedModel(inModel
+		//	, inShader
+		//	, glm::vec3(0.0f, 0.0f, -1.0f)
+		//	, glm::quat(glm::radians(glm::vec3(45, 45, 45)))
+		//	, glm::vec3(0.4f, 0.4f, 0.4f));
 
-		inScene.addRigidbodyTo(entity
-			, glm::vec3(0.0f, 0.0f, 0.0f)
-			, glm::vec3(15.0f, 15.0f, 15.0f));
+		//inScene.addRigidbodyTo(entity
+		//	, glm::vec3(0.0f, 0.0f, 0.0f)
+		//	, glm::vec3(15.0f, 15.0f, 15.0f));
 
-		return entity;
+		//return entity;
+		return Entity();
 	}
 
 	std::vector<Entity> createSceneCubes(Scene& inScene
@@ -136,19 +137,19 @@ namespace
 
 		for (size_t i = 0; i < N; ++i)
 		{
-			glm::quat rotation = glm::quat(glm::radians(cubeRotations[i]));
+			//glm::quat rotation = glm::quat(glm::radians(cubeRotations[i]));
 
-			Entity cube = inScene.createRenderedModel(inModel
-				, inShader
-				, cubePositions[i]
-				, rotation
-				, cubeScales[i]
-				, parentHierarchy);
+			//Entity cube = inScene.createRenderedModel(inModel
+			//	, inShader
+			//	, cubePositions[i]
+			//	, rotation
+			//	, cubeScales[i]
+			//	, parentHierarchy);
 
-			MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(cube);
-			meshRenderer->shaderParameters.addVec3("material.objectColor", cubeColors[i]);
+			//MeshRendererComponent* meshRenderer = inScene.getMeshRendererComponents().get(cube);
+			//meshRenderer->shaderParameters.addVec3("material.objectColor", cubeColors[i]);
 
-			entities.push_back(cube);
+			//entities.push_back(cube);
 		}
 
 		return entities;
@@ -158,62 +159,62 @@ namespace
 		, ResourceHandle inModel
 		, GPUHandle inShader)
 	{
-		glm::vec3 lightScale(0.2f);
-		glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));
+		//glm::vec3 lightScale(0.2f);
+		//glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));
 
-		Entity directionalLightID = inScene.createRenderedModel(inModel
-			, inShader
-			, glm::vec3(0, 0, 0)
-			, lightRotation
-			, lightScale);
+		//Entity directionalLightID = inScene.createRenderedModel(inModel
+		//	, inShader
+		//	, glm::vec3(0, 0, 0)
+		//	, lightRotation
+		//	, lightScale);
 
-		glm::vec3 directionalLightColor(glm::vec3(1, 1, 1));
+		//glm::vec3 directionalLightColor(glm::vec3(1, 1, 1));
 
-		MeshRendererComponent* directionalLightMeshRenderer = inScene.getMeshRendererComponents().get(directionalLightID);
-		directionalLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
-		directionalLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
-		directionalLightMeshRenderer->shaderParameters.addVec3("material.objectColor", directionalLightColor);
+		//MeshRendererComponent* directionalLightMeshRenderer = inScene.getMeshRendererComponents().get(directionalLightID);
+		//directionalLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
+		//directionalLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
+		//directionalLightMeshRenderer->shaderParameters.addVec3("material.objectColor", directionalLightColor);
 
-		DirectionalLightComponent* directionalLightComponent = inScene.addDirectionalLightTo(directionalLightID
-			, directionalLightColor
-			, 0.5f);
+		//DirectionalLightComponent* directionalLightComponent = inScene.addDirectionalLightTo(directionalLightID
+		//	, directionalLightColor
+		//	, 0.5f);
 
-		Entity pointLights[MAX_POINT_LIGHTS];
+		//Entity pointLights[MAX_POINT_LIGHTS];
 
-		glm::vec3 pointLightPositions[] = {
-			glm::vec3(0.7f,  -1.0f,  0.0f),
-			glm::vec3(0.0f,  1.0f,  0.0f),
-			glm::vec3(-2.0f,  3.0f, -5.0f)
-		};
+		//glm::vec3 pointLightPositions[] = {
+		//	glm::vec3(0.7f,  -1.0f,  0.0f),
+		//	glm::vec3(0.0f,  1.0f,  0.0f),
+		//	glm::vec3(-2.0f,  3.0f, -5.0f)
+		//};
 
-		glm::vec3 pointLightColors[] = {
-			color::red,
-			color::green,
-			color::blue
-		};
+		//glm::vec3 pointLightColors[] = {
+		//	color::red,
+		//	color::green,
+		//	color::blue
+		//};
 
-		for (size_t i = 0; i < MAX_POINT_LIGHTS; ++i)
-		{
-			Entity pointLightID = inScene.createRenderedModel(inModel
-				, inShader
-				, pointLightPositions[i]
-				, glm::quat()
-				, lightScale);
+		//for (size_t i = 0; i < MAX_POINT_LIGHTS; ++i)
+		//{
+		//	Entity pointLightID = inScene.createRenderedModel(inModel
+		//		, inShader
+		//		, pointLightPositions[i]
+		//		, glm::quat()
+		//		, lightScale);
 
-			MeshRendererComponent* pointLightMeshRenderer = inScene.getMeshRendererComponents().get(pointLightID);
-			pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
-			pointLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
-			pointLightMeshRenderer->shaderParameters.addVec3("material.objectColor", pointLightColors[i]);
+		//	MeshRendererComponent* pointLightMeshRenderer = inScene.getMeshRendererComponents().get(pointLightID);
+		//	pointLightMeshRenderer->shaderParameters.addTexture("material.diffuse", 0);
+		//	pointLightMeshRenderer->shaderParameters.addTexture("material.specular", 0);
+		//	pointLightMeshRenderer->shaderParameters.addVec3("material.objectColor", pointLightColors[i]);
 
-			PointLightComponent* pointLight = inScene.addPointLightTo(pointLightID
-				, pointLightColors[i]
-				, 3.0f /* intensity */
-				, 1.0f /* constant */
-				, 0.5f /* linear */
-				, 0.2f /* quadratic */);
+		//	PointLightComponent* pointLight = inScene.addPointLightTo(pointLightID
+		//		, pointLightColors[i]
+		//		, 3.0f /* intensity */
+		//		, 1.0f /* constant */
+		//		, 0.5f /* linear */
+		//		, 0.2f /* quadratic */);
 
-			pointLights[i] = pointLightID;
-		}
+		//	pointLights[i] = pointLightID;
+		//}
 	}
 }
 
@@ -271,7 +272,7 @@ namespace demoScene
 		ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
 
 		std::vector<Vertex> vertices = static_mesh::getCube();
-		std::vector<unsigned int> indices;
+		std::vector<uint16_t> indices;
 		std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
 		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
 
@@ -364,6 +365,49 @@ namespace demoScene
 			});
 	}
 
+	void loadVulkanDemo(Scene& inScene)
+	{
+		ZoneScoped;
+
+		ResourceHandle albedo = engine::getResources()->loadTexture(File::getResourcesDir() + "Textures/texture.jpg", "diffuse");
+
+		std::vector<Vertex> vertices = static_mesh::getPlaneVertices();
+		std::vector<uint16_t> indices = static_mesh::getPlaneIndices();
+		std::vector<ResourceHandle> textures = { albedo };
+		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
+
+		std::vector<Mesh> meshes;
+		meshes.push_back(std::move(mesh));
+
+		ResourceHandle planeModel = engine::getResources()->createModel(std::move(meshes), "plane");
+
+		Renderer* renderer = render::getRenderer();
+
+		ResourceHandle material = engine::getResources()->createMaterial(EMaterialBlendMode::OPAQUE, EMaterialType::UNLIT, albedo);
+
+		inScene.createRenderedModel(planeModel
+			, material
+			, glm::vec3()
+			, glm::quat()
+			, glm::vec3(1, 1, 1));
+
+		inScene.createRenderedModel(planeModel
+			, material
+			, glm::vec3(0, 0, 1)
+			, glm::quat()
+			, glm::vec3(1, 1, 1));
+
+		inScene.createRenderedModel(planeModel
+			, material
+			, glm::vec3(0, 0, -1)
+			, glm::quat()
+			, glm::vec3(1, 1, 1));
+
+		//Entity parentEntity = createScenePivot(inScene, planeModel, renderer->getLitShader());
+		//std::vector<Entity> childEntities = createSceneCubes(inScene, planeModel, renderer->getLitShader(), parentEntity);
+		//createSceneLights(inScene, planeModel, renderer->getSolidColorShader());
+	}
+
 	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize)
 	{
 		ZoneScoped;
@@ -409,19 +453,19 @@ namespace demoScene
 
 	void createAnimal(Scene& inScene, ResourceHandle inModel, const glm::vec3& inPosition)
 	{
-		ResourceHandle model = getRandomAnimalModel();
-		const glm::vec3 position = inPosition;
-		const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
-		const glm::vec3 scale = glm::vec3(0.2f);
-		Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), position, rotation, scale);
+		//ResourceHandle model = getRandomAnimalModel();
+		//const glm::vec3 position = inPosition;
+		//const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
+		//const glm::vec3 scale = glm::vec3(0.2f);
+		//Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), position, rotation, scale);
 
-		const float radius = 1;
-		const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
-		inScene.addSphereColliderTo(entity, radius, offset);
+		//const float radius = 1;
+		//const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
+		//inScene.addSphereColliderTo(entity, radius, offset);
 
-		const glm::vec3 linearVel = glm::normalize(getRandomAnimalSpawnPosition());
-		inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
+		//const glm::vec3 linearVel = glm::normalize(getRandomAnimalSpawnPosition());
+		//inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
 
-		render::getRenderer()->getDebugShapeSubRenderer().addMovableSphere(entity, color::red);
+		//render::getRenderer()->getDebugShapeSubRenderer().addMovableSphere(entity, color::red);
 	}
 }

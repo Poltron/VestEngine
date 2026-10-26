@@ -11,6 +11,7 @@ namespace demoScene
 
 	void loadPrimitivesDemo(Scene& inScene);
 	void loadCubesDemo(Scene& inScene);
+	void loadVulkanDemo(Scene& inScene);
 
 	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize);
 	void createAnimal(Scene& inScene);

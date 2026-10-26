@@ -34,14 +34,14 @@ void Inspector::shutdown()
 
 void Inspector::show(Entity inEntity)
 {
-	if (engine::getScene()->getEntityManager().exists(watchedEntity))
-	{
-		MeshRendererComponent* meshRenderer = engine::getScene()->getMeshRendererComponents().get(watchedEntity);
-		if (meshRenderer)
-		{
-			meshRenderer->bOutline = false;
-		}
-	}
+	//if (engine::getScene()->getEntityManager().exists(watchedEntity))
+	//{
+	//	MeshRendererComponent* meshRenderer = engine::getScene()->getMeshRendererComponents().get(watchedEntity);
+	//	if (meshRenderer)
+	//	{
+	//		meshRenderer->bOutline = false;
+	//	}
+	//}
 
 	if (!engine::getScene()->getEntityManager().exists(inEntity))
 	{
@@ -51,11 +51,11 @@ void Inspector::show(Entity inEntity)
 
 	watchedEntity = inEntity;
 
-	MeshRendererComponent* meshRenderer = engine::getScene()->getMeshRendererComponents().get(watchedEntity);
-	if (meshRenderer)
-	{
-		meshRenderer->bOutline = true;
-	}
+	//MeshRendererComponent* meshRenderer = engine::getScene()->getMeshRendererComponents().get(watchedEntity);
+	//if (meshRenderer)
+	//{
+	//	meshRenderer->bOutline = true;
+	//}
 
 	inspectorElements.clear();
 

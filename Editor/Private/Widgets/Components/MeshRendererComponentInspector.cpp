@@ -20,21 +20,21 @@ void MeshRendererComponentInspector::update()
 	}
 
 	model = meshRenderer->model.handle;
-	shader = meshRenderer->shader.id;
-	bOutline = meshRenderer->bOutline;
+	materialInstance = meshRenderer->materialInstance.handle;
+	//bOutline = meshRenderer->bOutline;
 
 	if (ImGui::InputScalar("Model", ImGuiDataType_U32, &model))
 	{
 		meshRenderer->model = ResourceHandle(model);
 	}
 
-	if (ImGui::InputScalar("Shader", ImGuiDataType_U32, &shader))
+	if (ImGui::InputScalar("Material", ImGuiDataType_U32, &materialInstance))
 	{
-		meshRenderer->shader = GPUHandle(shader);
+		meshRenderer->materialInstance = ResourceHandle(materialInstance);
 	}
 
-	if (ImGui::Checkbox("Outline", &bOutline))
-	{
-		meshRenderer->bOutline = bOutline;
-	}
+	//if (ImGui::Checkbox("Outline", &bOutline))
+	//{
+	//	meshRenderer->bOutline = bOutline;
+	//}
 }

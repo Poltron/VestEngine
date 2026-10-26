@@ -1,12 +1,13 @@
 #pragma once
 
+#include "Core/ResourceHandle.h"
 #include "Widgets/InspectorElement.h"
 
 class MeshRendererComponentInspector : public IInspectorElement
 {
-	unsigned int model = 0;
-	unsigned int shader = 0;
-	bool bOutline = false;
+	ResourceHandle model = 0;
+	ResourceHandle materialInstance = 0;
+	//bool bOutline = false;
 
 public:
 	MeshRendererComponentInspector(Entity inEntity)

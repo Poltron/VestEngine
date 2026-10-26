@@ -75,7 +75,7 @@ void Renderer::renderMainPass(Scene& inScene)
 		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
 		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
 		{
-			return inA.shader.id < inB.shader.id;
+			return inA.material.handle < inB.material.handle;
 		});
 	inScene.getMeshRendererComponents().rebuildLookupTable();
 

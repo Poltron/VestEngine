@@ -6,7 +6,7 @@
 #include "RenderBackend/RenderBackend.h"
 #include "RenderBackend_Vulkan/RenderDevice.h"
 
-Mesh_Vulkan::Mesh_Vulkan(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
+Mesh_Vulkan::Mesh_Vulkan(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices, std::vector<ResourceHandle>&& inTextures)
 	: vertices(inVertices), indices(inIndices), textures(inTextures)
 {
 	vertexBuffer = {};

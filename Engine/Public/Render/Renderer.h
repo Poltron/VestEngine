@@ -5,7 +5,6 @@
 #include "Render/Debug/DebugShapeSubRenderer.h"
 #include "Render/FrameInfo.h"
 #include "Render/GPUHandle.h"
-#include "Render/ShaderParameterCollection.h"
 #include "Core/ResourceHandle.h"
 
 #define MAX_POINT_LIGHTS 3
@@ -16,8 +15,6 @@ class Scene;
 
 class Renderer
 {
-	ShaderParameterCollection globalShaderParameters;
-
 	Camera* activeCamera;
 
 	GPUHandle litShaderHandle;
