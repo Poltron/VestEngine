@@ -6,6 +6,8 @@
 #include "Core/Ensure.h"
 #include "Core/FileSystem.h"
 
+#include "RenderBackend_Vulkan/RenderDevice.h"
+
 namespace
 {
 	bool createShaderModule(VkDevice inDevice, const std::vector<char>& inCode, VkShaderModule& outShaderModule)
@@ -96,36 +98,6 @@ namespace
 		}
 	}
 
-	VkShaderStageFlags getShaderStageFlags(ShaderStageFlags inShaderStageFlags)
-	{
-		VkShaderStageFlags shader = 0;
-		if (inShaderStageFlags & EShaderStageFlagBits::FRAGMENT)
-		{
-			shader = shader | VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-		if (inShaderStageFlags & EShaderStageFlagBits::VERTEX)
-		{
-			shader = shader | VK_SHADER_STAGE_VERTEX_BIT;
-		}
-		return shader;
-	}
-
-	void createVkDescriptorSetLayoutBindings(const std::vector<DescriptorSetLayoutBindingDesc>& inDescriptorSetLayoutBindings, std::vector<VkDescriptorSetLayoutBinding>& outVkDescriptorSetLayoutBindings)
-	{
-		outVkDescriptorSetLayoutBindings.clear();
-		for (const DescriptorSetLayoutBindingDesc& descriptorSetLayoutBinding : inDescriptorSetLayoutBindings)
-		{
-			VkDescriptorSetLayoutBinding binding{};
-			binding.binding = descriptorSetLayoutBinding.binding;
-			binding.descriptorCount = 1;
-			binding.descriptorType = getDescriptorType(descriptorSetLayoutBinding.type);
-			binding.stageFlags = getShaderStageFlags(descriptorSetLayoutBinding.stage);
-			binding.pImmutableSamplers = nullptr;
-
-			outVkDescriptorSetLayoutBindings.push_back(binding);
-		}
-	}
-
 	void createVkPipelineShaderStageCreateInfos(VkDevice inDevice, const std::vector<ShaderStageInfo>& inDescriptorSetLayoutBindings, std::vector<VkPipelineShaderStageCreateInfo>& outVkPipelineShaderStageCreateInfos, std::vector<VkShaderModule>& outShaderModules)
 	{
 		outVkPipelineShaderStageCreateInfos.clear();
@@ -148,22 +120,18 @@ namespace
 	}
 }
 
-bool RenderPipeline::initialize(VkDevice inDevice
+bool RenderPipeline::initialize(RenderDevice& inDevice
 	, VkRenderPass inRenderPass
 	, VkExtent2D inSwapchainExtent
-	, const std::vector<DescriptorSetLayoutBindingDesc>& inDescriptorSetLayoutBindingDescs
+	, const std::vector<VkPushConstantRange>& inPushConstantRanges
+	, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 	, const std::vector<ShaderStageInfo>& inShaderStageInfos
 	, uint32_t inVertexSize
 	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs)
 {
-	device = inDevice;
+	device = inDevice.getDevice();
 
-	if (!createDescriptorSetLayout(inDescriptorSetLayoutBindingDescs, descriptorSetLayout))
-	{
-		return false;
-	}
-
-	if (!createPipelineLayout(descriptorSetLayout, pipelineLayout))
+	if (!createPipelineLayout(inPushConstantRanges, inDescriptorSetLayouts, pipelineLayout))
 	{
 		return false;
 	}
@@ -183,35 +151,14 @@ void RenderPipeline::destroy()
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 }
 
-bool RenderPipeline::createDescriptorSetLayout(const std::vector<DescriptorSetLayoutBindingDesc>& inDescriptorSetLayoutBindings, VkDescriptorSetLayout& outDescriptorSetLayout)
-{
-	std::vector<VkDescriptorSetLayoutBinding> vkDescriptorSetLayoutBindings;
-	createVkDescriptorSetLayoutBindings(inDescriptorSetLayoutBindings, vkDescriptorSetLayoutBindings);
-
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = (uint32_t)vkDescriptorSetLayoutBindings.size();
-	layoutInfo.pBindings = vkDescriptorSetLayoutBindings.data();
-
-	VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &outDescriptorSetLayout);
-	if (result != VK_SUCCESS)
-	{
-		std::cerr << "Error: vkCreateDescriptorSetLayout failed" << std::endl;
-		return false;
-	}
-	return true;
-}
-
-bool RenderPipeline::createPipelineLayout(VkDescriptorSetLayout inDescriptorSetLayout, VkPipelineLayout& outPipelineLayout)
+bool RenderPipeline::createPipelineLayout(const std::vector<VkPushConstantRange>& inPushConstantRanges, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, VkPipelineLayout& outPipelineLayout)
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0; // Optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &inDescriptorSetLayout;
+	pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)inPushConstantRanges.size();
+	pipelineLayoutInfo.pPushConstantRanges = inPushConstantRanges.data();
+	pipelineLayoutInfo.setLayoutCount = (uint32_t)inDescriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = inDescriptorSetLayouts.data();
 
 	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &outPipelineLayout);
 	if (result != VK_SUCCESS)
@@ -284,7 +231,7 @@ bool RenderPipeline::createPipeline(VkExtent2D inSwapchainExtent, VkRenderPass i
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional

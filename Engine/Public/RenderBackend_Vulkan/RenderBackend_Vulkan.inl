@@ -21,6 +21,8 @@
 #include "Core/Scene.h"
 #include "Core/FileSystem.h"
 #include "Core/ResourcesManager.h"
+#include "ECS/Components/TransformComponent.h"
+#include "ECS/EntityManager.h"
 #include "Platform/Platform.h"
 #include "Platform/WindowHints.h"
 #include "Platform/WindowManager.h"
@@ -37,13 +39,6 @@
 #include "RenderBackend_Vulkan/RenderSurface.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
 
-struct UniformBufferObject
-{
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-};
-
 struct RenderBackend::Impl
 {
 	RenderInstance instance;
@@ -55,17 +50,6 @@ struct RenderBackend::Impl
 	GeometryRenderPass geometryRenderPass;
 	RenderPipeline geometryPipeline;
 
-	// scene
-	GPUHandle vertexBuffer;
-	GPUHandle indexBuffer;
-	std::vector<GPUHandle> uniformBuffers;
-	std::vector<void*> uniformBuffersMapped;
-	
-	GPUHandle texture;
-	VkSampler textureSampler;
-
-	std::vector<VkDescriptorSet> descriptorSets;
-
 	// sync primitives
 	std::vector<VkCommandBuffer> graphicsCommandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -73,138 +57,12 @@ struct RenderBackend::Impl
 	std::vector<VkFence> inFlightFences;
 
 	uint32_t currentFrameId = 0;
-
 	bool bFramebufferResized = false;
 };
 
-
 namespace
 {
-	bool createUniformBuffers(RenderDevice& inRenderDevice
-		, std::vector<GPUHandle>& outBufferHandles
-		, std::vector<void*>& outMappedMemories)
-	{
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-		constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		const QueueFamilyIndices& indices = inRenderDevice.getQueueFamilyIndices();
-		std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value(), indices.graphicsFamily.value() };
-		constexpr VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-		outBufferHandles.resize(MAX_FRAMES_IN_FLIGHT);
-		outMappedMemories.resize(MAX_FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-		{
-			outBufferHandles[i] = inRenderDevice.createBuffer(bufferSize, usageFlags, queueFamilyIndices, memoryFlags);
-
-			const RenderBuffer& buffer = inRenderDevice.getBuffer(outBufferHandles[i]);
-			vkMapMemory(buffer.getDevice(), buffer.getMemory(), 0, bufferSize, 0, &outMappedMemories[i]);
-		}
-
-		return true;
-	}
-
-	bool createDescriptorSets(RenderDevice& inDevice, VkDescriptorSetLayout inDescriptorSetLayout, uint32_t inDescriptorSetCount, const std::vector<GPUHandle>& inBuffers, VkImageView inTextureImageView, VkSampler inTextureSampler, std::vector<VkDescriptorSet>& outDescriptorSets)
-	{
-		std::vector<VkDescriptorSetLayout> layouts(inDescriptorSetCount, inDescriptorSetLayout);
-
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = inDevice.getMainDescriptorPool();
-		allocInfo.descriptorSetCount = inDescriptorSetCount;
-		allocInfo.pSetLayouts = layouts.data();
-
-		outDescriptorSets.resize(inDescriptorSetCount);
-		VkResult result = vkAllocateDescriptorSets(inDevice.getDevice(), &allocInfo, outDescriptorSets.data());
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkAllocateDescriptorSets failed" << std::endl;
-			return false;
-		}
-
-		for (size_t i = 0; i < inDescriptorSetCount; i++)
-		{
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-			
-			//
-			const RenderBuffer& renderBuffer = inDevice.getBuffer(inBuffers[i]);
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = renderBuffer.getBuffer();
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = outDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			//
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = inTextureImageView;
-			imageInfo.sampler = inTextureSampler;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = outDescriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(inDevice.getDevice(), (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-		}
-
-		return true;
-	}
-
-	bool createTextureSampler(VkDevice inDevice, VkPhysicalDevice inPhysicalDevice, VkSampler& outTextureSampler)
-	{
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-
-		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(inPhysicalDevice, &properties);
-
-		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
-
-		VkResult result = vkCreateSampler(inDevice, &samplerInfo, nullptr, &outTextureSampler);
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkCreateSampler failed" << std::endl;
-			return false;
-		}
-
-		return true;
-	}
-
-	bool recordCommandBuffer(VkCommandBuffer inCommandBuffer
-		, RenderPipeline inGeometryPipeline
-		, GeometryRenderPass inGeometryRenderPass
-		, VkExtent2D inSwapchainExtent
-		, uint32_t inImageIndex
-		, VkBuffer inVertexBuffer
-		, uint32_t inIndexCount
-		, VkBuffer inIndexBuffer
-		, const std::vector<VkDescriptorSet>& inDescriptorSets
-		, uint32_t inCurrentFrame)
+	bool beginCommandBuffer(VkCommandBuffer inCommandBuffer)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -218,6 +76,25 @@ namespace
 			return false;
 		}
 
+		return true;
+	}
+
+	bool endCommandBuffer(VkCommandBuffer inCommandBuffer)
+	{
+		VkResult result = vkEndCommandBuffer(inCommandBuffer);
+		if (result != VK_SUCCESS)
+		{
+			std::cerr << "Error: vkEndCommandBuffer failed" << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	void bindRenderPass(VkCommandBuffer inCommandBuffer
+		, GeometryRenderPass inGeometryRenderPass
+		, VkExtent2D inSwapchainExtent
+		, uint32_t inImageIndex)
+	{
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = inGeometryRenderPass.getRenderPass();
@@ -233,56 +110,123 @@ namespace
 		renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(inCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
 
-			vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inGeometryPipeline.getPipeline());
+	void unbindRenderPass(VkCommandBuffer inCommandBuffer)
+	{
+		vkCmdEndRenderPass(inCommandBuffer);
+	}
 
-			VkViewport viewport{};
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = static_cast<float>(inSwapchainExtent.width);
-			viewport.height = static_cast<float>(inSwapchainExtent.height);
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(inCommandBuffer, 0, 1, &viewport);
+	void bindPipeline(VkCommandBuffer inCommandBuffer
+		, RenderPipeline inGeometryPipeline
+		, VkExtent2D inSwapchainExtent)
+	{
+		vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inGeometryPipeline.getPipeline());
 
-			VkRect2D scissor{};
-			scissor.offset = { 0, 0 };
-			scissor.extent = inSwapchainExtent;
-			vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(inSwapchainExtent.width);
+		viewport.height = static_cast<float>(inSwapchainExtent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(inCommandBuffer, 0, 1, &viewport);
 
-			const ComponentManager<MeshRendererComponent>& meshes = engine::getScene()->getMeshRendererComponents();
-			for (size_t i = 0; i < meshes.size(); ++i)
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = inSwapchainExtent;
+		vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
+	}
+
+	void bindDescriptorSets(RenderDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, uint32_t inFrameId)
+	{
+		std::vector<VkDescriptorSet> descriptorSets;
+		std::vector<uint32_t> dynamicOffsets;
+
+		// Set 0 : Frame
+		FrameData frameData;
+		frameData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
+		frameData.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
+		UBOHandle frameDataHandle = inDevice.emplaceFrameData((void*)&frameData, sizeof(FrameData), inFrameId);
+
+		descriptorSets.push_back(inDevice.getFrameUniformBufferDescriptorSet(inFrameId));
+		dynamicOffsets.push_back(frameDataHandle.offset);
+
+		// Set 1 : Mat
+		MaterialData materialData;
+		materialData.color = glm::vec4(color::green, 1.0);
+
+		descriptorSets.push_back(inDevice.getMaterialDescriptorSet(0));
+		dynamicOffsets.push_back(0);
+
+		vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineLayout, 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), (uint32_t)dynamicOffsets.size(), dynamicOffsets.data());
+	}
+
+	bool recordCommandBuffer(RenderDevice& inDevice
+		, VkCommandBuffer inCommandBuffer
+		, const RenderPipeline& inGeometryPipeline
+		, const GeometryRenderPass& inGeometryRenderPass
+		, VkExtent2D inSwapchainExtent
+		, uint32_t inImageIndex
+		, uint32_t inFrameId)
+	{
+		beginCommandBuffer(inCommandBuffer);
+		bindRenderPass(inCommandBuffer, inGeometryRenderPass, inSwapchainExtent, inImageIndex);
+
+		const RenderPipeline* boundPipeline = nullptr;
+		const ComponentManager<MeshRendererComponent>& meshRenderers = engine::getScene()->getMeshRendererComponents();
+		const ComponentManager<WorldTransformComponent>& worldTransforms = engine::getScene()->getWorldTransformComponents();
+		for (size_t i = 0; i < meshRenderers.size(); ++i)
+		{
+			// todo : getPipelineForMaterial();
+			const RenderPipeline* pipelineNeeded = &inGeometryPipeline;
+			if (boundPipeline != pipelineNeeded)
 			{
-				const auto& mesh = meshes.at(i);
-				const Model* model = engine::getResources()->getModel(mesh->model);
-
-				VkBuffer vertexBuffers[] = { inVertexBuffer };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
-
-				vkCmdBindIndexBuffer(inCommandBuffer, inIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-				vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inGeometryPipeline.getPipelineLayout(), 0, 1, &inDescriptorSets[inCurrentFrame], 0, nullptr);
-
-				vkCmdDrawIndexed(inCommandBuffer, inIndexCount, 1, 0, 0, 0);
+				ensure(pipelineNeeded != nullptr);
+				bindPipeline(inCommandBuffer, *pipelineNeeded, inSwapchainExtent);
+				boundPipeline = pipelineNeeded;
+				
+				bindDescriptorSets(inDevice, inCommandBuffer, boundPipeline->getPipelineLayout(), inFrameId);
 			}
 
-		vkCmdEndRenderPass(inCommandBuffer);
+			const MeshRendererComponent* meshRenderer = meshRenderers.at(i);
+			const Model* model = engine::getResources()->getModel(meshRenderer->model);
+			ensure(model);
+			const std::vector<Mesh>& meshes = model->getMeshes();
 
-		result = vkEndCommandBuffer(inCommandBuffer);
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkEndCommandBuffer failed" << std::endl;
-			return false;
+			const WorldTransformComponent* worldTransform = worldTransforms.get(meshRenderer->entity);
+			ensure(worldTransform);
+			for (size_t j = 0; j < meshes.size(); ++j)
+			{
+				const RenderBuffer& vertexBuffer = inDevice.getBuffer(meshes[j].getVertexBuffer());
+				const VkBuffer vertexBuffers[] = { vertexBuffer.getBuffer() };
+				const VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
+
+				const RenderBuffer& indexBuffer = inDevice.getBuffer(meshes[j].getIndexBuffer());
+				vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+				// todo: push constants material instance values
+				void* pushConstants = (void*)&worldTransform->model;
+				uint32_t pushConstantSize = sizeof(glm::mat4);
+				uint32_t offset = 0;
+				VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
+				
+				vkCmdPushConstants(inCommandBuffer, inGeometryPipeline.getPipelineLayout(), stageFlags, offset, pushConstantSize, pushConstants);
+
+				vkCmdDrawIndexed(inCommandBuffer, (uint32_t)meshes[j].getIndicesSize(), 1, 0, 0, 0);
+			}
 		}
-		return true;
+
+		unbindRenderPass(inCommandBuffer);
+		return endCommandBuffer(inCommandBuffer);
 	}
 
 	bool createSyncObjects(VkDevice inDevice, std::vector<VkSemaphore>& outImageAvailableSemaphores, std::vector<VkSemaphore>& outRenderFinishedSemaphores, std::vector<VkFence>& outInFlightFences)
 	{
-		outImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		outRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		outInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+		outImageAvailableSemaphores.resize(RenderDevice::getFrameCount());
+		outRenderFinishedSemaphores.resize(RenderDevice::getFrameCount());
+		outInFlightFences.resize(RenderDevice::getFrameCount());
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -291,7 +235,7 @@ namespace
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+		for (size_t i = 0; i < RenderDevice::getFrameCount(); ++i)
 		{
 			VkResult result = vkCreateSemaphore(inDevice, &semaphoreInfo, nullptr, &outImageAvailableSemaphores[i]);
 			if (result != VK_SUCCESS)
@@ -413,14 +357,34 @@ namespace
 		inRenderPass.initialize(inDevice, inSwapchain);
 	}
 
-	void updateUniformBuffer(VkExtent2D inExtent, void* inMapped)
+	void updateFrameData(void* inMapped)
 	{
-		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1), (float)platform::getTime() * glm::radians(90.0f), glm::vec3(0, 0, 1));
-		ubo.view = render::getRenderer()->getActiveCamera().getViewMatrix();
-		ubo.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
-		ubo.proj[1][1] *= -1;
-		memcpy(inMapped, &ubo, sizeof(ubo));
+		FrameData frameData;
+		frameData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
+		frameData.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
+		//frameData.proj[1][1] *= -1;
+		memcpy(inMapped, &frameData, sizeof(frameData));
+	}
+
+	void updateMaterialData(void* inMapped, const glm::vec4& inColor)
+	{
+		MaterialData materialData;
+		materialData.color = inColor;
+		memcpy(inMapped, &materialData, sizeof(materialData));
+	}
+
+	void updateInstanceData(void* inMapped, const glm::mat4& inModelMat)
+	{
+		InstanceData instanceData{};
+		instanceData.model = glm::rotate(inModelMat, (float)platform::getTime() * glm::radians(90.0f), glm::vec3(0, 0, 1));
+		memcpy(inMapped, &instanceData, sizeof(instanceData));
+	}
+
+	// todo
+	void getShaderStagesForMaterial(std::vector<ShaderStageInfo>& outShaderStageInfos)
+	{
+		outShaderStageInfos.push_back({ "Resources/Shaders/Vulkan/default.vert.spv", EShaderStageFlagBits::VERTEX });
+		outShaderStageInfos.push_back({ "Resources/Shaders/Vulkan/unlit.frag.spv", EShaderStageFlagBits::FRAGMENT });
 	}
 }
 
@@ -440,6 +404,11 @@ RenderDevice& RenderBackend::getDevice()
 	return impl->device;
 }
 
+RenderPipeline& RenderBackend::getGeometryPipeline()
+{
+	return impl->geometryPipeline;
+}
+
 bool RenderBackend::initialize()
 {
 	if (!impl->instance.initialize())
@@ -452,8 +421,7 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	uint32_t maxDescriptorSets = 2;
-	if (!impl->device.initialize(impl->instance.getInstance(), impl->surface.getSurface(), impl->instance.isValidationEnabled(), validationLayers, maxDescriptorSets))
+	if (!impl->device.initialize(impl->instance.getInstance(), impl->surface.getSurface(), impl->instance.isValidationEnabled(), validationLayers))
 	{
 		return false;
 	}
@@ -463,10 +431,11 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
+	// move to device initialization ?
 	const QueueFamilyIndices queueFamilyIndices = impl->device.getQueueFamilyIndices();
 	impl->device.createCommandContexts(queueFamilyIndices);
-
-	if (!impl->device.getGraphicsCommandContext().createCommandBuffers(MAX_FRAMES_IN_FLIGHT, impl->graphicsCommandBuffers))
+	// stay here
+	if (!impl->device.getGraphicsCommandContext().createCommandBuffers(RenderDevice::getFrameCount(), impl->graphicsCommandBuffers))
 	{
 		return false;
 	}
@@ -477,13 +446,24 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	std::vector<DescriptorSetLayoutBindingDesc> descriptorSetLayoutBindings;
-	descriptorSetLayoutBindings.push_back({ 0, DescriptorType::UNIFORM_BUFFER, EShaderStageFlagBits::VERTEX });
-	descriptorSetLayoutBindings.push_back({ 1, DescriptorType::TEXTURE_SAMPLER, EShaderStageFlagBits::FRAGMENT });
-	
+	// note: all of this pipeline creation thing should be in consequence of a material being loaded, so material infos would already be obtainable
+
+	// todo : shader stages from material > when material is created, depending on 
+	// blendMode & type, choose which shader files to use
+
+	std::vector<VkPushConstantRange> pushConstantRanges;
+	VkPushConstantRange pushConstantRange{};
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(InstanceData);
+	pushConstantRange.stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
+	pushConstantRanges.push_back(pushConstantRange);
+
+	std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.push_back(impl->device.getFrameUniformBufferLayout());
+	descriptorSetLayouts.push_back(impl->device.getMaterialDescriptorSetLayout());
+
 	std::vector<ShaderStageInfo> shaderStageInfos;
-	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/default.vert.spv", EShaderStageFlagBits::VERTEX });
-	shaderStageInfos.push_back({ "Resources/Shaders/Vulkan/unlit.frag.spv", EShaderStageFlagBits::FRAGMENT });
+	getShaderStagesForMaterial(shaderStageInfos);
 
 	uint32_t vertexSize = sizeof(Vertex);
 	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc;
@@ -491,54 +471,14 @@ bool RenderBackend::initialize()
 	vertexInputAttributeDesc.push_back({ EDataFormat::R32G32B32, offsetof(Vertex, normal) }); // normal
 	vertexInputAttributeDesc.push_back({ EDataFormat::R32G32, offsetof(Vertex, texCoords) }); // tex
 
-	if (!impl->geometryPipeline.initialize(impl->device.getDevice()
+	if (!impl->geometryPipeline.initialize(impl->device
 		, impl->geometryRenderPass.getRenderPass()
 		, impl->swapchain.getExtent()
-		, descriptorSetLayoutBindings
+		, pushConstantRanges
+		, descriptorSetLayouts
 		, shaderStageInfos
 		, vertexSize
 		, vertexInputAttributeDesc))
-	{
-		return false;
-	}
-
-	// scene
-	ResourceHandle textureHandle = engine::getResources()->loadTexture(File::getResourcesDir() + "Textures/texture.jpg", "diffuse");
-	const Texture* texture = engine::getResources()->getTexture(textureHandle);
-	impl->texture = texture->getHandle();
-	if (!impl->texture.isValid())
-	{
-		return false;
-	}
-
-	if (!createTextureSampler(impl->device.getDevice(), impl->device.getPhysicalDevice(), impl->textureSampler))
-	{
-		return false;
-	}
-
-	std::vector<Vertex> vertices = static_mesh::getPlaneVertices();
-	size_t verticesSize = sizeof(Vertex) * vertices.size();
-	impl->vertexBuffer = impl->device.createAndFillBuffer(verticesSize, vertices.data(), EBufferType::VERTICES);
-	if (!impl->vertexBuffer.isValid())
-	{
-		return false;
-	}
-
-	std::vector<uint16_t> indices = static_mesh::getPlaneIndices();
-	size_t indicesSize = sizeof(uint16_t) * indices.size();
-	impl->indexBuffer = impl->device.createAndFillBuffer(indicesSize, indices.data(), EBufferType::INDICES);
-	if (!impl->indexBuffer.isValid())
-	{
-		return false;
-	}
-
-	if (!createUniformBuffers(impl->device, impl->uniformBuffers, impl->uniformBuffersMapped))
-	{
-		return false;
-	}
-
-	const RenderImage& image = impl->device.getImage(impl->texture);
-	if (!createDescriptorSets(impl->device, impl->geometryPipeline.getDescriptorSetLayout(), maxDescriptorSets, impl->uniformBuffers, image.getView(), impl->textureSampler, impl->descriptorSets))
 	{
 		return false;
 	}
@@ -556,7 +496,7 @@ void RenderBackend::shutdown()
 {
 	vkDeviceWaitIdle(impl->device.getDevice());
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	for (size_t i = 0; i < RenderDevice::getFrameCount(); ++i)
 	{
 		vkDestroySemaphore(impl->device.getDevice(), impl->imageAvailableSemaphores[i], nullptr);
 		vkDestroySemaphore(impl->device.getDevice(), impl->renderFinishedSemaphores[i], nullptr);
@@ -565,15 +505,9 @@ void RenderBackend::shutdown()
 
 	impl->swapchain.shutdown();
 
-	vkDestroySampler(impl->device.getDevice(), impl->textureSampler, nullptr);
-	impl->device.destroyImage(impl->texture);
-	impl->device.destroyBuffer(impl->vertexBuffer);
-	impl->device.destroyBuffer(impl->indexBuffer);
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		impl->device.destroyBuffer(impl->uniformBuffers[i]);
-	}
+	//impl->device.destroyImage(impl->texture);
+	//impl->device.destroyBuffer(impl->vertexBuffer);
+	//impl->device.destroyBuffer(impl->indexBuffer);
 
 	impl->geometryPipeline.destroy();
 	impl->geometryRenderPass.free(impl->device);
@@ -612,21 +546,16 @@ void RenderBackend::drawGeometry(Scene& inScene)
 
 	vkResetFences(impl->device.getDevice(), 1, &impl->inFlightFences[impl->currentFrameId]);
 
-	updateUniformBuffer(impl->swapchain.getExtent(), impl->uniformBuffersMapped[impl->currentFrameId]);
+	impl->device.resetFrameData();
 
 	vkResetCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], 0);
 
-	const RenderBuffer& vertexBuffer = impl->device.getBuffer(impl->vertexBuffer);
-	const RenderBuffer& indexBuffer = impl->device.getBuffer(impl->indexBuffer);
-	recordCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId]
+	recordCommandBuffer(impl->device
+		, impl->graphicsCommandBuffers[impl->currentFrameId]
 		, impl->geometryPipeline
 		, impl->geometryRenderPass
 		, impl->swapchain.getExtent()
 		, imageIndex
-		, vertexBuffer.getBuffer()
-		, static_mesh::getPlaneIndicesCount()
-		, indexBuffer.getBuffer()
-		, impl->descriptorSets
 		, impl->currentFrameId);
 
 	VkSubmitInfo submitInfo{};
@@ -676,7 +605,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	}
 
 	frameNumber++;
-	impl->currentFrameId = frameNumber % MAX_FRAMES_IN_FLIGHT;
+	impl->currentFrameId = frameNumber % RenderDevice::getFrameCount();
 }
 
 void RenderBackend::clear()
@@ -768,7 +697,8 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 		return false;
 	}
 
-	impl->device.fillBuffer(dataBufferHandle, (void*)inData, imageSize);
+	RenderBuffer& renderBuffer = impl->device.getBuffer(dataBufferHandle);
+	renderBuffer.mapAndFill((void*)inData, imageSize);
 
 	// note: format forced at texture level
 	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
@@ -784,14 +714,13 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 
 	VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	const RenderBuffer& renderBuffer = impl->device.getBuffer(dataBufferHandle);
 	RenderImage& renderImage = impl->device.getImage(imageHandle);
 	impl->device.getTransferCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
 	impl->device.getTransferCommandContext().executeCopyBufferToImageCommand(renderBuffer.getBuffer(), renderImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
 
 	oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	impl->device.getTransferCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
+	impl->device.getGraphicsCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
 	impl->device.destroyBuffer(dataBufferHandle);
 
 	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;

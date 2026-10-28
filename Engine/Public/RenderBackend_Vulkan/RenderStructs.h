@@ -2,24 +2,30 @@
 
 #include "Core/Ensure.h"
 
-enum class DescriptorType : uint8_t
+enum EShaderStageFlagBits : uint8_t
 {
-	UNIFORM_BUFFER,
-	TEXTURE_SAMPLER
+	NONE = 0x00,
+	VERTEX = 0x01,
+	FRAGMENT = 0x02
 };
 
-inline VkDescriptorType getDescriptorType(DescriptorType inDescriptorType)
+struct ShaderStageInfo
 {
-	switch (inDescriptorType)
-	{
-	case DescriptorType::UNIFORM_BUFFER:
-		return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		break;
-	case DescriptorType::TEXTURE_SAMPLER:
-		return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		break;
-	}
+	std::string relativePath;
+	EShaderStageFlagBits stage;
+};
+typedef uint8_t ShaderStageFlags;
 
-	ensure(false);
-	return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+inline VkShaderStageFlags getShaderStageFlags(ShaderStageFlags inShaderStageFlags)
+{
+	VkShaderStageFlags shader = 0;
+	if (inShaderStageFlags & EShaderStageFlagBits::FRAGMENT)
+	{
+		shader = shader | VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	if (inShaderStageFlags & EShaderStageFlagBits::VERTEX)
+	{
+		shader = shader | VK_SHADER_STAGE_VERTEX_BIT;
+	}
+	return shader;
 }

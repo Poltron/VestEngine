@@ -13,9 +13,6 @@ struct MeshRendererComponent
 	ResourceHandle model;
 	ResourceHandle materialInstance;
 
-	UBOHandle ubo;
-	DescriptorSetHandle descriptorSets;
-
 	//GPUHandle shader;
 	//bool bOutline;
 

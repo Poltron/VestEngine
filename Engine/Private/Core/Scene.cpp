@@ -155,11 +155,11 @@ LocalTransformComponent* Scene::addTransformTo(Entity inEntity
 
 MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	, ResourceHandle inModel
-	, ResourceHandle inMaterial)
+	, ResourceHandle inMaterialInstance)
 {
 	MeshRendererComponent* meshRendererComponent = meshRendererComponents.create(inEntity);
 	meshRendererComponent->model = inModel;
-	meshRendererComponent->material = inMaterial;
+	meshRendererComponent->materialInstance = inMaterialInstance;
 	//meshRendererComponent->shaderParameters.addVec3("material.objectColor", color::white);
 	return meshRendererComponent;
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 enum class EMaterialBlendMode
 {
 	OPAQUE
@@ -15,13 +17,15 @@ class Material
 {
 	EMaterialBlendMode blendMode;
 	EMaterialType type;
+	ResourceHandle albedo;
 
 public:
 	Material() = delete;
-	Material(EMaterialBlendMode inBlendMode, EMaterialType inType)
-		: blendMode(inBlendMode), type(inType)
+	Material(EMaterialBlendMode inBlendMode, EMaterialType inType, ResourceHandle inAlbedo)
+		: blendMode(inBlendMode), type(inType), albedo(inAlbedo)
 	{}
 
 	EMaterialType getType() const { return type; }
 	EMaterialBlendMode getBlendMode() const { return blendMode; }
+	ResourceHandle getAlbedo() const { return albedo; }
 };

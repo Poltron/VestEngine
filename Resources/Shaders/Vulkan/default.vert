@@ -1,11 +1,15 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject
+layout(set = 0, binding = 0) uniform FrameData
 {
-    mat4 model;
     mat4 view;
     mat4 proj;
-} ubo;
+} frameData;
+
+layout (push_constant) uniform InstanceData
+{
+    mat4 model;
+} instanceData;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -16,7 +20,7 @@ layout(location = 1) out vec2 outFragTexCoord;
 
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
-	outFragNormal = mat3(transpose(inverse(ubo.model))) * inNormal;
+    gl_Position = frameData.proj * frameData.view * instanceData.model * vec4(inPosition, 1.0);
+	outFragNormal = mat3(transpose(inverse(instanceData.model))) * inNormal;
     outFragTexCoord = inTexCoord;
 }

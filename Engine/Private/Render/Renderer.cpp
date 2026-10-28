@@ -75,7 +75,7 @@ void Renderer::renderMainPass(Scene& inScene)
 		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
 		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
 		{
-			return inA.material.handle < inB.material.handle;
+			return inA.materialInstance.handle < inB.materialInstance.handle;
 		});
 	inScene.getMeshRendererComponents().rebuildLookupTable();
 
@@ -157,47 +157,47 @@ void Renderer::updateLightParameters(Scene& inScene)
 {
 	ZoneScoped;
 
-	globalShaderParameters.addVec3("ambientLight.color", { 1.0f, 1.0f, 1.0f });
-	globalShaderParameters.addFloat("ambientLight.intensity", 0.3f);
+	//globalShaderParameters.addVec3("ambientLight.color", { 1.0f, 1.0f, 1.0f });
+	//globalShaderParameters.addFloat("ambientLight.intensity", 0.3f);
 
-	if (inScene.getDirectionalLightComponents().size() > 0)
-	{
-		const DirectionalLightComponent* directionalLightComp = inScene.getDirectionalLightComponents().at(0);
-		const WorldTransformComponent* directionalLightTransform = inScene.getWorldTransformComponents().get(directionalLightComp->entity);
+	//if (inScene.getDirectionalLightComponents().size() > 0)
+	//{
+	//	const DirectionalLightComponent* directionalLightComp = inScene.getDirectionalLightComponents().at(0);
+	//	const WorldTransformComponent* directionalLightTransform = inScene.getWorldTransformComponents().get(directionalLightComp->entity);
 
-		//
-		globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
-		globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
-		globalShaderParameters.addVec3("directionalLight.direction", maths::getMatrixForward(directionalLightTransform->model));
-	}
+	//	//
+	//	globalShaderParameters.addVec3("directionalLight.color", directionalLightComp->color);
+	//	globalShaderParameters.addFloat("directionalLight.intensity", directionalLightComp->intensity);
+	//	globalShaderParameters.addVec3("directionalLight.direction", maths::getMatrixForward(directionalLightTransform->model));
+	//}
 
-	if (inScene.getPointLightComponents().size() > 0)
-	{
-		assert(inScene.getPointLightComponents().size() <= MAX_POINT_LIGHTS);
+	//if (inScene.getPointLightComponents().size() > 0)
+	//{
+	//	assert(inScene.getPointLightComponents().size() <= MAX_POINT_LIGHTS);
 
-		globalShaderParameters.addInt("pointLightAmount", (int)inScene.getPointLightComponents().size());
+	//	globalShaderParameters.addInt("pointLightAmount", (int)inScene.getPointLightComponents().size());
 
-		//
-		for (size_t i = 0; i < inScene.getPointLightComponents().size(); ++i)
-		{
-			const PointLightComponent* pointLight = inScene.getPointLightComponents().at(i);
-			assert(pointLight != nullptr);
-			std::string pointLightName = "pointLights[";
-			pointLightName.append(std::to_string(i));
-			pointLightName.append("]");
+	//	//
+	//	for (size_t i = 0; i < inScene.getPointLightComponents().size(); ++i)
+	//	{
+	//		const PointLightComponent* pointLight = inScene.getPointLightComponents().at(i);
+	//		assert(pointLight != nullptr);
+	//		std::string pointLightName = "pointLights[";
+	//		pointLightName.append(std::to_string(i));
+	//		pointLightName.append("]");
 
-			globalShaderParameters.addVec3(pointLightName + ".color", pointLight->color);
-			globalShaderParameters.addFloat(pointLightName + ".intensity", pointLight->intensity);
-			globalShaderParameters.addFloat(pointLightName + ".constant", pointLight->constant);
-			globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
-			globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
+	//		globalShaderParameters.addVec3(pointLightName + ".color", pointLight->color);
+	//		globalShaderParameters.addFloat(pointLightName + ".intensity", pointLight->intensity);
+	//		globalShaderParameters.addFloat(pointLightName + ".constant", pointLight->constant);
+	//		globalShaderParameters.addFloat(pointLightName + ".linear", pointLight->linear); // darken diffuse light a bit
+	//		globalShaderParameters.addFloat(pointLightName + ".quadratic", pointLight->quadratic);
 
-			const WorldTransformComponent* pointLightTransform = inScene.getWorldTransformComponents().get(pointLight->entity);
-			assert(pointLightTransform != nullptr);
+	//		const WorldTransformComponent* pointLightTransform = inScene.getWorldTransformComponents().get(pointLight->entity);
+	//		assert(pointLightTransform != nullptr);
 
-			globalShaderParameters.addVec3(pointLightName + ".position", maths::getMatrixTranslation(pointLightTransform->model));
-		}
-	}
+	//		globalShaderParameters.addVec3(pointLightName + ".position", maths::getMatrixTranslation(pointLightTransform->model));
+	//	}
+	//}
 }
 
 //

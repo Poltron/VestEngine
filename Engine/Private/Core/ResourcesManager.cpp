@@ -1,5 +1,10 @@
 #include "Core/ResourcesManager.h"
 
+// todo: abstract
+#include "Render/Renderer.h"
+#include "RenderBackend/RenderBackend.h"
+#include "RenderBackend_Vulkan/RenderDevice.h"
+
 ResourcesManager::ResourcesManager()
 {
 	models.reserve(MAX_RESOURCES);
@@ -44,7 +49,7 @@ ResourceHandle ResourcesManager::loadModel(std::string inPath)
 	return handle;
 }
 
-ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType)
+ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, ResourceHandle inAlbedo)
 {
 	if (materialHandleCounter > MAX_RESOURCES)
 	{
@@ -52,12 +57,14 @@ ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, 
 		return ResourceHandle();
 	}
 
-	Material material(inBlendMode, inType);
+	Material material(inBlendMode, inType, inAlbedo);
 	materials.push_back(material);
 
 	ResourceHandle handle(materialHandleCounter);
 	materialsLookup.insert({ handle, &materials.back() });
 	materialHandleCounter++;
+
+	render::getRenderBackend()->getDevice().createMaterialDescriptorSet(handle);
 
 	std::cout << "INFO : Created material " << handle.handle << std::endl;
 

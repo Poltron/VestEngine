@@ -19,7 +19,7 @@ public:
 	ResourceHandle loadTexture(std::string inPath, std::string inType);
 	ResourceHandle loadMaterial();
 	ResourceHandle loadModel(std::string inPath);
-	ResourceHandle createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType);
+	ResourceHandle createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, ResourceHandle inAlbedo);
 	ResourceHandle createModel(std::vector<Mesh>&& inMeshes, std::string inName);
 
 	Texture* getTexture(ResourceHandle handle);

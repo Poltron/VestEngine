@@ -21,11 +21,20 @@ struct GPUHandle
 	}
 };
 
-struct UniformBufferObject
+struct FrameData
 {
-	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
+};
+
+struct MaterialData
+{
+	alignas(4) glm::vec4 color;
+};
+
+struct InstanceData
+{
+	alignas(16) glm::mat4 model;
 };
 
 struct UBOHandle

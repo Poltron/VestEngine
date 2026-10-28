@@ -7,6 +7,8 @@
 
 #include "RenderBackend_Vulkan/RenderStructs.h"
 
+class RenderDevice;
+
 enum class EDataFormat : uint8_t
 {
 	R32G32B32A32,
@@ -19,27 +21,6 @@ struct VertexInputAttributeDesc
 {
 	EDataFormat format;
 	uint32_t offset;
-};
-
-enum EShaderStageFlagBits : uint8_t
-{
-	NONE = 0x00,
-	VERTEX = 0x01,
-	FRAGMENT = 0x02
-};
-
-struct ShaderStageInfo
-{
-	std::string relativePath;
-	EShaderStageFlagBits stage;
-};
-typedef uint8_t ShaderStageFlags;
-
-struct DescriptorSetLayoutBindingDesc
-{
-	uint32_t binding;
-	DescriptorType type;
-	ShaderStageFlags stage;
 };
 
 class RenderPipeline
@@ -55,16 +36,22 @@ public:
 	VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
 	VkPipeline getPipeline() const { return pipeline; }
 
-	bool initialize(VkDevice inDevice
+	bool initialize(RenderDevice& inDevice
 		, VkRenderPass inRenderPass
 		, VkExtent2D inSwapchainExtent
-		, const std::vector<DescriptorSetLayoutBindingDesc>& inDescriptorSetLayoutBindingDescs
+		, const std::vector<VkPushConstantRange>& inPushConstantRanges
+		, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 		, const std::vector<ShaderStageInfo>& inShaderStageInfos
 		, uint32_t inVertexSize
 		, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs);
 	void destroy();
 
-	bool createDescriptorSetLayout(const std::vector<DescriptorSetLayoutBindingDesc>& inDescriptorSetLayoutBindings, VkDescriptorSetLayout& outDescriptorSetLayout);
-	bool createPipelineLayout(VkDescriptorSetLayout inDescriptorSetLayout, VkPipelineLayout& outPipelineLayout);
-	bool createPipeline(VkExtent2D inSwapchainExtent, VkRenderPass inRenderPass, const std::vector<ShaderStageInfo>& inShaderStageInfos, uint32_t inVertexSize, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, VkPipeline& outPipeline);
+private:
+	bool createPipelineLayout(const std::vector<VkPushConstantRange>& inPushConstantRanges, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, VkPipelineLayout& outPipelineLayout);
+	bool createPipeline(VkExtent2D inSwapchainExtent
+		, VkRenderPass inRenderPass
+		, const std::vector<ShaderStageInfo>& inShaderStageInfos
+		, uint32_t inVertexSize
+		, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+		, VkPipeline& outPipeline);
 };

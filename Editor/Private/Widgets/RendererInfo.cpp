@@ -1,6 +1,7 @@
 #include "Widgets/RendererInfo.h"
 
-#include "imgui.h"
+#include <imgui.h>
+#include <string>
 
 #include "Render/Renderer.h"
 
