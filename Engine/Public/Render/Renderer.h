@@ -17,9 +17,9 @@ class Renderer
 {
 	Camera* activeCamera;
 
-	GPUHandle litShaderHandle;
-	GPUHandle unlitShaderHandle;
-	GPUHandle solidColorShaderHandle;
+	ResourceHandle litMaterialHandle;
+	ResourceHandle unlitMaterialHandle;
+	ResourceHandle solidColorMaterialHandle;
 
 protected:
 	DebugShapeSubRenderer debugShapeSubRenderer;
@@ -42,15 +42,15 @@ public:
 
 //
 public:
-	void loadDefaultShaders();
+	void loadDefaultMaterials();
 	void updateLightParameters(Scene& inScene);
 
-	GPUHandle getLitShader() { return litShaderHandle; }
-	void setLitShader(GPUHandle inResourceHandle) { litShaderHandle = inResourceHandle; }
-	GPUHandle getUnlitShader() { return unlitShaderHandle; }
-	void setUnlitShader(GPUHandle inResourceHandle) { unlitShaderHandle = inResourceHandle; }
-	GPUHandle getSolidColorShader() { return solidColorShaderHandle; }
-	void setSolidColorShader(GPUHandle inResourceHandle) { solidColorShaderHandle = inResourceHandle; }
+	ResourceHandle getLitMaterial() { return litMaterialHandle; }
+	void setLitMaterial(ResourceHandle inResourceHandle) { litMaterialHandle = inResourceHandle; }
+	ResourceHandle getUnlitMaterial() { return unlitMaterialHandle; }
+	void setUnlitMaterial(ResourceHandle inResourceHandle) { unlitMaterialHandle = inResourceHandle; }
+	ResourceHandle getSolidColorMaterial() { return solidColorMaterialHandle; }
+	void setSolidColorMaterial(ResourceHandle inResourceHandle) { solidColorMaterialHandle = inResourceHandle; }
 
 	void setActiveCamera(Camera* inCamera);
 	Camera& getActiveCamera();

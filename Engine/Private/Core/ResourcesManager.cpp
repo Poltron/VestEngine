@@ -58,13 +58,11 @@ ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, 
 	}
 
 	Material material(inBlendMode, inType, inAlbedo);
-	materials.push_back(material);
+	materials.push_back(std::move(material));
 
 	ResourceHandle handle(materialHandleCounter);
 	materialsLookup.insert({ handle, &materials.back() });
 	materialHandleCounter++;
-
-	render::getRenderBackend()->getDevice().createMaterialDescriptorSet(handle);
 
 	std::cout << "INFO : Created material " << handle.handle << std::endl;
 

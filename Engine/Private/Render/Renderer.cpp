@@ -84,7 +84,7 @@ void Renderer::renderMainPass(Scene& inScene)
 
 void Renderer::renderDebugPass(Scene& inScene)
 {
-	debugShapeSubRenderer.render(*this, frameInfo);
+	//debugShapeSubRenderer.render(*this, frameInfo);
 }
 
 void Renderer::swap()
@@ -124,26 +124,28 @@ void Renderer::drawModel(const Model& inModel)
 	}
 }
 
-void Renderer::loadDefaultShaders()
+void Renderer::loadDefaultMaterials()
 {
 	ZoneScoped;
-	std::cout << "Loading default shaders.." << std::endl;
-	debugShapeSubRenderer.loadShaders();
-	debugShapeSubRenderer.loadDebugShapes();
-	
-	std::string renderBackendName = render::getRenderBackend()->getName();
-	const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/default.vert";
-	const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/lit.frag";
-	GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
-	g_Renderer->setLitShader(litShader);
+	std::cout << "Loading default materials.." << std::endl;
 
-	const std::string unlitFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/unlit.frag";
-	GPUHandle unlitShader = render::getRenderBackend()->compileShader(vertexPath, unlitFragmentPath);
-	g_Renderer->setUnlitShader(unlitShader);
+	//debugShapeSubRenderer.loadShaders();
+	//debugShapeSubRenderer.loadDebugShapes();
 
-	const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/color.frag";
-	GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
-	g_Renderer->setSolidColorShader(solidColorShader);
+	ResourceHandle placeholderDiffuse = engine::getResources()->loadTexture(File::getResourcesDir() + "Textures/placeholder.png", "diffuse");
+
+	//std::string renderBackendName = render::getRenderBackend()->getName();
+	//const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/default.vert";
+	//const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/lit.frag";
+	//GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
+	//g_Renderer->setLitShader(litShader);
+
+	ResourceHandle unlitMat = engine::getResources()->createMaterial(EMaterialBlendMode::OPAQUE, EMaterialType::UNLIT, placeholderDiffuse);
+	g_Renderer->setUnlitMaterial(unlitMat);
+
+	//const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/color.frag";
+	//GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
+	//g_Renderer->setSolidColorShader(solidColorShader);
 
 	std::cout << "Loaded default shaders successfully." << std::endl;
 }

@@ -21,6 +21,7 @@
 #include "Core/Scene.h"
 #include "Core/FileSystem.h"
 #include "Core/ResourcesManager.h"
+#include "Core/Resources/Material.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/EntityManager.h"
 #include "Platform/Platform.h"
@@ -138,7 +139,7 @@ namespace
 		vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
 	}
 
-	void bindDescriptorSets(RenderDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, uint32_t inFrameId)
+	void bindDescriptorSets(RenderDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, Material* inMaterial, uint32_t inFrameId)
 	{
 		std::vector<VkDescriptorSet> descriptorSets;
 		std::vector<uint32_t> dynamicOffsets;
@@ -147,20 +148,27 @@ namespace
 		FrameData frameData;
 		frameData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
 		frameData.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
-		UBOHandle frameDataHandle = inDevice.emplaceFrameData((void*)&frameData, sizeof(FrameData), inFrameId);
-
-		descriptorSets.push_back(inDevice.getFrameUniformBufferDescriptorSet(inFrameId));
+		
+		const UBOHandle frameDataHandle = inDevice.emplaceFrameData((void*)&frameData, sizeof(FrameData), inFrameId);
 		dynamicOffsets.push_back(frameDataHandle.offset);
+		descriptorSets.push_back(inDevice.getFrameUniformBufferDescriptorSet(inFrameId));
 
 		// Set 1 : Mat
 		MaterialData materialData;
-		materialData.color = glm::vec4(color::green, 1.0);
-		UBOHandle materialDataHandle = inDevice.emplaceFrameData((void*)&materialData, sizeof(MaterialData), inFrameId);
+		materialData.color = glm::vec4(color::white, 1.0);
 
-		descriptorSets.push_back(inDevice.getMaterialDescriptorSet(0));
+		const UBOHandle materialDataHandle = inDevice.emplaceFrameData((void*)&materialData, sizeof(MaterialData), inFrameId);
 		dynamicOffsets.push_back(materialDataHandle.offset);
+		const uint32_t descriptorSetId = inMaterial->getDescriptorSetHandle().id + inFrameId;
+		descriptorSets.push_back(inDevice.getMaterialDescriptorSet(descriptorSetId));
 
 		vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineLayout, 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), (uint32_t)dynamicOffsets.size(), dynamicOffsets.data());
+	}
+
+	// todo
+	const RenderPipeline* getPipelineForMaterial(const Material* inMaterial, const RenderPipeline* inRenderPipeline)
+	{
+		return inRenderPipeline;
 	}
 
 	bool recordCommandBuffer(RenderDevice& inDevice
@@ -179,18 +187,21 @@ namespace
 		const ComponentManager<WorldTransformComponent>& worldTransforms = engine::getScene()->getWorldTransformComponents();
 		for (size_t i = 0; i < meshRenderers.size(); ++i)
 		{
-			// todo : getPipelineForMaterial();
-			const RenderPipeline* pipelineNeeded = &inGeometryPipeline;
+			const MeshRendererComponent* meshRenderer = meshRenderers.at(i);
+
+			ResourceHandle materialHandle = meshRenderer->materialInstance;
+			Material* material = engine::getResources()->getMaterial(materialHandle);
+
+			const RenderPipeline* pipelineNeeded = getPipelineForMaterial(material, &inGeometryPipeline);
 			if (boundPipeline != pipelineNeeded)
 			{
 				ensure(pipelineNeeded != nullptr);
 				bindPipeline(inCommandBuffer, *pipelineNeeded, inSwapchainExtent);
 				boundPipeline = pipelineNeeded;
 				
-				bindDescriptorSets(inDevice, inCommandBuffer, boundPipeline->getPipelineLayout(), inFrameId);
+				bindDescriptorSets(inDevice, inCommandBuffer, boundPipeline->getPipelineLayout(), material, inFrameId);
 			}
 
-			const MeshRendererComponent* meshRenderer = meshRenderers.at(i);
 			const Model* model = engine::getResources()->getModel(meshRenderer->model);
 			ensure(model);
 			const std::vector<Mesh>& meshes = model->getMeshes();

@@ -52,17 +52,18 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 	minUniformBufferOffsetAlignment = (uint32_t)physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
+	maxUniformBufferRange = (uint32_t)physicalDeviceProperties.limits.maxUniformBufferRange;
 
-	DescriptorPoolElement textureSamplerPoolElement;
-	textureSamplerPoolElement.count = 16;
-	textureSamplerPoolElement.type = EDescriptorType::TEXTURE_SAMPLER;
+	DescriptorPoolElement textureSamplerDescriptorSetPoolElement;
+	textureSamplerDescriptorSetPoolElement.count = RenderDevice::getFrameCount();
+	textureSamplerDescriptorSetPoolElement.type = EDescriptorType::TEXTURE_SAMPLER;
 
-	DescriptorPoolElement uniformBufferPoolElement;
-	uniformBufferPoolElement.count = RenderDevice::getFrameCount();
-	uniformBufferPoolElement.type = EDescriptorType::UNIFORM_BUFFER_DYNAMIC;
+	DescriptorPoolElement uniformBufferDescriptorSetPoolElement;
+	uniformBufferDescriptorSetPoolElement.count = RenderDevice::getFrameCount();
+	uniformBufferDescriptorSetPoolElement.type = EDescriptorType::UNIFORM_BUFFER_DYNAMIC;
 	
-	const uint8_t maxSets = textureSamplerPoolElement.count + uniformBufferPoolElement.count;
-	if (!descriptorPool.initialize(*this, { textureSamplerPoolElement, uniformBufferPoolElement }, maxSets))
+	const uint8_t maxSets = textureSamplerDescriptorSetPoolElement.count + uniformBufferDescriptorSetPoolElement.count;
+	if (!descriptorPool.initialize(*this, { textureSamplerDescriptorSetPoolElement, uniformBufferDescriptorSetPoolElement }, maxSets))
 	{
 		return false;
 	}
@@ -294,7 +295,7 @@ bool RenderDevice::createMaterialDescriptorSetLayout()
 	return true;
 }
 
-bool RenderDevice::createMaterialDescriptorSet(ResourceHandle inHandle)
+DescriptorSetHandle RenderDevice::createMaterialDescriptorSets(ResourceHandle inAlbedoHandle, uint32_t inCount)
 {
 	// note : c/c from createMaterialDescriptorSetLayout
 	std::vector<DescriptorSetLayoutElement> layoutElements;
@@ -315,8 +316,7 @@ bool RenderDevice::createMaterialDescriptorSet(ResourceHandle inHandle)
 
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(RenderDevice::getFrameCount(), materialDescriptorSetLayout);
 
-	const Material* material = engine::getResources()->getMaterial(inHandle);
-	const Texture* albedo = engine::getResources()->getTexture(material->getAlbedo());
+	const Texture* albedo = engine::getResources()->getTexture(inAlbedoHandle);
 
 	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), RenderDevice::getFrameCount());
 	for (uint32_t i = 0; i < RenderDevice::getFrameCount(); ++i)
@@ -325,14 +325,38 @@ bool RenderDevice::createMaterialDescriptorSet(ResourceHandle inHandle)
 
 		GPUHandle imageHandle;
 		layoutValues.images[frameIndexOffset + 0] = { albedo->getHandle(), getTextureSampler(0)};
-		layoutValues.buffers[frameIndexOffset + 1] = { getFrameUniformBufferHandle(0) };
+		layoutValues.buffers[frameIndexOffset + 1] = { getFrameUniformBufferHandle(i), sizeof(MaterialData) };
 	}
 
 	std::vector<VkDescriptorSet> descriptorSets;
-	descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, RenderDevice::getFrameCount(), descriptorSets);
-	materialDescriptorSets.push_back(descriptorSets[0]);
+	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, inCount, descriptorSets))
+	{
+		std::cerr << "RenderDevice::createMaterialDescriptorSets failed" << std::endl;
+		return DescriptorSetHandle();
+	}
 
-	return true;
+	DescriptorSetHandle handle((uint32_t)materialDescriptorSets.size(), 2);
+	for (size_t i = 0; i < descriptorSets.size(); ++i)
+	{
+		materialDescriptorSets.push_back(descriptorSets[i]);
+	}
+
+	return handle;
+}
+
+void RenderDevice::destroyMaterialDescriptorSets(DescriptorSetHandle inHandle)
+{
+	if (inHandle.id + inHandle.count > materialDescriptorSets.size())
+	{
+		return;
+	}
+
+	vkFreeDescriptorSets(device, descriptorPool.getPool(), inHandle.count, &materialDescriptorSets[inHandle.id]);
+
+	for (uint32_t i = 0; i < inHandle.count; ++i)
+	{
+		materialDescriptorSets[inHandle.id + i] = VK_NULL_HANDLE;
+	}
 }
 
 GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
@@ -453,8 +477,8 @@ bool RenderDevice::createFrameDynamicUniformBuffers(uint8_t inFrameCount
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(RenderDevice::getFrameCount(), frameUniformBufferLayout);
 
 	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), inFrameCount);
-	layoutValues.buffers[0] = { outBufferHandles[0] };
-	layoutValues.buffers[1] = { outBufferHandles[1] };
+	layoutValues.buffers[0] = { outBufferHandles[0], sizeof(FrameData) };
+	layoutValues.buffers[1] = { outBufferHandles[1], sizeof(FrameData) };
 
 	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, inFrameCount, frameUniformBufferDescriptorSets))
 	{

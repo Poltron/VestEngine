@@ -62,7 +62,7 @@ struct DescriptorSetHandle
 
 	bool isValid() const
 	{
-		return id != UINT32_MAX;
+		return id != UINT32_MAX && count > 0;
 	}
 };
 

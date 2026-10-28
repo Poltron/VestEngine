@@ -56,6 +56,8 @@ class RenderDevice
 	RenderDescriptorPool descriptorPool;
 
 	uint32_t minUniformBufferOffsetAlignment;
+	uint32_t maxUniformBufferRange;
+
 	uint32_t nextUniformBufferOffset;
 	std::vector<GPUHandle> frameUniformBuffers;
 	std::vector<VkDescriptorSet> frameUniformBufferDescriptorSets;
@@ -77,14 +79,14 @@ public:
 	VkSampler getTextureSampler(uint32_t inHandle) const { return textureSamplers[inHandle]; }
 
 	static constexpr uint8_t getFrameCount() { return 2; }
-	static constexpr size_t getFrameUniformBufferSize() { return 1024; }
+	static constexpr size_t getFrameUniformBufferSize() { return 10240; }
 
 	GPUHandle getFrameUniformBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
 	const RenderBuffer& getFrameUniformBuffer(uint32_t inFrameIndex) const { return getBuffer(frameUniformBuffers[inFrameIndex]); }
 	VkDescriptorSet getFrameUniformBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
 	VkDescriptorSetLayout getFrameUniformBufferLayout() const { return frameUniformBufferLayout; }
 
-	VkDescriptorSet getMaterialDescriptorSet(ResourceHandle inHandle) const { return materialDescriptorSets[inHandle.handle]; }
+	VkDescriptorSet getMaterialDescriptorSet(uint32_t inId) const { return materialDescriptorSets[inId]; }
 	VkDescriptorSetLayout getMaterialDescriptorSetLayout() const { return materialDescriptorSetLayout; }
 
 public:
@@ -102,7 +104,10 @@ public:
 	//
 	void resetFrameData();
 	UBOHandle emplaceFrameData(void* inData, uint32_t inSize, uint32_t inFrameId);
-	bool createMaterialDescriptorSet(ResourceHandle inHandle);
+
+	//
+	DescriptorSetHandle createMaterialDescriptorSets(ResourceHandle inHandle, uint32_t inCount);
+	void destroyMaterialDescriptorSets(DescriptorSetHandle inHandle);
 
 	//
 	GPUHandle createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);

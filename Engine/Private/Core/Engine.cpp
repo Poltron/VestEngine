@@ -74,7 +74,7 @@ void VestEngine::launch()
 		//killZoneSystem.update(*scene);
 
 		hierarchySystem.update(*scene);
-		physicsSystem.update(*scene, deltaTime);
+		//physicsSystem.update(*scene, deltaTime);
 		transformSystem.update(*scene);
 		frustumCullingSystem.update(*scene);
 

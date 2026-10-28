@@ -18,16 +18,16 @@ namespace
 {
 	const std::string animals[] =
 	{
-		"Resources/Models/kenney-cube-pets/animal-bee.obj",
-		"Resources/Models/kenney-cube-pets/animal-caterpillar.obj",
-		"Resources/Models/kenney-cube-pets/animal-crab.obj",
-		"Resources/Models/kenney-cube-pets/animal-koala.obj",
-		"Resources/Models/kenney-cube-pets/animal-pig.obj",
-		"Resources/Models/kenney-cube-pets/animal-beaver.obj",
-		"Resources/Models/kenney-cube-pets/animal-elephant.obj",
-		"Resources/Models/kenney-cube-pets/animal-panda.obj",
-		"Resources/Models/kenney-cube-pets/animal-polar.obj",
-		"Resources/Models/kenney-cube-pets/animal-tiger.obj"
+		"Models/kenney-cube-pets/animal-bee.obj",
+		"Models/kenney-cube-pets/animal-caterpillar.obj",
+		"Models/kenney-cube-pets/animal-crab.obj",
+		"Models/kenney-cube-pets/animal-koala.obj",
+		"Models/kenney-cube-pets/animal-pig.obj",
+		"Models/kenney-cube-pets/animal-beaver.obj",
+		"Models/kenney-cube-pets/animal-elephant.obj",
+		"Models/kenney-cube-pets/animal-panda.obj",
+		"Models/kenney-cube-pets/animal-polar.obj",
+		"Models/kenney-cube-pets/animal-tiger.obj"
 	};
 
 	const size_t animalModelsTotal = 10;
@@ -41,7 +41,7 @@ namespace
 	ResourceHandle getRandomAnimalModel()
 	{
 		const size_t index = rand() % animalModelsTotal;
-		const std::string animalModel = File::getProjectDir() + animals[index];
+		const std::string animalModel = File::getResourcesDir() + animals[index];
 		return engine::getResources()->loadModel(animalModel);
 	}
 
@@ -52,7 +52,7 @@ namespace
 
 	Entity createScenePivot(Scene& inScene
 		, ResourceHandle inModel
-		, GPUHandle inShader)
+		, ResourceHandle inMaterial)
 	{
 		//const float boundingSphereRadius = 1.0f;
 
@@ -72,7 +72,7 @@ namespace
 
 	std::vector<Entity> createSceneCubes(Scene& inScene
 		, ResourceHandle inModel
-		, GPUHandle inShader
+		, ResourceHandle inMaterial
 		, Entity inParentEntity)
 	{
 		std::vector<Entity> entities;
@@ -157,7 +157,7 @@ namespace
 
 	void createSceneLights(Scene& inScene
 		, ResourceHandle inModel
-		, GPUHandle inShader)
+		, ResourceHandle inMaterial)
 	{
 		//glm::vec3 lightScale(0.2f);
 		//glm::quat lightRotation = glm::quat(glm::radians(glm::vec3(45, 0, 0)));
@@ -266,8 +266,8 @@ namespace demoScene
 	{
 		ZoneScoped;
 
-		const std::string containerPath = File::getProjectDir() + "Resources/Textures/container2.png";
-		const std::string containerSpecularPath = File::getProjectDir() + "Resources/Textures/container2_specular.png";
+		const std::string containerPath = File::getResourcesDir() + "Textures/container2.png";
+		const std::string containerSpecularPath = File::getResourcesDir() + "Textures/container2_specular.png";
 		ResourceHandle containerTexture = engine::getResources()->loadTexture(containerPath, "diffuse");
 		ResourceHandle containerSpecularTexture = engine::getResources()->loadTexture(containerSpecularPath, "specular");
 
@@ -283,9 +283,9 @@ namespace demoScene
 
 		Renderer* renderer = render::getRenderer();
 
-		Entity parentEntity = createScenePivot(inScene, cubeModel, renderer->getLitShader());
-		std::vector<Entity> childEntities = createSceneCubes(inScene, cubeModel, renderer->getLitShader(), parentEntity);
-		createSceneLights(inScene, cubeModel, renderer->getSolidColorShader());
+		Entity parentEntity = createScenePivot(inScene, cubeModel, renderer->getLitMaterial());
+		std::vector<Entity> childEntities = createSceneCubes(inScene, cubeModel, renderer->getLitMaterial(), parentEntity);
+		createSceneLights(inScene, cubeModel, renderer->getSolidColorMaterial());
 
 		// tmp inputs
 		platform::getInputManager().registerKeyCallback(input::EKey::P
@@ -381,31 +381,25 @@ namespace demoScene
 
 		ResourceHandle planeModel = engine::getResources()->createModel(std::move(meshes), "plane");
 
-		Renderer* renderer = render::getRenderer();
-
-		ResourceHandle material = engine::getResources()->createMaterial(EMaterialBlendMode::OPAQUE, EMaterialType::UNLIT, albedo);
+		ResourceHandle unlitMat = render::getRenderer()->getUnlitMaterial();
 
 		inScene.createRenderedModel(planeModel
-			, material
+			, unlitMat
 			, glm::vec3(0, 0, 0)
 			, glm::quat()
 			, glm::vec3(1, 1, 1));
 
 		inScene.createRenderedModel(planeModel
-			, material
+			, unlitMat
 			, glm::vec3(0, 0, 1)
 			, glm::quat()
 			, glm::vec3(1, 1, 1));
 
 		inScene.createRenderedModel(planeModel
-			, material
+			, unlitMat
 			, glm::vec3(0, 0, -1)
 			, glm::quat()
 			, glm::vec3(1, 1, 1));
-
-		//Entity parentEntity = createScenePivot(inScene, planeModel, renderer->getLitShader());
-		//std::vector<Entity> childEntities = createSceneCubes(inScene, planeModel, renderer->getLitShader(), parentEntity);
-		//createSceneLights(inScene, planeModel, renderer->getSolidColorShader());
 	}
 
 	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize)
@@ -413,7 +407,7 @@ namespace demoScene
 		ZoneScoped;
 
 		srand((unsigned int)time(0));
-
+		
 		inScene.getCamera().setPosition(glm::vec3(6.508f, 5.24268f, 3.30692f));
 		inScene.getCamera().setRotation(-154.026f, -42.2807f);
 
@@ -430,41 +424,41 @@ namespace demoScene
 
 		for (size_t i = 0; i < animalModelsTotal; ++i)
 		{
-			ResourceHandle model = engine::getResources()->loadModel(File::getProjectDir() + animals[i]);
+			ResourceHandle model = engine::getResources()->loadModel(File::getResourcesDir() + animals[i]);
 
 			for (size_t j = 0; j < totalPerMesh; ++j)
 			{
 				const glm::vec3 position = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
-				createAnimal(inScene, model, position);
+				createAnimal(inScene, model, render::getRenderer()->getUnlitMaterial(), position);
 			}
 		}
 
-		Renderer* renderer = render::getRenderer();
-		ResourceHandle model = engine::getResources()->loadModel(File::getProjectDir() + animals[0]);
-		createSceneLights(inScene, model, renderer->getSolidColorShader());
+		ResourceHandle material = render::getRenderer()->getLitMaterial();
+		ResourceHandle model = engine::getResources()->loadModel(File::getResourcesDir() + animals[0]);
+		createSceneLights(inScene, model, material);
 
-		render::getRenderer()->getDebugShapeSubRenderer().addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);
+		//render::getRenderer()->getDebugShapeSubRenderer().addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);
 	}
 
 	void createAnimal(Scene& inScene)
 	{
-		createAnimal(inScene, getRandomAnimalModel(), getRandomAnimalSpawnPosition());
+		createAnimal(inScene, getRandomAnimalModel(), render::getRenderer()->getUnlitMaterial(), getRandomAnimalSpawnPosition());
 	}
 
-	void createAnimal(Scene& inScene, ResourceHandle inModel, const glm::vec3& inPosition)
+	void createAnimal(Scene& inScene, ResourceHandle inModel, ResourceHandle inMaterial, const glm::vec3& inPosition)
 	{
-		//ResourceHandle model = getRandomAnimalModel();
-		//const glm::vec3 position = inPosition;
-		//const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
-		//const glm::vec3 scale = glm::vec3(0.2f);
-		//Entity entity = inScene.createRenderedModel(model, render::getRenderer()->getLitShader(), position, rotation, scale);
+		ResourceHandle model = getRandomAnimalModel();
+		const glm::vec3 position = inPosition;
+		const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
+		const glm::vec3 scale = glm::vec3(0.2f);
+		Entity entity = inScene.createRenderedModel(model, inMaterial, position, rotation, scale);
 
-		//const float radius = 1;
-		//const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
-		//inScene.addSphereColliderTo(entity, radius, offset);
+		const float radius = 1;
+		const glm::vec3 offset = glm::vec3(0, 0.7f, 0);
+		inScene.addSphereColliderTo(entity, radius, offset);
 
-		//const glm::vec3 linearVel = glm::normalize(getRandomAnimalSpawnPosition());
-		//inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
+		const glm::vec3 linearVel = glm::normalize(getRandomAnimalSpawnPosition());
+		inScene.addRigidbodyTo(entity, linearVel, glm::vec3(0));
 
 		//render::getRenderer()->getDebugShapeSubRenderer().addMovableSphere(entity, color::red);
 	}

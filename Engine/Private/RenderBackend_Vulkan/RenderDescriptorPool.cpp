@@ -24,11 +24,11 @@ namespace
 		}
 	}
 
-	void createWriteDescriptorBuffer(const RenderBuffer& inBuffer, const VkDescriptorSet& inDescriptorSet, uint32_t inBinding, uint32_t inDstArrayElement, VkDescriptorBufferInfo& outBufferInfos, VkWriteDescriptorSet& outWriteDescriptorSet)
+	void createWriteDescriptorBuffer(const RenderBuffer& inBuffer, const VkDeviceSize inDataSize, const VkDescriptorSet& inDescriptorSet, uint32_t inBinding, uint32_t inDstArrayElement, VkDescriptorBufferInfo& outBufferInfos, VkWriteDescriptorSet& outWriteDescriptorSet)
 	{
 		outBufferInfos.buffer = inBuffer.getBuffer();
 		outBufferInfos.offset = 0;
-		outBufferInfos.range = inBuffer.getSize();
+		outBufferInfos.range = inDataSize;
 
 		outWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		outWriteDescriptorSet.dstSet = inDescriptorSet;
@@ -128,7 +128,7 @@ bool RenderDescriptorPool::createDescriptorSets(RenderDevice& inDevice
 					bufferInfos.push_back({});
 
 					const RenderBuffer& buffer = inDevice.getBuffer(inLayoutValues.buffers[writeIndex].bufferHandle);
-					createWriteDescriptorBuffer(buffer, outDescriptorSets[descriptorSetIndex], layoutElement.binding, layoutElement.dstArrayElement, bufferInfos.back(), writeDescriptors[writeIndex]);
+					createWriteDescriptorBuffer(buffer, inLayoutValues.buffers[writeIndex].dataSize, outDescriptorSets[descriptorSetIndex], layoutElement.binding, layoutElement.dstArrayElement, bufferInfos.back(), writeDescriptors[writeIndex]);
 					break;
 				}
 				case EDescriptorType::TEXTURE_SAMPLER:

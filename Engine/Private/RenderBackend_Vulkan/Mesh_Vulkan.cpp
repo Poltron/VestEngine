@@ -61,10 +61,10 @@ Mesh_Vulkan& Mesh_Vulkan::operator=(Mesh_Vulkan&& inOther) noexcept
 void Mesh_Vulkan::setupMesh()
 {
 	RenderDevice& renderDevice = render::getRenderBackend()->getDevice();
+
 	size_t verticesSize = sizeof(Vertex) * vertices.size();
 	vertexBuffer = renderDevice.createAndFillBuffer(verticesSize, vertices.data(), EBufferType::VERTICES);
 
-	std::vector<uint16_t> indices = static_mesh::getPlaneIndices();
 	size_t indicesSize = sizeof(uint16_t) * indices.size();
 	indexBuffer = renderDevice.createAndFillBuffer(indicesSize, indices.data(), EBufferType::INDICES);
 }

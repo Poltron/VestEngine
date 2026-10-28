@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 	{
 		if (editor::initialize())
 		{
-			render::getRenderer()->loadDefaultShaders();
+			render::getRenderer()->loadDefaultMaterials();
 
 			Scene* scene = engine::createScene();
 

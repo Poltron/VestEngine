@@ -15,5 +15,5 @@ namespace demoScene
 
 	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize);
 	void createAnimal(Scene& inScene);
-	void createAnimal(Scene& inScene, ResourceHandle inModel, const glm::vec3& inPosition);
+	void createAnimal(Scene& inScene, ResourceHandle inModel, ResourceHandle inMaterial, const glm::vec3& inPosition);
 };

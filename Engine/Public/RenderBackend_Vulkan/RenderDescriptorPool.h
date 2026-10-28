@@ -51,6 +51,7 @@ struct DescriptorSetLayoutElement
 struct DescriptorSetLayoutElementBufferValue
 {
 	GPUHandle bufferHandle;
+	VkDeviceSize dataSize;
 };
 
 struct DescriptorSetLayoutElementImageValue
