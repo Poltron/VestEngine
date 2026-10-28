@@ -65,8 +65,7 @@ bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSu
 		return false;
 	}
 
-	// note: unnecessary ? we already have image count. can vkcreateswapchain change the imagecount ?
-	//vkGetSwapchainImagesKHR(inDevice.getDevice(), swapchain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(inDevice.getDevice(), swapchain, &imageCount, nullptr);
 	images.resize(imageCount);
 	vkGetSwapchainImagesKHR(inDevice.getDevice(), swapchain, &imageCount, images.data());
 

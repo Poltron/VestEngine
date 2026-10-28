@@ -155,9 +155,10 @@ namespace
 		// Set 1 : Mat
 		MaterialData materialData;
 		materialData.color = glm::vec4(color::green, 1.0);
+		UBOHandle materialDataHandle = inDevice.emplaceFrameData((void*)&materialData, sizeof(MaterialData), inFrameId);
 
 		descriptorSets.push_back(inDevice.getMaterialDescriptorSet(0));
-		dynamicOffsets.push_back(0);
+		dynamicOffsets.push_back(materialDataHandle.offset);
 
 		vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineLayout, 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), (uint32_t)dynamicOffsets.size(), dynamicOffsets.data());
 	}
@@ -504,10 +505,6 @@ void RenderBackend::shutdown()
 	}
 
 	impl->swapchain.shutdown();
-
-	//impl->device.destroyImage(impl->texture);
-	//impl->device.destroyBuffer(impl->vertexBuffer);
-	//impl->device.destroyBuffer(impl->indexBuffer);
 
 	impl->geometryPipeline.destroy();
 	impl->geometryRenderPass.free(impl->device);
