@@ -1,5 +1,4 @@
 #pragma once
-#include <stdlib.h>
 #include <cassert>
 
 // Marker based allocator
@@ -7,10 +6,9 @@ class StackAllocator
 {
 public:
 	StackAllocator(size_t inCapacity)
-		: capacity(inCapacity)
+		: capacity(inCapacity), top(0)
 	{
-		base = (char*)malloc(capacity);
-		top = base;
+		base = (uint8_t*)malloc(capacity);
 	}
 
 	~StackAllocator()
@@ -18,29 +16,34 @@ public:
 		free(base);
 	}
 
-	char* create(size_t inAllocationSize)
+	size_t create(size_t inAllocationSize)
 	{
-		assert(top < base + capacity);
+		assert(false);
+		assert(base + top + inAllocationSize < base + capacity);
 
-		char* ptr = top;
+		size_t newAllocOffset = top;
 		top += inAllocationSize;
-
-		return ptr;
+		return newAllocOffset;
 	}
 
 	void clear()
 	{
-		top = base;
+		top = 0;
 	}
 
-	void resetTo(char* inMarker)
+	void resetTo(size_t inMarker)
 	{
 		top = inMarker;
+	}
+
+	uint8_t* get(size_t inOffset)
+	{
+		return base + inOffset;
 	}
 
 private:
 	size_t capacity = 0;
 
-	char* base = nullptr;
-	char* top = nullptr;
+	uint8_t* base = nullptr;
+	size_t top = 0;
 };
