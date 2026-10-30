@@ -6,7 +6,7 @@ layout(set = 0, binding = 0) uniform FrameData
     mat4 proj;
 } frameData;
 
-layout (push_constant) uniform InstanceData
+layout (push_constant) uniform VertexInstanceData
 {
     mat4 model;
 } instanceData;
