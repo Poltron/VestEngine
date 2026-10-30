@@ -9,15 +9,9 @@ struct ResourceHandle
 {
 	uint32_t handle;
 
-	ResourceHandle()
-		: ResourceHandle(RESOURCE_INVALID)
-	{
-	}
-
 	ResourceHandle(uint32_t inHandle)
 		: handle(inHandle)
-	{
-	}
+	{}
 
 	bool IsValid() const
 	{
@@ -28,6 +22,8 @@ struct ResourceHandle
 	{
 		return handle == inOther.handle;
 	}
+
+	static ResourceHandle invalid;
 };
 
 template<>
@@ -38,4 +34,3 @@ struct std::hash<ResourceHandle>
 		return std::hash<uint32_t>{}(inResource.handle);
 	}
 };
-
