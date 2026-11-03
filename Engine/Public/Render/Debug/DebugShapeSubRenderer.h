@@ -44,7 +44,7 @@ public:
 	void loadShaders();
 	void loadDebugShapes();
 	void render(Renderer& inRenderer, FrameInfo& inFrameInfo);
-	void updateDebugShapes(Scene& inScene);
+	void updateDebugShapes(Scene& inScene, double inDeltaTime);
 
 	GPUHandle getDebugPrimitiveShader() { return debugPrimitiveShaderHandle; }
 	void setDebugPrimitiveShader(GPUHandle inHandle) { debugPrimitiveShaderHandle = inHandle; }

@@ -7,7 +7,7 @@
 #include "ECS/ComponentManager.h"
 #include "ECS/Components/TransformComponent.h"
 
-void KillZoneSystem::update(Scene& inScene)
+void KillZoneSystem::update(Scene& inScene, double inDeltaTime)
 {
 	ZoneScoped;
 

@@ -1,9 +1,10 @@
 #pragma once
+#include "ECS/Systems/ISystem.h"
 
 class Scene;
 
-class FrustumCullingSystem
+class FrustumCullingSystem : public ISystem
 {
 public:
-	void update(Scene& inScene);
+	virtual void update(Scene& inScene, double inDeltaTime) override;
 };

@@ -43,7 +43,6 @@ protected:
 	HierarchySystem hierarchySystem;
 	PhysicsSystem physicsSystem;
 	TransformSystem transformSystem;
-	FrustumCullingSystem frustumCullingSystem;
 	KillZoneSystem killZoneSystem;
 	RespawnSystem respawnSystem;
 };

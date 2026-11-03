@@ -1,10 +1,16 @@
 #pragma once
 
-struct EntityDebugShapeMeshInstances;
+#include "ECS/Systems/ISystem.h"
+#include "Render/Debug/DebugShapes.h"
+
 class Scene;
 
-class EntityDebugShapesSystem
+class EntityDebugShapesSystem : public ISystem
 {
+	EntityDebugShapeMeshInstances* debugShapeMeshInstances = nullptr;
+
 public:
-	void update(EntityDebugShapeMeshInstances& inSphereInstances, Scene& inScene);
+	void setMeshInstances(EntityDebugShapeMeshInstances* inDebugShapeMeshInstances) { debugShapeMeshInstances = inDebugShapeMeshInstances; }
+
+	virtual void update(Scene& inScene, double inDeltaTime) override;
 };

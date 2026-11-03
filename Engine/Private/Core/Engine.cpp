@@ -69,18 +69,15 @@ void VestEngine::launch()
 		scene->getWorldTransformComponents().drawDebug(550, 50);
 #endif
 
-		//respawnSystem.update(*scene);
-		//killZoneSystem.update(*scene);
+		//respawnSystem.update(*scene, deltaTime);
+		//killZoneSystem.update(*scene, deltaTime);
 
-		hierarchySystem.update(*scene);
+		hierarchySystem.update(*scene, deltaTime);
 		//physicsSystem.update(*scene, deltaTime);
-		transformSystem.update(*scene);
-		frustumCullingSystem.update(*scene);
-
-		//render::getRenderer()->updateDebugShapes(*scene);
+		transformSystem.update(*scene, deltaTime);
 
 		render::getRenderer()->clear();
-		render::getRenderer()->render(*scene);
+		render::getRenderer()->render(*scene, deltaTime);
 		//if (uiUpdateCallback)
 		//{
 		//	uiUpdateCallback();

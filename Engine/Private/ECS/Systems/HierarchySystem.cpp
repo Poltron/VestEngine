@@ -10,7 +10,7 @@
 #include "ECS/Components/HierarchyComponent.h"
 #include "ECS/Components/TransformComponent.h"
 
-void HierarchySystem::update(Scene& inScene)
+void HierarchySystem::update(Scene& inScene, double inDeltaTime)
 {
 	ZoneScoped;
 

@@ -45,9 +45,10 @@ void DebugShapeSubRenderer::loadDebugShapes()
 	debugShapeMeshes.push_back(std::move(sphere));
 }
 
-void DebugShapeSubRenderer::updateDebugShapes(Scene& inScene)
+void DebugShapeSubRenderer::updateDebugShapes(Scene& inScene, double inDeltaTime)
 {
-	updateEntityDebugShapesSystem.update(entitySphereInstances, inScene);
+	//updateEntityDebugShapesSystem.setMeshInstances(&entitySphereInstances);
+	//updateEntityDebugShapesSystem.update(inScene, inDeltaTime);
 }
 
 void DebugShapeSubRenderer::render(Renderer& inRenderer, FrameInfo& inFrameInfo)

@@ -3,6 +3,7 @@
 #include "glm/fwd.hpp"
 
 #include "ECS/Entity.h"
+#include "ECS/Systems/ISystem.h"
 
 struct HierarchyComponent;
 struct LocalTransformComponent;
@@ -12,10 +13,10 @@ template<typename T>
 class ComponentManager;
 class Scene;
 
-class PhysicsSystem
+class PhysicsSystem : public ISystem
 {
 public:
-	void update(Scene& inScene, double inDeltaTime);
+	virtual void update(Scene& inScene, double inDeltaTime) override;
 
 private:
 	void setWorldPosition(const glm::vec3& inPosition

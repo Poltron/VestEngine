@@ -5,7 +5,7 @@
 #include "Core/Scene.h"
 #include "DemoScene.h"
 
-void RespawnSystem::update(Scene& inScene)
+void RespawnSystem::update(Scene& inScene, double inDeltaTime)
 {
 	ZoneScoped;
 

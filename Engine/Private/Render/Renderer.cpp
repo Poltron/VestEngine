@@ -8,6 +8,7 @@
 
 #include "Camera.h"
 #include "Core/Engine.h"
+#include "Core/Ensure.h"
 #include "Core/FileSystem.h"
 #include "Core/Maths.h"
 #include "Core/Scene.h"
@@ -55,7 +56,7 @@ void Renderer::clear()
 	frameInfo.reset();
 }
 
-void Renderer::render(Scene& inScene)
+void Renderer::render(Scene& inScene, double inDeltaTime)
 {
 	ZoneScopedN("Renderer::render");
 
@@ -65,13 +66,17 @@ void Renderer::render(Scene& inScene)
 		return;
 	}
 
+	// todo: this should output list of non-culled items from frustum culling
+	frustumCullingSystem.update(inScene, inDeltaTime);
+	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
+
 	renderMainPass(inScene);
 	renderDebugPass(inScene);
 }
 
 void Renderer::renderMainPass(Scene& inScene)
 {
-	// todo: sort by mat
+	// todo: instead of sorting all mesh renderers, sort the frustum culling output items, by mat then mesh
 	std::sort(inScene.getMeshRendererComponents().getData()
 		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
 		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
@@ -79,6 +84,8 @@ void Renderer::renderMainPass(Scene& inScene)
 			return inA.materialInstance.handle < inB.materialInstance.handle;
 		});
 	inScene.getMeshRendererComponents().rebuildLookupTable();
+
+	// todo: after sorting, loop on drawn items and add commands to the commandrecorder
 
 	render::getRenderBackend()->drawGeometry(inScene);
 }
@@ -159,9 +166,9 @@ void Renderer::loadDefaultMaterials()
 	std::cout << "Loaded default shaders successfully." << std::endl;
 }
 
-void Renderer::updateDebugShapes(Scene& inScene)
+void Renderer::updateDebugShapes(Scene& inScene, double inDeltaTime)
 {
-	debugShapeSubRenderer.updateDebugShapes(inScene);
+	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
 }
 
 void Renderer::updateLightParameters(Scene& inScene)

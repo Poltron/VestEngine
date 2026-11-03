@@ -36,7 +36,7 @@ namespace
 	}
 }
 
-void FrustumCullingSystem::update(Scene& inScene)
+void FrustumCullingSystem::update(Scene& inScene, double inDeltaTime)
 {
 	ZoneScoped;
 
@@ -47,11 +47,11 @@ void FrustumCullingSystem::update(Scene& inScene)
 		SphereColliderComponent* sphere = inScene.getSphereColliderComponents().at(i);
 		ensure(sphere);
 
-		WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);
+		const WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(sphere->entity);
 		ensure(worldTransform);
 
-		glm::vec3 squaredScale = maths::getMatrixSquaredScale(worldTransform->model);
-		float maxScale = glm::sqrt(std::max({ squaredScale.x, squaredScale.y, squaredScale.z }));
+		const glm::vec3 squaredScale = maths::getMatrixSquaredScale(worldTransform->model);
+		const float maxScale = glm::sqrt(std::max({ squaredScale.x, squaredScale.y, squaredScale.z }));
 
 		sphere->bInFrustum = isInFrustum(maths::getMatrixTranslation(worldTransform->model), sphere->radius, maxScale, frustum);
 	}

@@ -1,11 +1,8 @@
 #pragma once
+#include "ECS/Systems/ISystem.h"
 
-template<typename T>
-class ComponentManager;
-class Scene;
-
-class TransformSystem
+class TransformSystem : public ISystem
 {
 public:
-	void update(Scene& inScene);
+	virtual void update(Scene& inScene, double inDeltaTime) override;
 };

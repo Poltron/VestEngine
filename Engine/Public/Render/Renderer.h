@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "ECS/Systems/FrustumCullingSystem.h"
 #include "Render/Debug/DebugShapeSubRenderer.h"
 #include "Render/FrameInfo.h"
 #include "Render/GPUHandle.h"
@@ -23,14 +24,16 @@ class Renderer
 
 protected:
 	DebugShapeSubRenderer debugShapeSubRenderer;
+	FrustumCullingSystem frustumCullingSystem;
+
 	FrameInfo frameInfo;
 
 public:
 	void clear();
-	void render(Scene& inScene);
+	void render(Scene& inScene, double inDeltaTime);
 	void swap();
 
-	void updateDebugShapes(Scene& inScene);
+	void updateDebugShapes(Scene& inScene, double inDeltaTime);
 
 private:
 	void renderMainPass(Scene& inScene);
