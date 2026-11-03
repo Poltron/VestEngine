@@ -5,20 +5,38 @@
 #include <vector>
 
 #include "Core/ResourceHandle.h"
+#include "Render/GPUHandle.h"
+#include "RenderBackend_Vulkan/ShaderStructs.h"
+
+class Material;
 
 class MaterialInstance
 {
-	std::vector<std::pair<std::string, ResourceHandle>> textureParameters;
-	std::vector<std::pair<std::string, int>> intParameters;
-	std::vector<std::pair<std::string, float>> floatParameters;
-	std::vector<std::pair<std::string, glm::vec3>> vec3Parameters;
+	ResourceHandle materialHandle;
+
+	BufferHandle materialBufferHandle;
+	uint32_t descriptorSetHandle;
 
 public:
-	void clear();
-	void applyToShader();
+	BufferHandle getMaterialBufferHandle() const { return materialBufferHandle; }
+	uint32_t getDescriptorSetHandle() const { return descriptorSetHandle; }
+	ResourceHandle getMaterial() const { return materialHandle; }
 
-	void addTexture(const std::string& inName, ResourceHandle inValue);
-	void addInt(const std::string& inName, int inValue);
-	void addFloat(const std::string& inName, float inValue);
-	void addVec3(const std::string& inName, const glm::vec3& inValue);
+	MaterialInstance() = delete;
+	MaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle);
+	~MaterialInstance();
+
+	MaterialInstance(const MaterialInstance& inOther) = delete;
+	MaterialInstance& operator=(const MaterialInstance& inOther) = delete;
+
+	MaterialInstance(MaterialInstance&& inOther) noexcept;
+	MaterialInstance& operator=(MaterialInstance&& inOther) noexcept;
+
+	uint32_t getUint(std::string_view inName) const;
+	glm::vec4 getVec4(std::string_view inName) const;
+
+	void setVec3(std::string_view inName, const glm::vec3& inValue);
+	void setVec4(std::string_view inName, const glm::vec4& inValue);
+	void setMat4(std::string_view inName, const glm::mat4& inValue);
+	void setTexture(std::string_view inName, ResourceHandle inValue);
 };

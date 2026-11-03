@@ -9,6 +9,7 @@ ResourcesManager::ResourcesManager()
 {
 	models.reserve(MAX_RESOURCES);
 	materials.reserve(MAX_RESOURCES);
+	materialInstances.reserve(MAX_MATINSTANCES);
 	textures.reserve(MAX_RESOURCES);
 }
 
@@ -16,6 +17,7 @@ ResourcesManager::~ResourcesManager()
 {
 	textures.clear();
 	materials.clear();
+	materialInstances.clear();
 	models.clear();
 }
 
@@ -34,35 +36,54 @@ ResourceHandle ResourcesManager::loadModel(std::string inPath)
 	if (modelHandleCounter > MAX_RESOURCES)
 	{
 		std::cout << "ERROR : Max model resources reached" << std::endl;
-		return ResourceHandle();
+		return ResourceHandle::invalid;
 	}
 
-	Model model = Model(std::move(inPath));
-	models.push_back(std::move(model));
+	Model& model = models.emplace_back(std::move(inPath));
 
 	ResourceHandle handle(modelHandleCounter);
-	modelsLookup.insert({ handle, &models.back() });
+	modelsLookup.insert({ handle, &model });
 	modelHandleCounter++;
 
-	std::cout << "INFO : Loaded model " << handle.handle << " ( " << models.back().getPath() << " )" << std::endl;
+	std::cout << "INFO : Loaded model " << handle.handle << " ( " << model.getPath() << " )" << std::endl;
 
 	return handle;
 }
 
-ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, ResourceHandle inAlbedo)
+ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, const ShaderParameters& inShaderParameters)
 {
 	if (materialHandleCounter > MAX_RESOURCES)
 	{
 		std::cout << "ERROR : Max material resources reached" << std::endl;
-		return ResourceHandle();
+		return ResourceHandle::invalid;
 	}
 
-	Material material(inBlendMode, inType, inAlbedo);
-	materials.push_back(std::move(material));
+	Material& material = materials.emplace_back(inBlendMode, inType, inShaderParameters);
 
 	ResourceHandle handle(materialHandleCounter);
-	materialsLookup.insert({ handle, &materials.back() });
+	materialsLookup.insert({ handle, &material });
 	materialHandleCounter++;
+
+	material.createDefaultMaterialInstance(handle.handle);
+
+	std::cout << "INFO : Created material " << handle.handle << std::endl;
+
+	return handle;
+}
+
+ResourceHandle ResourcesManager::createMaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle)
+{
+	if (materialInstanceHandleCounter > MAX_MATINSTANCES)
+	{
+		std::cout << "ERROR : Max material resources reached" << std::endl;
+		return ResourceHandle::invalid;
+	}
+
+	MaterialInstance& materialInstance = materialInstances.emplace_back(inMaterial, inMaterialHandle);
+
+	ResourceHandle handle(materialInstanceHandleCounter);
+	materialInstancesLookup.insert({ handle, &materialInstance });
+	materialInstanceHandleCounter++;
 
 	std::cout << "INFO : Created material " << handle.handle << std::endl;
 
@@ -84,17 +105,16 @@ ResourceHandle ResourcesManager::createModel(std::vector<Mesh>&& inMeshes, std::
 	if (modelHandleCounter > MAX_RESOURCES)
 	{
 		std::cout << "ERROR : Max model resources reached" << std::endl;
-		return ResourceHandle();
+		return ResourceHandle::invalid;
 	}
 
-	Model model(std::move(inMeshes), std::move(inName));
-	models.push_back(std::move(model));
+	Model& model = models.emplace_back(std::move(inMeshes), std::move(inName));
 
 	ResourceHandle handle(modelHandleCounter);
-	modelsLookup.insert({ handle, &models.back() });
+	modelsLookup.insert({ handle, &model });
 	modelHandleCounter++;
 
-	std::cout << "INFO : Created model " << handle.handle << " ( " << models.back().getPath() << " )" << std::endl;
+	std::cout << "INFO : Created model " << handle.handle << " ( " << model.getPath() << " )" << std::endl;
 
 	return handle;
 }
@@ -114,17 +134,16 @@ ResourceHandle ResourcesManager::loadTexture(std::string inPath, std::string inT
 	if (textureHandleCounter > MAX_RESOURCES)
 	{
 		std::cout << "ERROR : Max texture resources reached" << std::endl;
-		return ResourceHandle();
+		return ResourceHandle::invalid;
 	}
 	
-	Texture texture(std::move(inPath), std::move(inType));
-	textures.push_back(std::move(texture));
+	Texture& texture = textures.emplace_back(std::move(inPath), std::move(inType));
 
 	ResourceHandle handle(textureHandleCounter);
-	texturesLookup.insert({ handle, &textures.back() });
+	texturesLookup.insert({ handle, &texture });
 	textureHandleCounter++;
 
-	std::cout << "INFO : Loaded texture " << handle.handle << " ( " << textures.back().getPath() << " )" << std::endl;
+	std::cout << "INFO : Loaded texture " << handle.handle << " ( " << texture.getPath() << " )" << std::endl;
 
 	return handle;
 }
@@ -134,9 +153,8 @@ ResourceHandle ResourcesManager::loadMaterial()
 	if (materialHandleCounter > MAX_RESOURCES)
 	{
 		//std::cout << "ERROR : Max shader resources reached" << std::endl;
-		return ResourceHandle();
+		return ResourceHandle::invalid;
 	}
-
 
 	//Material material = Material(std::move(inVertexPath), std::move(inFragmentPath));
 	//shaders.push_back(std::move(shader));
@@ -147,42 +165,54 @@ ResourceHandle ResourcesManager::loadMaterial()
 
 	//std::cout << "INFO : Loaded shader " << handle.handle << " ( " << shaders.back().getVertexPath() << " + " << shaders.back().getFragmentPath() << " )" << std::endl;
 
-	return ResourceHandle();
+	return ResourceHandle::invalid;
 }
 
-
+//
 Model* ResourcesManager::getModel(ResourceHandle handle)
 {
-	assert(handle.IsValid());
+	assert(handle.isValid());
 	return modelsLookup.at(handle);
 }
 
 const Model* ResourcesManager::getModel(ResourceHandle handle) const
 {
-	assert(handle.IsValid());
+	assert(handle.isValid());
 	return modelsLookup.at(handle);
 }
 
 Texture* ResourcesManager::getTexture(ResourceHandle handle)
 {
-	assert(handle.IsValid());
+	assert(handle.isValid());
 	return texturesLookup.at(handle);
 }
 
 const Texture* ResourcesManager::getTexture(ResourceHandle handle) const
 {
-	assert(handle.IsValid());
+	assert(handle.isValid());
 	return texturesLookup.at(handle);
 }
 
 Material* ResourcesManager::getMaterial(ResourceHandle handle)
 {
-	assert(handle.IsValid());
+	assert(handle.isValid());
 	return materialsLookup.at(handle);
 }
 
 const Material* ResourcesManager::getMaterial(ResourceHandle handle) const
 {
-	assert(handle.IsValid());
+	assert(handle.isValid());
 	return materialsLookup.at(handle);
+}
+
+MaterialInstance* ResourcesManager::getMaterialInstance(ResourceHandle handle)
+{
+	assert(handle.isValid());
+	return materialInstancesLookup.at(handle);
+}
+
+const MaterialInstance* ResourcesManager::getMaterialInstance(ResourceHandle handle) const
+{
+	assert(handle.isValid());
+	return materialInstancesLookup.at(handle);
 }

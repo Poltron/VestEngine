@@ -17,9 +17,9 @@ class Renderer
 {
 	Camera* activeCamera;
 
-	ResourceHandle litMaterialHandle;
-	ResourceHandle unlitMaterialHandle;
-	ResourceHandle solidColorMaterialHandle;
+	ResourceHandle litMaterialHandle = ResourceHandle::invalid;
+	ResourceHandle unlitMaterialHandle = ResourceHandle::invalid;
+	ResourceHandle solidColorMaterialHandle = ResourceHandle::invalid;
 
 protected:
 	DebugShapeSubRenderer debugShapeSubRenderer;

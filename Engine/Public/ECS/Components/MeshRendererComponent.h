@@ -13,10 +13,7 @@ struct MeshRendererComponent
 	ResourceHandle model;
 	ResourceHandle materialInstance;
 
-	//GPUHandle shader;
 	//bool bOutline;
-
-	//ShaderParameterCollection shaderParameters;
 
 	MeshRendererComponent();
 	~MeshRendererComponent();

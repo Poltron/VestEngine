@@ -71,6 +71,7 @@ void Renderer::render(Scene& inScene)
 
 void Renderer::renderMainPass(Scene& inScene)
 {
+	// todo: sort by mat
 	std::sort(inScene.getMeshRendererComponents().getData()
 		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
 		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
@@ -132,16 +133,24 @@ void Renderer::loadDefaultMaterials()
 	//debugShapeSubRenderer.loadShaders();
 	//debugShapeSubRenderer.loadDebugShapes();
 
-	ResourceHandle placeholderDiffuse = engine::getResources()->loadTexture(File::getResourcesDir() + "Textures/placeholder.png", "diffuse");
-
 	//std::string renderBackendName = render::getRenderBackend()->getName();
 	//const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/default.vert";
 	//const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/lit.frag";
 	//GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
 	//g_Renderer->setLitShader(litShader);
+	
+	const ShaderParameters& shaderParameters = shader::getUnlitMaterialShaderParameters();
+	ResourceHandle unlitMatHandle = engine::getResources()->createMaterial(EMaterialBlendMode::OPAQUE, EMaterialType::UNLIT, shaderParameters);
+	const Material* material = engine::getResources()->getMaterial(unlitMatHandle);
 
-	ResourceHandle unlitMat = engine::getResources()->createMaterial(EMaterialBlendMode::OPAQUE, EMaterialType::UNLIT, placeholderDiffuse);
-	g_Renderer->setUnlitMaterial(unlitMat);
+	ResourceHandle defaultUnlitMatInstanceHandle = engine::getResources()->createMaterialInstance(material, unlitMatHandle);
+	MaterialInstance* unlitMatInstance = engine::getResources()->getMaterialInstance(defaultUnlitMatInstanceHandle);
+
+	ResourceHandle placeholderDiffuse = engine::getResources()->loadTexture(File::getResourcesDir() + "Textures/placeholder.png", "diffuse");
+	unlitMatInstance->setTexture("diffuse", placeholderDiffuse);
+	unlitMatInstance->setVec4("color", glm::vec4(color::red, 1.0));
+
+	g_Renderer->setUnlitMaterial(unlitMatHandle);
 
 	//const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/color.frag";
 	//GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);

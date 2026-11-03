@@ -123,15 +123,15 @@ namespace
 bool RenderPipeline::initialize(RenderDevice& inDevice
 	, VkRenderPass inRenderPass
 	, VkExtent2D inSwapchainExtent
-	, const std::vector<VkPushConstantRange>& inPushConstantRanges
-	, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 	, const std::vector<ShaderStageInfo>& inShaderStageInfos
+	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
 	, uint32_t inVertexSize
-	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs)
+	, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
+	, const std::vector<VkPushConstantRange>& inPushConstantRanges)
 {
 	device = inDevice.getDevice();
 
-	if (!createPipelineLayout(inPushConstantRanges, inDescriptorSetLayouts, pipelineLayout))
+	if (!createPipelineLayout(inDescriptorSetLayouts, inPushConstantRanges, pipelineLayout))
 	{
 		return false;
 	}
@@ -151,7 +151,7 @@ void RenderPipeline::destroy()
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 }
 
-bool RenderPipeline::createPipelineLayout(const std::vector<VkPushConstantRange>& inPushConstantRanges, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, VkPipelineLayout& outPipelineLayout)
+bool RenderPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, const std::vector<VkPushConstantRange>& inPushConstantRanges, VkPipelineLayout& outPipelineLayout)
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -231,7 +231,7 @@ bool RenderPipeline::createPipeline(VkExtent2D inSwapchainExtent, VkRenderPass i
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional

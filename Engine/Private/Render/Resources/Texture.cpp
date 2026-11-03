@@ -7,6 +7,7 @@
 #include "RenderBackend/RenderBackend.h"
 
 Texture::Texture(std::string inPath, std::string inType)
+	: handle(GPUHandle::invalid)
 {
 	path = std::move(inPath);
 	type = std::move(inType);
@@ -25,7 +26,7 @@ Texture::~Texture()
 Texture::Texture(Texture&& inOther) noexcept
 	: handle(inOther.handle), type(inOther.type), path(inOther.path)
 {
-	inOther.handle = {};
+	inOther.handle = GPUHandle::invalid;
 	inOther.type.clear();
 	inOther.path.clear();
 }
@@ -38,7 +39,7 @@ Texture& Texture::operator=(Texture&& inOther) noexcept
 		type = inOther.type;
 		path = inOther.path;
 
-		inOther.handle = {};
+		inOther.handle = GPUHandle::invalid;
 		inOther.type.clear();
 		inOther.path.clear();
 	}

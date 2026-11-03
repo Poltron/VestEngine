@@ -1,12 +1,12 @@
 #version 450
 
-layout(set = 0, binding = 0) uniform FrameData
+layout (set = 0, binding = 0) uniform FrameData
 {
     mat4 view;
     mat4 proj;
 } frameData;
 
-layout (push_constant) uniform VertexInstanceData
+layout (push_constant) uniform InstanceData
 {
     mat4 model;
 } instanceData;

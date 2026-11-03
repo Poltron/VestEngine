@@ -1,99 +1,102 @@
 #include "Core/Resources/MaterialInstance.h"
-
 #include "Core/Engine.h"
 #include "Core/Ensure.h"
 #include "Core/ResourcesManager.h"
+#include "Render/Color.h"
 #include "Render/Renderer.h"
 #include "RenderBackend/RenderBackend.h"
+#include "RenderBackend_Vulkan/RenderDevice.h"
 
-void MaterialInstance::clear()
+MaterialInstance::MaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle)
+	: materialHandle(inMaterialHandle), materialBufferHandle(0, 0)
 {
-	intParameters.clear();
-	floatParameters.clear();
-	vec3Parameters.clear();
-	textureParameters.clear();
+	materialHandle = inMaterialHandle;
+
+	const ShaderParameters& shaderParameters = inMaterial->getShaderParameters();
+	
+	// todo: dynamic fields initialization
+	MaterialData defaultMaterialData;
+	defaultMaterialData.color = glm::vec4(color::white, 1);
+	defaultMaterialData.diffuseTexIndex = 0;
+
+	materialBufferHandle = render::getRenderBackend()->getDevice().pushMaterialData(&defaultMaterialData, shaderParameters.size);
+	descriptorSetHandle = render::getRenderBackend()->getDevice().getMaterialInstanceCompatibleDescriptorSet();
 }
 
-void MaterialInstance::applyToShader()
+MaterialInstance::~MaterialInstance()
 {
-	for (const auto& intParameter : intParameters)
-	{
-		render::getRenderBackend()->setInt(intParameter.first, intParameter.second);
-	}
-
-	for (const auto& floatParameter : floatParameters)
-	{
-		render::getRenderBackend()->setFloat(floatParameter.first, floatParameter.second);
-	}
-
-	for (const auto& vec3Parameter : vec3Parameters)
-	{
-		render::getRenderBackend()->setVec3(vec3Parameter.first, vec3Parameter.second);
-	}
-
-	for (size_t i = 0; i < textureParameters.size(); ++i)
-	{
-		const auto& textureParameter = textureParameters[i];
-
-		Texture* texture = engine::getResources()->getTexture(textureParameter.second);
-		ensure(texture);
-
-		render::getRenderBackend()->bindTexture(texture->getHandle(), texture->getType(), i);
-	}
+	// todo
+	//render::getRenderBackend()->getDevice().destroyMaterialData(parametersBufferHandle);
 }
 
-void MaterialInstance::addTexture(const std::string& inName, ResourceHandle inValue)
+MaterialInstance::MaterialInstance(MaterialInstance&& inOther) noexcept
+	: descriptorSetHandle(inOther.descriptorSetHandle), materialBufferHandle(inOther.materialBufferHandle), materialHandle(inOther.materialHandle)
 {
-	for (auto it = textureParameters.begin(); it != textureParameters.end(); ++it)
-	{
-		if (it->first == inName)
-		{
-			it->second = inValue;
-			return;
-		}
-	}
-
-	textureParameters.push_back({ inName, inValue });
+	inOther.descriptorSetHandle = 0;
+	inOther.materialBufferHandle = BufferHandle::invalid;
+	inOther.materialHandle = ResourceHandle::invalid;
 }
 
-void MaterialInstance::addInt(const std::string& inName, int inValue)
+MaterialInstance& MaterialInstance::operator=(MaterialInstance&& inOther) noexcept
 {
-	for (auto it = intParameters.begin(); it != intParameters.end(); ++it)
+	if (this == &inOther)
 	{
-		if (it->first == inName)
-		{
-			it->second = inValue;
-			return;
-		}
+		descriptorSetHandle = inOther.descriptorSetHandle;
+		materialBufferHandle = inOther.materialBufferHandle;
+		materialHandle = inOther.materialHandle;
+
+		inOther.descriptorSetHandle = 0;
+		inOther.materialBufferHandle = BufferHandle::invalid;
+		inOther.materialHandle = ResourceHandle::invalid;
 	}
 
-	intParameters.push_back({ inName, inValue });
+	return *this;
 }
 
-void MaterialInstance::addFloat(const std::string& inName, float inValue)
+uint32_t MaterialInstance::getUint(std::string_view inName) const
 {
-	for (auto it = floatParameters.begin(); it != floatParameters.end(); ++it)
-	{
-		if (it->first == inName)
-		{
-			it->second = inValue;
-			return;
-		}
-	}
-
-	floatParameters.push_back({ inName, inValue });
+	const Material* material = engine::getResources()->getMaterial(materialHandle);
+	const uint8_t* materialBuffer = render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(materialBufferHandle.offset);
+	return material->getShaderParameters().getUint(inName, materialBuffer);
 }
 
-void MaterialInstance::addVec3(const std::string& inName, const glm::vec3& inValue)
+glm::vec4 MaterialInstance::getVec4(std::string_view inName) const
 {
-	for (auto it = vec3Parameters.begin(); it != vec3Parameters.end(); ++it)
-	{
-		if (it->first == inName)
-		{
-			it->second = inValue;
-			return;
-		}
-	}
+	const Material* material = engine::getResources()->getMaterial(materialHandle);
+	const uint8_t* materialBuffer = render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(materialBufferHandle.offset);
+	return material->getShaderParameters().getVec4(inName, materialBuffer);
+}
 
-	vec3Parameters.push_back({ inName, inValue });
+void MaterialInstance::setVec3(std::string_view inName, const glm::vec3& inValue)
+{
+	const Material* material = engine::getResources()->getMaterial(materialHandle);
+	uint32_t offset = material->getShaderParameters().getParameterOffset(inName);
+	glm::vec3* parameterMem = (glm::vec3*)render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(materialBufferHandle.offset + offset);
+	*parameterMem = inValue;
+}
+
+void MaterialInstance::setVec4(std::string_view inName, const glm::vec4& inValue)
+{
+	const Material* material = engine::getResources()->getMaterial(materialHandle);
+	uint32_t paramOffset = material->getShaderParameters().getParameterOffset(inName);
+	glm::vec4* parameterMem = (glm::vec4*)render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(materialBufferHandle.offset + paramOffset);
+	*parameterMem = inValue;
+}
+
+void MaterialInstance::setMat4(std::string_view inName, const glm::mat4& inValue)
+{
+	const Material* material = engine::getResources()->getMaterial(materialHandle);
+	uint32_t offset = material->getShaderParameters().getParameterOffset(inName);
+	glm::mat4* parameterMem = (glm::mat4*)render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(materialBufferHandle.offset + offset);
+	*parameterMem = inValue;
+}
+
+void MaterialInstance::setTexture(std::string_view inName, ResourceHandle inValue)
+{
+	uint32_t textureIndex = render::getRenderBackend()->getDevice().addTexture(inValue);
+
+	const Material* material = engine::getResources()->getMaterial(materialHandle);
+	uint32_t offset = material->getShaderParameters().getParameterOffset(inName);
+	uint32_t* parameterMem = (uint32_t*)render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(materialBufferHandle.offset + offset);
+	*parameterMem = textureIndex;
 }

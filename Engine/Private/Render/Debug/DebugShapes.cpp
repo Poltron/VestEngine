@@ -6,11 +6,8 @@
 #include "RenderBackend/RenderBackend.h"
 
 DebugShapePrimitive::DebugShapePrimitive(size_t inCapacity)
-	: capacity(inCapacity), instanceCount(0)
+	: capacity(inCapacity), instanceCount(0), VAO(GPUHandle::invalid), VBO(GPUHandle::invalid)
 {
-	VAO = {};
-	VBO = {};
-
 	initialize();
 }
 
@@ -23,8 +20,8 @@ DebugShapePrimitive::~DebugShapePrimitive()
 DebugShapePrimitive::DebugShapePrimitive(DebugShapePrimitive&& inOther) noexcept
 	: VAO(inOther.VAO), VBO(inOther.VBO), capacity(inOther.capacity), instanceCount(inOther.instanceCount)
 {
-	inOther.VAO = {};
-	inOther.VBO = {};
+	inOther.VAO = GPUHandle::invalid;
+	inOther.VBO = GPUHandle::invalid;
 	inOther.capacity = 0;
 	inOther.instanceCount = 0;
 }
@@ -38,8 +35,8 @@ DebugShapePrimitive& DebugShapePrimitive::operator=(DebugShapePrimitive&& inOthe
 		capacity = inOther.capacity;
 		instanceCount = inOther.instanceCount;
 
-		inOther.VAO = {};
-		inOther.VBO = {};
+		inOther.VAO = GPUHandle::invalid;
+		inOther.VBO = GPUHandle::invalid;
 		inOther.capacity = 0;
 		inOther.instanceCount = 0;
 	}
@@ -96,12 +93,8 @@ void DebugShapePrimitive::updateVBO(std::vector<DebugShapePrimitiveInstance>& in
 
 //
 DebugShapeMesh::DebugShapeMesh(std::vector<glm::vec3>&& inVertices, size_t inCapacity)
-	: vertices(inVertices), capacity(inCapacity), instanceCount(0)
+	: vertices(inVertices), capacity(inCapacity), instanceCount(0), VAO(GPUHandle::invalid), VBOmesh(GPUHandle::invalid), VBOinstances(GPUHandle::invalid)
 {
-	VAO = {};
-	VBOmesh = {};
-	VBOinstances = {};
-
 	initialize();
 }
 
@@ -118,9 +111,9 @@ DebugShapeMesh::DebugShapeMesh(DebugShapeMesh&& inOther) noexcept
 	vertices.clear();
 	vertices = std::move(inOther.vertices);
 
-	inOther.VAO = {};
-	inOther.VBOmesh = {};
-	inOther.VBOinstances = {};
+	inOther.VAO = GPUHandle::invalid;
+	inOther.VBOmesh = GPUHandle::invalid;
+	inOther.VBOinstances = GPUHandle::invalid;
 }
 
 DebugShapeMesh& DebugShapeMesh::operator=(DebugShapeMesh&& inOther) noexcept
@@ -136,9 +129,9 @@ DebugShapeMesh& DebugShapeMesh::operator=(DebugShapeMesh&& inOther) noexcept
 		capacity = inOther.capacity;
 		instanceCount = inOther.instanceCount;
 
-		inOther.VAO = {};
-		inOther.VBOmesh = {};
-		inOther.VBOinstances = {};
+		inOther.VAO = GPUHandle::invalid;
+		inOther.VBOmesh = GPUHandle::invalid;
+		inOther.VBOinstances = GPUHandle::invalid;
 		inOther.capacity = capacity;
 		inOther.instanceCount = instanceCount;
 	}

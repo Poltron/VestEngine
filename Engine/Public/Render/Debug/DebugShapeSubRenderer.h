@@ -24,8 +24,8 @@ enum class EDebugShapeMesh : unsigned int
 
 class DebugShapeSubRenderer
 {
-	GPUHandle debugPrimitiveShaderHandle;
-	GPUHandle debugMeshShaderHandle;
+	GPUHandle debugPrimitiveShaderHandle = GPUHandle::invalid;
+	GPUHandle debugMeshShaderHandle = GPUHandle::invalid;
 
 	std::vector<DebugShapePrimitive> debugShapePrimitives;
 	std::vector<DebugShapePrimitiveInstance> pointDebugShapeInstances;

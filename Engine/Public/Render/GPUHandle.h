@@ -3,6 +3,8 @@
 #include <glm/mat4x4.hpp>
 #include <stdint.h>
 
+#define GPURESOURCE_INVALID_ID UINT32_MAX
+
 struct GPUHandle
 {
 	uint32_t id;
@@ -11,59 +13,29 @@ struct GPUHandle
 		: id(inId)
 	{}
 
-	GPUHandle()
-		: GPUHandle(UINT32_MAX)
-	{}
-
 	bool isValid() const
 	{
 		return id != UINT32_MAX;
 	}
+
+	static GPUHandle invalid;
 };
 
-struct FrameData
-{
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-};
-
-struct MaterialData
-{
-	alignas(4) glm::vec4 color;
-};
-
-struct InstanceData
-{
-	alignas(16) glm::mat4 model;
-};
-
-struct UBOHandle
+struct BufferHandle
 {
 	uint32_t offset;
 	uint32_t size;
 
-	UBOHandle(uint32_t inOffset, uint32_t inSize)
+	BufferHandle(uint32_t inOffset, uint32_t inSize)
 		: offset(inOffset), size(inSize)
-	{}
-};
-
-struct DescriptorSetHandle
-{
-	uint32_t id;
-	uint32_t count;
-
-	DescriptorSetHandle(uint32_t inId, uint32_t inCount)
-		: id(inId), count(inCount)
-	{}
-
-	DescriptorSetHandle()
-		: DescriptorSetHandle(UINT32_MAX, 0)
 	{}
 
 	bool isValid() const
 	{
-		return id != UINT32_MAX && count > 0;
+		return size != 0;
 	}
+
+	static BufferHandle invalid;
 };
 
 enum class EBufferType

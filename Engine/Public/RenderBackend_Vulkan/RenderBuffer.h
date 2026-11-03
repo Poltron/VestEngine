@@ -13,6 +13,7 @@ class RenderBuffer
 	VkDeviceSize size;
 
 	void* mappedMemory = nullptr;
+	uint32_t offset;
 
 public:
 	VkDevice getDevice() const { return device; }
@@ -23,7 +24,7 @@ public:
 	bool isMapped() const { return mappedMemory != nullptr; }
 
 	RenderBuffer(VkDevice inDevice, VkBuffer inBuffer, VkDeviceMemory inMemory, VkDeviceSize inSize)
-		: device(inDevice), buffer(inBuffer), memory(inMemory), size(inSize), mappedMemory(nullptr)
+		: device(inDevice), buffer(inBuffer), memory(inMemory), size(inSize), mappedMemory(nullptr), offset(0)
 	{}
 
 	void fill(void* inData, size_t inDataSize, uint32_t inOffset = 0)
@@ -52,5 +53,36 @@ public:
 	{
 		vkUnmapMemory(device, memory);
 		mappedMemory = nullptr;
+	}
+
+	BufferHandle push_back(void* inData, uint32_t inSize, uint32_t inOffsetAlignment)
+	{
+		ensure(isMapped());
+		ensure(getSize() >= offset + inSize);
+
+		BufferHandle handle = reserve(inSize, inOffsetAlignment);
+		fill(inData, handle.size, handle.offset);
+		return handle;
+	}
+
+	BufferHandle reserve(uint32_t inSize, uint32_t inOffsetAlignment)
+	{
+		ensure(getSize() >= offset + inSize);
+
+		BufferHandle handle(offset, inSize);
+		offset += getPaddedSize(inSize, inOffsetAlignment);
+		return handle;
+	}
+
+	void reset()
+	{
+		offset = 0;
+	}
+
+private:
+	uint32_t getPaddedSize(uint32_t inSize, uint32_t inAlignment)
+	{
+		ensure(inAlignment > 0);
+		return (inSize + inAlignment - 1) & ~(inAlignment - 1);
 	}
 };

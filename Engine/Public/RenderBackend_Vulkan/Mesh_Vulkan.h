@@ -34,6 +34,8 @@ public:
 	size_t getVerticesSize() const { return vertices.size(); }
 	size_t getIndicesSize() const { return indices.size(); }
 
+	const std::vector<ResourceHandle>& getTextures() const { return textures; }
+
 private:
 	void setupMesh();
 };

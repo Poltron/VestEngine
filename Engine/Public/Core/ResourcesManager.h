@@ -6,9 +6,11 @@
 #include "Core/ResourceHandle.h"
 #include "Core/Resources/Model.h"
 #include "Core/Resources/Material.h"
+#include "Core/Resources/MaterialInstance.h"
 #include "Render/Resources/Texture.h"
 
 #define MAX_RESOURCES 10
+#define MAX_MATINSTANCES 100
 
 class ResourcesManager
 {
@@ -19,7 +21,8 @@ public:
 	ResourceHandle loadTexture(std::string inPath, std::string inType);
 	ResourceHandle loadMaterial();
 	ResourceHandle loadModel(std::string inPath);
-	ResourceHandle createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, ResourceHandle inAlbedo);
+	ResourceHandle createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, const ShaderParameters& inShaderParameters);
+	ResourceHandle createMaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle);
 	ResourceHandle createModel(std::vector<Mesh>&& inMeshes, std::string inName);
 
 	Texture* getTexture(ResourceHandle handle);
@@ -28,6 +31,8 @@ public:
 	const Model* getModel(ResourceHandle handle) const;
 	Material* getMaterial(ResourceHandle handle);
 	const Material* getMaterial(ResourceHandle handle) const;
+	MaterialInstance* getMaterialInstance(ResourceHandle handle);
+	const MaterialInstance* getMaterialInstance(ResourceHandle handle) const;
 
 private:
 	// note : vector is temporary, currently unsafe if vector is reallocated since lookup table is not updated
@@ -42,5 +47,9 @@ private:
 	uint32_t materialHandleCounter = 0;
 	std::unordered_map<ResourceHandle, Material*> materialsLookup;
 	std::vector<Material> materials;
+
+	uint32_t materialInstanceHandleCounter = 0;
+	std::unordered_map<ResourceHandle, MaterialInstance*> materialInstancesLookup;
+	std::vector<MaterialInstance> materialInstances;
 };
 

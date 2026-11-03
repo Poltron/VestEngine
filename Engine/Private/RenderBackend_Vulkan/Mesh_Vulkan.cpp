@@ -7,11 +7,8 @@
 #include "RenderBackend_Vulkan/RenderDevice.h"
 
 Mesh_Vulkan::Mesh_Vulkan(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices, std::vector<ResourceHandle>&& inTextures)
-	: vertices(inVertices), indices(inIndices), textures(inTextures)
+	: vertices(inVertices), indices(inIndices), textures(inTextures), vertexBuffer(GPUHandle::invalid), indexBuffer(GPUHandle::invalid)
 {
-	vertexBuffer = {};
-	indexBuffer = {};
-
 	setupMesh();
 }
 
@@ -32,8 +29,8 @@ Mesh_Vulkan::Mesh_Vulkan(Mesh_Vulkan&& inOther) noexcept
 	indices = inOther.indices;
 	textures = inOther.textures;
 
-	inOther.vertexBuffer = {};
-	inOther.indexBuffer = {};
+	inOther.vertexBuffer = GPUHandle::invalid;
+	inOther.indexBuffer = GPUHandle::invalid;
 }
 
 Mesh_Vulkan& Mesh_Vulkan::operator=(Mesh_Vulkan&& inOther) noexcept
@@ -51,9 +48,8 @@ Mesh_Vulkan& Mesh_Vulkan::operator=(Mesh_Vulkan&& inOther) noexcept
 		vertexBuffer = inOther.vertexBuffer;
 		indexBuffer = inOther.indexBuffer;
 
-		inOther.vertexBuffer = {};
-		inOther.indexBuffer = {};
-
+		inOther.vertexBuffer = GPUHandle::invalid;
+		inOther.indexBuffer = GPUHandle::invalid;
 	}
 	return *this;
 }

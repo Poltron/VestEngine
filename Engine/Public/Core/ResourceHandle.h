@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#define RESOURCE_INVALID UINT32_MAX
+#define RESOURCE_INVALID_ID UINT32_MAX
 
 // todo : introduce ref counting ?
 struct ResourceHandle
@@ -13,9 +13,9 @@ struct ResourceHandle
 		: handle(inHandle)
 	{}
 
-	bool IsValid() const
+	bool isValid() const
 	{
-		return handle != RESOURCE_INVALID;
+		return handle != RESOURCE_INVALID_ID;
 	}
 
 	bool operator==(const ResourceHandle& inOther) const

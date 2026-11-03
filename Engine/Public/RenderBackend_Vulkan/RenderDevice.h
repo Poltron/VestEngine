@@ -2,14 +2,18 @@
 
 #include <optional>
 #include <set>
+#include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
 
+#include "Core/Allocators/StackAllocator.h"
 #include "Core/ResourceHandle.h"
+#include "Core/Resources/Material.h"
+#include "Core/Resources/MaterialInstance.h"
 #include "Render/GPUHandle.h"
 #include "RenderBackend_Vulkan/CommandContext.h"
 #include "RenderBackend_Vulkan/RenderDescriptorPool.h"
-#include "RenderBackend_Vulkan/RenderStructs.h"
+#include "RenderBackend_Vulkan/RenderConfig.h"
 
 class RenderImage;
 class RenderBuffer;
@@ -47,24 +51,29 @@ class RenderDevice
 	VkDevice device = VK_NULL_HANDLE;
 	QueueFamilyIndices queueFamilyIndices;
 
-	std::vector<RenderBuffer> renderBuffers;
-	std::vector<RenderImage> renderImages;
-	
 	std::vector<CommandContext> commandContexts;
-	std::vector<VkSampler> textureSamplers;
+
+	std::vector<RenderBuffer> renderBuffers;
+	std::vector<RenderImage> images;
+	VkSampler sampler;
 	
 	RenderDescriptorPool descriptorPool;
 
 	uint32_t minUniformBufferOffsetAlignment;
 	uint32_t maxUniformBufferRange;
 
-	uint32_t nextUniformBufferOffset;
 	std::vector<GPUHandle> frameUniformBuffers;
 	std::vector<VkDescriptorSet> frameUniformBufferDescriptorSets;
 	VkDescriptorSetLayout frameUniformBufferLayout;
 
+	VkDescriptorSet textureDescriptorSet;
+	VkDescriptorSetLayout textureDescriptorSetLayout;
+
+	GPUHandle materialBuffer = GPUHandle::invalid;
+	VkDescriptorSet materialDescriptorSet;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
-	std::vector<VkDescriptorSet> materialDescriptorSets;
+
+	uint8_t nextTextureAvailableSlot;
 
 public:
 	VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
@@ -76,17 +85,15 @@ public:
 	CommandContext& getPresentCommandContext() { return commandContexts[(uint8_t)EQueueFamily::PRESENT]; }
 	CommandContext& getTransferCommandContext() { return commandContexts[(uint8_t)EQueueFamily::TRANSFER]; }
 
-	VkSampler getTextureSampler(uint32_t inHandle) const { return textureSamplers[inHandle]; }
+	GPUHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
+	VkDescriptorSet getFrameBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
+	VkDescriptorSetLayout getFrameBufferDescriptorSetLayout() const { return frameUniformBufferLayout; }
 
-	static constexpr uint8_t getFrameCount() { return 2; }
-	static constexpr size_t getFrameUniformBufferSize() { return 10240; }
+	VkDescriptorSet getTextureDescriptorSet() const { return textureDescriptorSet; }
+	VkDescriptorSetLayout getTextureDescriptorSetLayout() const { return textureDescriptorSetLayout; }
 
-	GPUHandle getFrameUniformBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
-	const RenderBuffer& getFrameUniformBuffer(uint32_t inFrameIndex) const { return getBuffer(frameUniformBuffers[inFrameIndex]); }
-	VkDescriptorSet getFrameUniformBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
-	VkDescriptorSetLayout getFrameUniformBufferLayout() const { return frameUniformBufferLayout; }
-
-	VkDescriptorSet getMaterialDescriptorSet(uint32_t inId) const { return materialDescriptorSets[inId]; }
+	GPUHandle getMaterialBufferHandle() const { return materialBuffer; }
+	VkDescriptorSet getMaterialBufferDescriptorSet() const { return materialDescriptorSet; }
 	VkDescriptorSetLayout getMaterialDescriptorSetLayout() const { return materialDescriptorSetLayout; }
 
 public:
@@ -94,6 +101,7 @@ public:
 	void shutdown();
 	void createCommandContexts(const QueueFamilyIndices& inQueueFamilyIndices);
 
+	// resources
 	//
 	GPUHandle createAndFillBuffer(size_t inSize, void* inData, EBufferType inType);
 	GPUHandle createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
@@ -102,18 +110,32 @@ public:
 	void destroyBuffer(GPUHandle inHandle);
 
 	//
-	void resetFrameData();
-	UBOHandle emplaceFrameData(void* inData, uint32_t inSize, uint32_t inFrameId);
-
-	//
-	DescriptorSetHandle createMaterialDescriptorSets(ResourceHandle inHandle, uint32_t inCount);
-	void destroyMaterialDescriptorSets(DescriptorSetHandle inHandle);
-
-	//
 	GPUHandle createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
 	RenderImage& getImage(GPUHandle inHandle);
 	const RenderImage& getImage(GPUHandle inHandle) const;
 	void destroyImage(GPUHandle inHandle);
+
+	// rendering data, descriptor sets
+	//
+	void resetFrameData(uint32_t inFrameId);
+	BufferHandle pushFrameData(void* inData, uint32_t inSize, uint32_t inFrameId);
+
+	//
+	uint32_t addTexture(ResourceHandle inTexture);
+	uint8_t getAvailableTextureSlot();
+
+	//
+	BufferHandle pushMaterialData(void* inData, uint32_t inSize);
+	const uint8_t* getMaterialInstanceBuffer(uint32_t inOffset) const;
+	uint32_t getMaterialInstanceCompatibleDescriptorSet();
+
+	//DescriptorSetHandle createMaterialDescriptorSet(GPUHandle inBuffer, size_t inBufferSize);
+	//void destroyMaterialDescriptorSets(DescriptorSetHandle inHandle);
+	VkDescriptorSet getMaterialDescriptorSet(uint32_t inHandle) const;
+
+	// should be in renderbackend
+	void getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos);
+	bool checkCompatiblePipeline(const std::vector<ShaderStageInfo>& inShaderStageInfos) const;
 
 private:
 	static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface);
@@ -124,10 +146,16 @@ private:
 	bool pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice);
 	bool createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers);
 
-	bool createFrameDynamicUniformBuffers(uint8_t inFrameCount
+	bool createFrameData(uint8_t inFrameCount
 		, VkDeviceSize inBufferSize
 		, std::vector<GPUHandle>& outBufferHandles
 		, std::vector<VkDescriptorSet>& outBufferDescriptorSets);
-	bool createTextureSamplers(uint8_t inCount);
-	bool createMaterialDescriptorSetLayout();
+
+	bool createTextureSampler();
+	bool createTextureData(uint8_t inTexturesCount
+		, VkDescriptorSet& outDescriptorSet);
+
+	bool createMaterialData(VkDeviceSize inBufferSize
+		, GPUHandle& outBufferHandle
+		, VkDescriptorSet& outBufferDescriptorSet);
 };

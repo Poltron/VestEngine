@@ -8,20 +8,18 @@
 #include "RenderBackend_Vulkan/RenderPipeline.h"
 
 MeshRendererComponent::MeshRendererComponent()
-	: entity(ENTITY_INVALID), model(RESOURCE_INVALID)//, shader({}), bOutline(false)
+	: entity(ENTITY_INVALID), model(ResourceHandle::invalid), materialInstance(ResourceHandle::invalid)//, bOutline(false)
 {}
 
 MeshRendererComponent::~MeshRendererComponent()
 {}
 
 MeshRendererComponent::MeshRendererComponent(MeshRendererComponent&& inOther) noexcept
-	: entity(inOther.entity), model(inOther.model), materialInstance(inOther.materialInstance)//, ubo(inOther.ubo), descriptorSets(inOther.descriptorSets)
+	: entity(inOther.entity), model(inOther.model), materialInstance(inOther.materialInstance)
 {
 	inOther.entity = Entity();
-	inOther.model = ResourceHandle();
-	inOther.materialInstance = ResourceHandle();
-	//inOther.ubo = UBOHandle(0, 0);
-	//inOther.descriptorSets = {};
+	inOther.model = ResourceHandle::invalid;
+	inOther.materialInstance = ResourceHandle::invalid;
 }
 
 MeshRendererComponent& MeshRendererComponent::operator=(MeshRendererComponent&& inOther) noexcept
@@ -31,14 +29,10 @@ MeshRendererComponent& MeshRendererComponent::operator=(MeshRendererComponent&& 
 		entity = inOther.entity;
 		model = inOther.model;
 		materialInstance = inOther.materialInstance;
-		//ubo = inOther.ubo;
-		//descriptorSets = inOther.descriptorSets;
 
 		inOther.entity = Entity();
-		inOther.model = ResourceHandle();
-		inOther.materialInstance = ResourceHandle();
-		//inOther.ubo = UBOHandle(0, 0);
-		//inOther.descriptorSets = DescriptorSetHandle(0, 0);
+		inOther.model = ResourceHandle::invalid;
+		inOther.materialInstance = ResourceHandle::invalid;
 	}
 	return *this;
 }

@@ -15,7 +15,7 @@ class GeometryRenderPass
 
 	VkRenderPass renderPass;
 	std::vector<VkFramebuffer> framebuffers;
-	GPUHandle depthBufferHandle;
+	GPUHandle depthBufferHandle = GPUHandle::invalid;
 
 public:
 	VkRenderPass getRenderPass() const { return renderPass; }

@@ -160,7 +160,6 @@ MeshRendererComponent* Scene::addMeshRendererTo(Entity inEntity
 	MeshRendererComponent* meshRendererComponent = meshRendererComponents.create(inEntity);
 	meshRendererComponent->model = inModel;
 	meshRendererComponent->materialInstance = inMaterialInstance;
-	//meshRendererComponent->shaderParameters.addVec3("material.objectColor", color::white);
 	return meshRendererComponent;
 }
 
@@ -213,7 +212,7 @@ RigidbodyComponent* Scene::addRigidbodyTo(Entity inEntity
 }
 
 Entity Scene::createRenderedModel(ResourceHandle inModel
-	, ResourceHandle inMaterial
+	, ResourceHandle inMaterialInstance
 	, const glm::vec3& inPosition
 	, const glm::quat& inRotation
 	, const glm::vec3& inScale
@@ -221,6 +220,6 @@ Entity Scene::createRenderedModel(ResourceHandle inModel
 {
 	Entity entity = entities.createEntity();
 	addTransformTo(entity, inPosition, inRotation, inScale, inParentHierarchy);
-	addMeshRendererTo(entity, inModel, inMaterial);
+	addMeshRendererTo(entity, inModel, inMaterialInstance);
 	return entity;
 }

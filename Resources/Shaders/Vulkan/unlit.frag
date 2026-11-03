@@ -1,16 +1,14 @@
 #version 450
 
-layout (set = 1, binding = 0) uniform sampler2D texSampler;
+layout (set = 1, binding = 0) uniform texture2D textures[16];
 
-layout (set = 1, binding = 1) uniform MaterialData
-{
-	vec4 color;
-} materialData;
+layout (set = 1, binding = 1) uniform sampler textureSampler;
 	
-layout (push_constant) uniform FragInstanceData
+layout (set = 2, binding = 0) uniform MaterialData
 {
 	vec4 color;
-} instanceData;
+	uint diffuseTexIndex;
+} materialData;
 
 layout(location = 0) in vec3 inFragNormal;
 layout(location = 1) in vec2 inFragTexCoord;
@@ -19,5 +17,6 @@ layout(location = 0) out vec4 outColor;
 
 void main() 
 {
-	outColor = materialData.color * instanceData.color * vec4(texture(texSampler, inFragTexCoord).rgb, 1.0);
+	vec4 texColor = texture(sampler2D(textures[materialData.diffuseTexIndex], textureSampler), inFragTexCoord);
+	outColor = materialData.color * vec4(texColor.rgb, 1.0);
 }

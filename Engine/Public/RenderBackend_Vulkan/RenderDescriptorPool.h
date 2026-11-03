@@ -4,7 +4,8 @@
 #include <vulkan/vulkan.h>
 
 #include "Render/GPUHandle.h"
-#include "RenderBackend_Vulkan/RenderStructs.h"
+#include "RenderBackend_Vulkan/ShaderStructs.h"
+#include "RenderBackend_Vulkan/RenderConfig.h"
 
 class RenderDevice;
 
@@ -12,7 +13,8 @@ enum class EDescriptorType : uint8_t
 {
 	UNIFORM_BUFFER,
 	UNIFORM_BUFFER_DYNAMIC,
-	TEXTURE_SAMPLER
+	SAMPLER,
+	TEXTURE
 };
 
 inline VkDescriptorType getDescriptorType(EDescriptorType inDescriptorType)
@@ -25,8 +27,11 @@ inline VkDescriptorType getDescriptorType(EDescriptorType inDescriptorType)
 	case EDescriptorType::UNIFORM_BUFFER_DYNAMIC:
 		return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		break;
-	case EDescriptorType::TEXTURE_SAMPLER:
-		return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	case EDescriptorType::SAMPLER:
+		return VK_DESCRIPTOR_TYPE_SAMPLER;
+		break;
+	case EDescriptorType::TEXTURE:
+		return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 		break;
 	}
 
@@ -45,30 +50,45 @@ struct DescriptorSetLayoutElement
 	uint32_t binding;
 	EDescriptorType type;
 	ShaderStageFlags stage;
+	uint32_t descriptorCount;
 	uint32_t dstArrayElement;
 };
 
 struct DescriptorSetLayoutElementBufferValue
 {
-	GPUHandle bufferHandle;
+	GPUHandle bufferHandle = GPUHandle::invalid;
 	VkDeviceSize dataSize;
 };
 
-struct DescriptorSetLayoutElementImageValue
+struct DescriptorSetLayoutElementTextureValue
 {
-	GPUHandle imageHandle;
+	std::array<GPUHandle, renderConfig::getTextureArraySize()> imageHandles;
+	uint8_t count;
+
+	DescriptorSetLayoutElementTextureValue()
+		: imageHandles({ GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
+			, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
+			, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
+			, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid })
+	{}
+};
+
+struct DescriptorSetLayoutElementSamplerValue
+{
 	VkSampler sampler;
 };
 
 struct DescriptorSetLayoutElementValues
 {
 	std::vector<DescriptorSetLayoutElementBufferValue> buffers;
-	std::vector<DescriptorSetLayoutElementImageValue> images;
+	std::vector<DescriptorSetLayoutElementTextureValue> textures;
+	std::vector<DescriptorSetLayoutElementSamplerValue> samplers;
 
 	DescriptorSetLayoutElementValues(uint32_t inElementCount, uint32_t inDescriptorCount)
 	{
 		buffers.resize(inElementCount * inDescriptorCount);
-		images.resize(inElementCount * inDescriptorCount);
+		textures.resize(inElementCount * inDescriptorCount);
+		samplers.resize(inElementCount * inDescriptorCount);
 	}
 };
 
@@ -94,4 +114,8 @@ public:
 	static bool createDescriptorSetLayout(VkDevice inDevice
 		, const std::vector<DescriptorSetLayoutElement>& inLayoutElements
 		, VkDescriptorSetLayout& outDescriptorSetLayout);
+
+	static std::vector<DescriptorSetLayoutElement> getFrameDescriptorSetLayoutElements();
+	static std::vector<DescriptorSetLayoutElement> getTexturesDescriptorSetLayoutElements();
+	static std::vector<DescriptorSetLayoutElement> getMaterialDescriptorSetLayoutElements();
 };

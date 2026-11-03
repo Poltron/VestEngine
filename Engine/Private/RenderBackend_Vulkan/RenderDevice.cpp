@@ -12,30 +12,35 @@
 #include "RenderBackend_Vulkan/RenderBuffer.h"
 #include "RenderBackend_Vulkan/RenderImage.h"
 #include "RenderBackend_Vulkan/RenderSwapchain.h"
+#include "RenderBackend_Vulkan/ShaderStructs.h"
 
-uint32_t getVkBufferType(EBufferType inType)
+namespace
 {
-	switch (inType)
+	const std::vector<const char*> deviceExtensions =
 	{
-	case EBufferType::VERTEX_ARRAY:
-		ensure(false);
-		return 0; // should not be needed
-		break;
-	case EBufferType::VERTICES:
-		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		break;
-	case EBufferType::INDICES:
-		return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		break;
-	}
-	ensure(false);
-	return 0;
-}
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		VK_EXT_ROBUSTNESS_2_EXTENSION_NAME
+	};
 
-const std::vector<const char*> deviceExtensions =
-{
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+	uint32_t getVkBufferType(EBufferType inType)
+	{
+		switch (inType)
+		{
+		case EBufferType::VERTEX_ARRAY:
+			ensure(false);
+			return 0; // should not be needed
+			break;
+		case EBufferType::VERTICES:
+			return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+			break;
+		case EBufferType::INDICES:
+			return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+			break;
+		}
+		ensure(false);
+		return 0;
+	}
+}
 
 bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers)
 {
@@ -49,37 +54,42 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 		return false;
 	}
 
+	createCommandContexts(queueFamilyIndices);
+
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 	minUniformBufferOffsetAlignment = (uint32_t)physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
 	maxUniformBufferRange = (uint32_t)physicalDeviceProperties.limits.maxUniformBufferRange;
 
-	DescriptorPoolElement textureSamplerDescriptorSetPoolElement;
-	textureSamplerDescriptorSetPoolElement.count = RenderDevice::getFrameCount();
-	textureSamplerDescriptorSetPoolElement.type = EDescriptorType::TEXTURE_SAMPLER;
-
 	DescriptorPoolElement uniformBufferDescriptorSetPoolElement;
-	uniformBufferDescriptorSetPoolElement.count = RenderDevice::getFrameCount();
+	uniformBufferDescriptorSetPoolElement.count = 4;
 	uniformBufferDescriptorSetPoolElement.type = EDescriptorType::UNIFORM_BUFFER_DYNAMIC;
+
+	DescriptorPoolElement samplerDescriptorSetPoolElement;
+	samplerDescriptorSetPoolElement.count = 1;
+	samplerDescriptorSetPoolElement.type = EDescriptorType::SAMPLER;
+
+	DescriptorPoolElement textureDescriptorSetPoolElement;
+	textureDescriptorSetPoolElement.count = 16;
+	textureDescriptorSetPoolElement.type = EDescriptorType::TEXTURE;
 	
-	const uint8_t maxSets = textureSamplerDescriptorSetPoolElement.count + uniformBufferDescriptorSetPoolElement.count;
-	if (!descriptorPool.initialize(*this, { textureSamplerDescriptorSetPoolElement, uniformBufferDescriptorSetPoolElement }, maxSets))
+	const uint8_t maxSets = uniformBufferDescriptorSetPoolElement.count + samplerDescriptorSetPoolElement.count + textureDescriptorSetPoolElement.count;
+	if (!descriptorPool.initialize(*this, { uniformBufferDescriptorSetPoolElement, samplerDescriptorSetPoolElement, textureDescriptorSetPoolElement }, maxSets))
+	{
+		return false;
+	}
+	
+	if (!createFrameData(renderConfig::getFrameCount(), renderConfig::getFrameBufferSize(), frameUniformBuffers, frameUniformBufferDescriptorSets))
 	{
 		return false;
 	}
 
-	const uint8_t samplerCount = 1;
-	if (!createTextureSamplers(samplerCount))
-	{
-		return false;
-	}
-	
-	if (!createFrameDynamicUniformBuffers(RenderDevice::getFrameCount(), getFrameUniformBufferSize(), frameUniformBuffers, frameUniformBufferDescriptorSets))
+	if (!createTextureData(renderConfig::getTextureArraySize(), textureDescriptorSet))
 	{
 		return false;
 	}
 
-	if (!createMaterialDescriptorSetLayout())
+	if (!createMaterialData(renderConfig::getMaterialBufferSize(), materialBuffer, materialDescriptorSet))
 	{
 		return false;
 	}
@@ -89,10 +99,7 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 
 void RenderDevice::shutdown()
 {
-	for (size_t i = 0; i < textureSamplers.size(); ++i)
-	{
-		vkDestroySampler(device, textureSamplers[i], nullptr);
-	}
+	vkDestroySampler(device, sampler, nullptr);
 
 	for (size_t i = 0; i < frameUniformBuffers.size(); ++i)
 	{
@@ -211,14 +218,14 @@ GPUHandle RenderDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inU
 	if (result != VK_SUCCESS)
 	{
 		std::cerr << "Error: vkAllocateMemory failed" << std::endl;
-		return GPUHandle();
+		return GPUHandle::invalid;
 	}
 
 	result = vkBindBufferMemory(device, buffer, memory, 0);
 	if (result != VK_SUCCESS)
 	{
 		std::cerr << "Error: vkBindBufferMemory failed" << std::endl;
-		return GPUHandle();
+		return GPUHandle::invalid;
 	}
 
 	renderBuffers.push_back(RenderBuffer(device, buffer, memory, allocInfo.allocationSize));
@@ -242,122 +249,130 @@ void RenderDevice::destroyBuffer(GPUHandle handle)
 	vkFreeMemory(device, renderBuffer.getMemory(), nullptr);
 }
 
-namespace
+void RenderDevice::resetFrameData(uint32_t inFrameId)
 {
-	uint32_t getPaddedSize(uint32_t inSize, uint32_t inAlignment)
+	RenderBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
+	buffer.reset();
+}
+
+BufferHandle RenderDevice::pushFrameData(void* inData, uint32_t inSize, uint32_t inFrameId)
+{
+	RenderBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
+	return buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
+}
+
+VkDescriptorSet RenderDevice::getMaterialDescriptorSet(uint32_t inHandle) const
+{
+	return materialDescriptorSet;
+}
+
+BufferHandle RenderDevice::pushMaterialData(void* inData, uint32_t inSize)
+{
+	RenderBuffer& buffer = getBuffer(materialBuffer);
+	return buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
+}
+
+const uint8_t* RenderDevice::getMaterialInstanceBuffer(uint32_t inOffset) const
+{
+	const uint8_t* memory = (uint8_t*)getBuffer(materialBuffer).getMappedMemory();
+	return memory + inOffset;
+}
+
+uint32_t RenderDevice::getMaterialInstanceCompatibleDescriptorSet()
+{
+	// todo
+	return 0;
+}
+
+void RenderDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos)
+{
+	if (inBlendMode == EMaterialBlendMode::OPAQUE && inType == EMaterialType::UNLIT)
 	{
-		ensure(inAlignment > 0);
-		return (inSize + inAlignment - 1) & ~(inAlignment - 1);
+		outShaderStageInfos = shader::getUnlitMaterialStageInfos();
+	}
+	else if (inBlendMode == EMaterialBlendMode::OPAQUE && inType == EMaterialType::LIT)
+	{
+		outShaderStageInfos = shader::getLitMaterialStageInfos();
 	}
 }
 
-void RenderDevice::resetFrameData()
+bool RenderDevice::checkCompatiblePipeline(const std::vector<ShaderStageInfo>& inShaderStageInfos) const
 {
-	nextUniformBufferOffset = 0;
+	// should be in the renderbackend, can't check pipeline from inside the device
+	return true;
 }
 
-UBOHandle RenderDevice::emplaceFrameData(void* inData, uint32_t inSize, uint32_t inFrameId)
+bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
+	, GPUHandle& outBufferHandle
+	, VkDescriptorSet& outBufferDescriptorSet)
 {
-	RenderBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
-	ensure(buffer.isMapped());
-	ensure(buffer.getSize() >= nextUniformBufferOffset + inSize);
-	
-	buffer.fill(inData, inSize, nextUniformBufferOffset);
-	
-	UBOHandle handle(nextUniformBufferOffset, inSize);
-	nextUniformBufferOffset += getPaddedSize(inSize, minUniformBufferOffsetAlignment);
-	return handle;
-}
+	constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	const QueueFamilyIndices& indices = getQueueFamilyIndices();
+	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value(), indices.graphicsFamily.value() };
+	constexpr VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
+	outBufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
+	getBuffer(outBufferHandle).map(inBufferSize);
 
-bool RenderDevice::createMaterialDescriptorSetLayout()
-{
-	std::vector<DescriptorSetLayoutElement> layoutElements;
-
-	DescriptorSetLayoutElement element0;
-	element0.binding = 0;
-	element0.type = EDescriptorType::TEXTURE_SAMPLER;
-	element0.stage = EShaderStageFlagBits::FRAGMENT;
-	element0.dstArrayElement = 0;
-	layoutElements.push_back(element0);
-
-	DescriptorSetLayoutElement element1;
-	element1.binding = 1;
-	element1.type = EDescriptorType::UNIFORM_BUFFER_DYNAMIC;
-	element1.stage = EShaderStageFlagBits::FRAGMENT;
-	element1.dstArrayElement = 0;
-	layoutElements.push_back(element1);
-
+	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getMaterialDescriptorSetLayoutElements();
 	if (!RenderDescriptorPool::createDescriptorSetLayout(device, layoutElements, materialDescriptorSetLayout))
 	{
 		return false;
 	}
+
+	const uint8_t descriptorSetCount = 1;
+	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), descriptorSetCount);
+	layoutValues.buffers[0] = { outBufferHandle, sizeof(MaterialData) };
+
+	std::vector<VkDescriptorSet> descriptorSets;
+	if (!descriptorPool.createDescriptorSets(*this, { materialDescriptorSetLayout }, layoutElements, layoutValues, descriptorSetCount, descriptorSets))
+	{
+		return false;
+	}
+
+	materialDescriptorSet = descriptorSets[0];
 	return true;
 }
 
-DescriptorSetHandle RenderDevice::createMaterialDescriptorSets(ResourceHandle inAlbedoHandle, uint32_t inCount)
-{
-	// note : c/c from createMaterialDescriptorSetLayout
-	std::vector<DescriptorSetLayoutElement> layoutElements;
+//DescriptorSetHandle RenderDevice::createMaterialDescriptorSet(GPUHandle inBuffer, size_t inBufferSize)
+//{
+//	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getMaterialDescriptorSetLayoutElements();
+//
+//	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), 1);
+//	layoutValues.buffers[0] = { inBuffer, inBufferSize };
+//
+//	std::vector<VkDescriptorSet> descriptorSets;
+//	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { materialDescriptorSetLayout };
+//	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, 1, descriptorSets))
+//	{
+//		std::cerr << "RenderDevice::createMaterialDescriptorSets failed" << std::endl;
+//		return DescriptorSetHandle();
+//	}
+//
+//	DescriptorSetHandle handle((uint32_t)materialDescriptorSets.size(), (uint32_t)descriptorSets.size());
+//
+//	for (VkDescriptorSet descriptorSet : descriptorSets)
+//	{
+//		materialDescriptorSets.push_back(descriptorSet);
+//	}
+//
+//	return handle;
+//}
 
-	DescriptorSetLayoutElement element0;
-	element0.binding = 0;
-	element0.type = EDescriptorType::TEXTURE_SAMPLER;
-	element0.stage = EShaderStageFlagBits::FRAGMENT;
-	element0.dstArrayElement = 0;
-	layoutElements.push_back(element0);
-
-	DescriptorSetLayoutElement element1;
-	element1.binding = 1;
-	element1.type = EDescriptorType::UNIFORM_BUFFER_DYNAMIC;
-	element1.stage = EShaderStageFlagBits::FRAGMENT;
-	element1.dstArrayElement = 0;
-	layoutElements.push_back(element1);
-
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(RenderDevice::getFrameCount(), materialDescriptorSetLayout);
-
-	const Texture* albedo = engine::getResources()->getTexture(inAlbedoHandle);
-
-	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), RenderDevice::getFrameCount());
-	for (uint32_t i = 0; i < RenderDevice::getFrameCount(); ++i)
-	{
-		uint32_t frameIndexOffset = i * RenderDevice::getFrameCount();
-
-		GPUHandle imageHandle;
-		layoutValues.images[frameIndexOffset + 0] = { albedo->getHandle(), getTextureSampler(0)};
-		layoutValues.buffers[frameIndexOffset + 1] = { getFrameUniformBufferHandle(i), sizeof(MaterialData) };
-	}
-
-	std::vector<VkDescriptorSet> descriptorSets;
-	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, inCount, descriptorSets))
-	{
-		std::cerr << "RenderDevice::createMaterialDescriptorSets failed" << std::endl;
-		return DescriptorSetHandle();
-	}
-
-	DescriptorSetHandle handle((uint32_t)materialDescriptorSets.size(), 2);
-	for (size_t i = 0; i < descriptorSets.size(); ++i)
-	{
-		materialDescriptorSets.push_back(descriptorSets[i]);
-	}
-
-	return handle;
-}
-
-void RenderDevice::destroyMaterialDescriptorSets(DescriptorSetHandle inHandle)
-{
-	if (inHandle.id + inHandle.count > materialDescriptorSets.size())
-	{
-		return;
-	}
-
-	vkFreeDescriptorSets(device, descriptorPool.getPool(), inHandle.count, &materialDescriptorSets[inHandle.id]);
-
-	for (uint32_t i = 0; i < inHandle.count; ++i)
-	{
-		materialDescriptorSets[inHandle.id + i] = VK_NULL_HANDLE;
-	}
-}
+//void RenderDevice::destroyMaterialDescriptorSets(DescriptorSetHandle inHandle)
+//{
+//	if (inHandle.id + inHandle.count > materialDescriptorSets.size())
+//	{
+//		return;
+//	}
+//
+//	vkFreeDescriptorSets(device, descriptorPool.getPool(), inHandle.count, &materialDescriptorSets[inHandle.id]);
+//
+//	for (uint32_t i = 0; i < inHandle.count; ++i)
+//	{
+//		materialDescriptorSets[inHandle.id + i] = VK_NULL_HANDLE;
+//	}
+//}
 
 GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
 {
@@ -416,23 +431,23 @@ GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkForma
 	}
 	vkBindImageMemory(getDevice(), image, memory, 0);
 
-	renderImages.push_back(RenderImage(device, image, memory));
-	return GPUHandle((uint32_t)(renderImages.size() - 1));
+	images.push_back(RenderImage(device, image, memory));
+	return GPUHandle((uint32_t)(images.size() - 1));
 }
 
 RenderImage& RenderDevice::getImage(GPUHandle inHandle)
 {
-	return renderImages.at(inHandle.id);
+	return images.at(inHandle.id);
 }
 
 const RenderImage& RenderDevice::getImage(GPUHandle inHandle) const
 {
-	return renderImages.at(inHandle.id);
+	return images.at(inHandle.id);
 }
 
 void RenderDevice::destroyImage(GPUHandle inHandle)
 {
-	RenderImage& renderImage = renderImages.at(inHandle.id);
+	RenderImage& renderImage = images.at(inHandle.id);
 
 	vkDestroyImage(device, renderImage.getImage(), nullptr);
 	vkDestroyImageView(device, renderImage.getView(), nullptr);
@@ -441,7 +456,42 @@ void RenderDevice::destroyImage(GPUHandle inHandle)
 	renderImage = RenderImage(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
 }
 
-bool RenderDevice::createFrameDynamicUniformBuffers(uint8_t inFrameCount
+uint32_t RenderDevice::addTexture(ResourceHandle inTexture)
+{
+	const Texture* texture = engine::getResources()->getTexture(inTexture);
+	ensure(texture);
+
+	const RenderImage& image = getImage(texture->getHandle());
+
+	VkDescriptorImageInfo imageInfos;
+	imageInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfos.sampler = VK_NULL_HANDLE;
+	imageInfos.imageView = image.getView();
+
+	uint32_t textureSlot = getAvailableTextureSlot();
+
+	VkWriteDescriptorSet writeDescriptorSet{};
+	writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptorSet.dstSet = getTextureDescriptorSet();
+	writeDescriptorSet.dstBinding = 0;
+	writeDescriptorSet.dstArrayElement = textureSlot;
+	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+	writeDescriptorSet.descriptorCount = 1;
+	writeDescriptorSet.pImageInfo = &imageInfos;
+
+	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+
+	return textureSlot;
+}
+
+uint8_t RenderDevice::getAvailableTextureSlot()
+{
+	const uint8_t slot = nextTextureAvailableSlot;
+	nextTextureAvailableSlot++;
+	return slot;
+}
+
+bool RenderDevice::createFrameData(uint8_t inFrameCount
 	, VkDeviceSize inBufferSize
 	, std::vector<GPUHandle>& outBufferHandles
 	, std::vector<VkDescriptorSet>& outBufferDescriptorSets)
@@ -451,30 +501,22 @@ bool RenderDevice::createFrameDynamicUniformBuffers(uint8_t inFrameCount
 	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value(), indices.graphicsFamily.value() };
 	constexpr VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	outBufferHandles.resize(inFrameCount);
-
 	for (size_t i = 0; i < inFrameCount; ++i)
 	{
-		outBufferHandles[i] = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
+		GPUHandle bufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
+		outBufferHandles.push_back(bufferHandle);
 
 		RenderBuffer& buffer = getBuffer(outBufferHandles[i]);
 		buffer.map(inBufferSize);
 	}
 	
-	std::vector<DescriptorSetLayoutElement> layoutElements;
-
-	DescriptorSetLayoutElement element1;
-	element1.binding = 0;
-	element1.type = EDescriptorType::UNIFORM_BUFFER_DYNAMIC;
-	element1.stage = EShaderStageFlagBits::VERTEX;
-	element1.dstArrayElement = 0;
-	layoutElements.push_back(element1);
+	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getFrameDescriptorSetLayoutElements();
 
 	if (!RenderDescriptorPool::createDescriptorSetLayout(device, layoutElements, frameUniformBufferLayout))
 	{
 		return false;
 	}
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(RenderDevice::getFrameCount(), frameUniformBufferLayout);
+	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(renderConfig::getFrameCount(), frameUniformBufferLayout);
 
 	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), inFrameCount);
 	layoutValues.buffers[0] = { outBufferHandles[0], sizeof(FrameData) };
@@ -488,7 +530,7 @@ bool RenderDevice::createFrameDynamicUniformBuffers(uint8_t inFrameCount
 	return true;
 }
 
-bool RenderDevice::createTextureSamplers(uint8_t inCount)
+bool RenderDevice::createTextureSampler()
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -512,19 +554,42 @@ bool RenderDevice::createTextureSamplers(uint8_t inCount)
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = 0.0f;
 
-	for (uint8_t i = 0; i < inCount; ++i)
+	VkResult result = vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+	if (result != VK_SUCCESS)
 	{
-		VkSampler sampler;
-		VkResult result = vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Error: vkCreateSampler failed" << std::endl;
-			return false;
-		}
-
-		textureSamplers.push_back(sampler);
+		std::cerr << "Error: vkCreateSampler failed" << std::endl;
+		return false;
 	}
 
+	return true;
+}
+
+bool RenderDevice::createTextureData(uint8_t inTexturesCount
+	, VkDescriptorSet& outDescriptorSet)
+{
+	if (!createTextureSampler())
+	{
+		return false;
+	}
+
+	const uint32_t descriptorSetCount = 1;
+	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getTexturesDescriptorSetLayoutElements();
+	if (!RenderDescriptorPool::createDescriptorSetLayout(device, layoutElements, textureDescriptorSetLayout))
+	{
+		return false;
+	}
+
+	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), descriptorSetCount);
+	layoutValues.textures[0].count = inTexturesCount;
+	layoutValues.samplers[1].sampler = sampler;
+
+	std::vector<VkDescriptorSet> descriptorSets;
+	if (!descriptorPool.createDescriptorSets(*this, { textureDescriptorSetLayout }, layoutElements, layoutValues, descriptorSetCount, descriptorSets))
+	{
+		return false;
+	}
+
+	textureDescriptorSet = descriptorSets[0];
 	return true;
 }
 
@@ -627,6 +692,20 @@ int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfac
 		return 0;
 	}
 
+	VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = {};
+	robustness2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+
+	VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures2.pNext = &robustness2Features;
+
+	vkGetPhysicalDeviceFeatures2(inPhysicalDevice, &deviceFeatures2);
+	// note: to enable VK_NULL_HANDLE in shaders, for texture array
+	if (robustness2Features.nullDescriptor == VK_FALSE)
+	{
+		return 0;
+	}
+
 	int score = 0;
 
 	if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -699,8 +778,14 @@ bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSur
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
+	// 1. Check support during physical device selection
+	VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = {};
+	robustness2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+	robustness2Features.nullDescriptor = VK_TRUE;
+
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pNext = &robustness2Features;
 	createInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();

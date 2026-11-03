@@ -6,12 +6,8 @@
 #include "RenderBackend/RenderBackend.h"
 
 Mesh_OpenGL::Mesh_OpenGL(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
-	: vertices(inVertices), indices(inIndices), textures(inTextures)
+	: vertices(inVertices), indices(inIndices), textures(inTextures), VAO(GPUHandle::invalid), VBO(GPUHandle::invalid), EBO(GPUHandle::invalid)
 {
-	VAO = {};
-	VBO = {};
-	EBO = {};
-
 	setupMesh();
 }
 
@@ -33,9 +29,9 @@ Mesh_OpenGL::Mesh_OpenGL(Mesh_OpenGL&& inOther) noexcept
 	indices = inOther.indices;
 	textures = inOther.textures;
 
-	inOther.VAO = {};
-	inOther.VBO = {};
-	inOther.EBO = {};
+	inOther.VAO = GPUHandle::invalid;
+	inOther.VBO = GPUHandle::invalid;
+	inOther.EBO = GPUHandle::invalid;
 }
 
 Mesh_OpenGL& Mesh_OpenGL::operator=(Mesh_OpenGL&& inOther) noexcept
@@ -54,10 +50,9 @@ Mesh_OpenGL& Mesh_OpenGL::operator=(Mesh_OpenGL&& inOther) noexcept
 		VBO = inOther.VBO;
 		EBO = inOther.EBO;
 
-		inOther.VAO = {};
-		inOther.VBO = {};
-		inOther.EBO = {};
-
+		inOther.VAO = GPUHandle::invalid;
+		inOther.VBO = GPUHandle::invalid;
+		inOther.EBO = GPUHandle::invalid;
 	}
 	return *this;
 }
@@ -97,7 +92,7 @@ void Mesh_OpenGL::bindTextures(const ResourcesManager& inResourcesManager) const
 	for (std::vector<ResourceHandle>::size_type i = 0; i < textures.size(); ++i)
 	{
 		const ResourceHandle& textureHandle = textures[i];
-		if (!textureHandle.IsValid())
+		if (!textureHandle.isValid())
 		{
 			continue;
 		}

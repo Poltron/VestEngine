@@ -422,36 +422,47 @@ namespace demoScene
 		const float floorStart = animalModelsTotal / -2.0f;
 		const float rowStart = inRowSize / -2.0f;
 
+		const ResourceHandle unlitMaterialHandle = render::getRenderer()->getUnlitMaterial();
+		const Material* unlitMaterial = engine::getResources()->getMaterial(unlitMaterialHandle);
+
 		for (size_t i = 0; i < animalModelsTotal; ++i)
 		{
-			ResourceHandle model = engine::getResources()->loadModel(File::getResourcesDir() + animals[i]);
+			const ResourceHandle modelHandle = engine::getResources()->loadModel(File::getResourcesDir() + animals[i]);
+			Model* model = engine::getResources()->getModel(modelHandle);
+			const ResourceHandle matInstanceHandle = engine::getResources()->createMaterialInstance(unlitMaterial, unlitMaterialHandle);
+			MaterialInstance* matInstance = engine::getResources()->getMaterialInstance(matInstanceHandle);
 
+			const Mesh& mesh = model->getMeshes()[0];
+			matInstance->setTexture("diffuse", mesh.getTextures()[0]);
+			
 			for (size_t j = 0; j < totalPerMesh; ++j)
 			{
 				const glm::vec3 position = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
-				createAnimal(inScene, model, render::getRenderer()->getUnlitMaterial(), position);
+				createAnimal(inScene, modelHandle, matInstanceHandle, position);
 			}
 		}
 
-		ResourceHandle material = render::getRenderer()->getLitMaterial();
-		ResourceHandle model = engine::getResources()->loadModel(File::getResourcesDir() + animals[0]);
-		createSceneLights(inScene, model, material);
+		//ResourceHandle material = render::getRenderer()->getLitMaterial();
+		//ResourceHandle model = engine::getResources()->loadModel(File::getResourcesDir() + animals[0]);
+		//createSceneLights(inScene, model, material);
 
 		//render::getRenderer()->getDebugShapeSubRenderer().addBox({ 0, 0, 0 }, { 0, 0, 0 }, { 15, 15, 15 }, color::white);
 	}
 
 	void createAnimal(Scene& inScene)
 	{
-		createAnimal(inScene, getRandomAnimalModel(), render::getRenderer()->getUnlitMaterial(), getRandomAnimalSpawnPosition());
+		ResourceHandle unlitMaterialHandle = render::getRenderer()->getUnlitMaterial();
+		const Material* material = engine::getResources()->getMaterial(unlitMaterialHandle);
+		createAnimal(inScene, getRandomAnimalModel(), material->getDefaultMatInstance(), getRandomAnimalSpawnPosition());
 	}
 
-	void createAnimal(Scene& inScene, ResourceHandle inModel, ResourceHandle inMaterial, const glm::vec3& inPosition)
+	void createAnimal(Scene& inScene, ResourceHandle inModel, ResourceHandle inMaterialInstance, const glm::vec3& inPosition)
 	{
 		ResourceHandle model = getRandomAnimalModel();
 		const glm::vec3 position = inPosition;
 		const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
 		const glm::vec3 scale = glm::vec3(0.2f);
-		Entity entity = inScene.createRenderedModel(model, inMaterial, position, rotation, scale);
+		Entity entity = inScene.createRenderedModel(model, inMaterialInstance, position, rotation, scale);
 
 		const float radius = 1;
 		const glm::vec3 offset = glm::vec3(0, 0.7f, 0);

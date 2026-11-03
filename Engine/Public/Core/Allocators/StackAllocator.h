@@ -5,20 +5,33 @@
 class StackAllocator
 {
 public:
-	StackAllocator(size_t inCapacity)
-		: capacity(inCapacity), top(0)
-	{
-		base = (uint8_t*)malloc(capacity);
-	}
+	StackAllocator()
+		: capacity(0), top(0), base(nullptr)
+	{}
 
 	~StackAllocator()
 	{
 		free(base);
 	}
 
+	// todo: copy/move ctr
+
+	void reserve(size_t inCapacity)
+	{
+		uint8_t* newBase = (uint8_t*)malloc(capacity);
+
+		if (base != nullptr)
+		{
+			memcpy(newBase, base, capacity);
+			free(base);
+		}
+
+		base = newBase;
+		capacity = inCapacity;
+	}
+
 	size_t create(size_t inAllocationSize)
 	{
-		assert(false);
 		assert(base + top + inAllocationSize < base + capacity);
 
 		size_t newAllocOffset = top;
@@ -37,6 +50,11 @@ public:
 	}
 
 	uint8_t* get(size_t inOffset)
+	{
+		return base + inOffset;
+	}
+
+	const uint8_t* get(size_t inOffset) const
 	{
 		return base + inOffset;
 	}
