@@ -5,11 +5,11 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
-#include "RenderBackend_Vulkan/ShaderStructs.h"
+#include "RenderBackend_Vulkan/VulkanShaderHelper.h"
 
-class RenderDevice;
+class VulkanDevice;
 
-class RenderPipeline
+class VulkanPipeline
 {
 	VkDevice device;
 
@@ -22,7 +22,7 @@ public:
 	VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
 	VkPipeline getPipeline() const { return pipeline; }
 
-	bool initialize(RenderDevice& inDevice
+	bool initialize(VulkanDevice& inDevice
 		, VkRenderPass inRenderPass
 		, VkExtent2D inSwapchainExtent
 		, const std::vector<ShaderStageInfo>& inShaderStageInfos

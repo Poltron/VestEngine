@@ -4,12 +4,12 @@
 #include <vulkan/vulkan.h>
 
 #include "Render/GPUHandle.h"
-#include "RenderBackend_Vulkan/CommandContext.h"
-#include "RenderBackend_Vulkan/RenderDevice.h"
-#include "RenderBackend_Vulkan/RenderImage.h"
-#include "RenderBackend_Vulkan/RenderSwapchain.h"
+#include "RenderBackend_Vulkan/VulkanCommandQueue.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
+#include "RenderBackend_Vulkan/VulkanImage.h"
+#include "RenderBackend_Vulkan/VulkanSwapchain.h"
 
-class GeometryRenderPass
+class VulkanGeometryRenderPass
 {
 	VkDevice device;
 
@@ -21,7 +21,7 @@ public:
 	VkRenderPass getRenderPass() const { return renderPass; }
 	const std::vector<VkFramebuffer>& getFramebuffers() const { return framebuffers; }
 
-	bool initialize(RenderDevice& inDevice, const RenderSwapchain& inSwapchain)
+	bool initialize(VulkanDevice& inDevice, const VulkanSwapchain& inSwapchain)
 	{ 
 		device = inDevice.getDevice();
 
@@ -38,7 +38,7 @@ public:
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depthAttachment{};
-		GeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthAttachment.format);
+		VulkanGeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthAttachment.format);
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -95,7 +95,7 @@ public:
 		return true;
 	}
 
-	void free(RenderDevice& inDevice)
+	void free(VulkanDevice& inDevice)
 	{
 		inDevice.destroyImage(depthBufferHandle);
 
@@ -108,12 +108,12 @@ public:
 	}
 
 private:
-	bool createFramebuffers(RenderDevice& inDevice, const RenderSwapchain& inSwapchain)
+	bool createFramebuffers(VulkanDevice& inDevice, const VulkanSwapchain& inSwapchain)
 	{
 		const std::vector<VkImageView>& swapchainImageViews = inSwapchain.getImageViews();
 		framebuffers.resize(swapchainImageViews.size());
 
-		RenderImage& depthBufferImage = inDevice.getImage(depthBufferHandle);
+		VulkanImage& depthBufferImage = inDevice.getImage(depthBufferHandle);
 
 		for (size_t i = 0; i < swapchainImageViews.size(); i++)
 		{
@@ -143,10 +143,10 @@ private:
 		return true;
 	}
 
-	bool createDepthResources(RenderDevice& inDevice, const VkExtent2D& inExtent)
+	bool createDepthResources(VulkanDevice& inDevice, const VkExtent2D& inExtent)
 	{
 		VkFormat depthFormat;
-		GeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
+		VulkanGeometryRenderPass::findDepthFormat(inDevice.getPhysicalDevice(), depthFormat);
 
 		QueueFamilyIndices queueFamilyIndices = inDevice.getQueueFamilyIndices();
 		depthBufferHandle = inDevice.createImage(inExtent.width, inExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() }, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -155,16 +155,16 @@ private:
 			return false;
 		}
 
-		RenderImage& depthBufferImage = inDevice.getImage(depthBufferHandle);
-		VkImageView view = RenderImage::createImageView(inDevice.getDevice(), depthBufferImage.getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VulkanImage& depthBufferImage = inDevice.getImage(depthBufferHandle);
+		VkImageView view = VulkanImage::createImageView(inDevice.getDevice(), depthBufferImage.getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 		if (view == VK_NULL_HANDLE)
 		{
 			return false;
 		}
 		depthBufferImage.setTextureView(view);
 
-		CommandContext& graphicsCommandContext = inDevice.getGraphicsCommandContext();
-		graphicsCommandContext.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		VulkanCommandQueue& graphicsVulkanCommandQueue = inDevice.getGraphicsVulkanCommandQueue();
+		graphicsVulkanCommandQueue.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		return true;
 	}
@@ -194,7 +194,7 @@ private:
 
 	bool findDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat& outFormat)
 	{
-		return GeometryRenderPass::findSupportedFormat(inPhysicalDevice
+		return VulkanGeometryRenderPass::findSupportedFormat(inPhysicalDevice
 			, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }
 			, VK_IMAGE_TILING_OPTIMAL
 			, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT

@@ -9,7 +9,6 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Renderer.h"
-#include "RenderBackend/RenderBackendDef.h"
 #include "UI/UIManager.h"
 
 class VestEngine final : public Engine

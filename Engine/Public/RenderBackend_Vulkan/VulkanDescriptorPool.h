@@ -1,13 +1,14 @@
 #pragma once
 
+#include <array>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 #include "Render/GPUHandle.h"
-#include "RenderBackend_Vulkan/ShaderStructs.h"
-#include "RenderBackend_Vulkan/RenderConfig.h"
+#include "RenderBackend_Vulkan/VulkanShaderHelper.h"
+#include "RenderBackend_Vulkan/VulkanConfig.h"
 
-class RenderDevice;
+class VulkanDevice;
 
 enum class EDescriptorType : uint8_t
 {
@@ -63,7 +64,6 @@ struct DescriptorSetLayoutElementBufferValue
 struct DescriptorSetLayoutElementTextureValue
 {
 	std::array<GPUHandle, renderConfig::getTextureArraySize()> imageHandles;
-	uint8_t count;
 
 	DescriptorSetLayoutElementTextureValue()
 		: imageHandles({ GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
@@ -92,7 +92,7 @@ struct DescriptorSetLayoutElementValues
 	}
 };
 
-class RenderDescriptorPool
+class VulkanDescriptorPool
 {
 	VkDevice device;
 	VkDescriptorPool pool;
@@ -100,10 +100,10 @@ class RenderDescriptorPool
 public:
 	VkDescriptorPool getPool() { return pool; }
 
-	bool initialize(const RenderDevice& inDevice, const std::vector<DescriptorPoolElement>& inPoolElements, uint32_t inMaxSets);
+	bool initialize(const VulkanDevice& inDevice, const std::vector<DescriptorPoolElement>& inPoolElements, uint32_t inMaxSets);
 	void shutdown();
 
-	bool createDescriptorSets(RenderDevice& inDevice
+	bool createDescriptorSets(VulkanDevice& inDevice
 		, const std::vector<VkDescriptorSetLayout>& inLayouts
 		, const std::vector<DescriptorSetLayoutElement>& inLayoutElements
 		, const DescriptorSetLayoutElementValues& inLayoutValues

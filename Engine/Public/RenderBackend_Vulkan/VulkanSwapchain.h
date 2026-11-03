@@ -3,9 +3,9 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-class RenderDevice;
+class VulkanDevice;
 
-class RenderSwapchain
+class VulkanSwapchain
 {
 	VkDevice device;
 
@@ -22,7 +22,7 @@ public:
 	const std::vector<VkImage> getImages() const { return images; }
 	const std::vector<VkImageView>& getImageViews() const { return imageViews; }
 
-	bool initialize(const RenderDevice& inDevice, VkSurfaceKHR inSurface);
+	bool initialize(const VulkanDevice& inDevice, VkSurfaceKHR inSurface);
 	void shutdown();
 
 	struct SwapchainSupportDetails

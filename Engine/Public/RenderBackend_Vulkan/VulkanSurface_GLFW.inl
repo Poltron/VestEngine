@@ -1,4 +1,4 @@
-#include "RenderBackend_Vulkan/RenderSurface.h"
+#include "RenderBackend_Vulkan/VulkanSurface.h"
 
 #include <iostream>
 
@@ -9,7 +9,7 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 
-bool RenderSurface::create(VkInstance inInstance)
+bool VulkanSurface::create(VkInstance inInstance)
 {
 	WindowManager& windowManager = platform::getWindowManager();
 	VkResult result = glfwCreateWindowSurface(inInstance, (GLFWwindow*)windowManager.getWindow(), nullptr, &surface);
@@ -21,7 +21,7 @@ bool RenderSurface::create(VkInstance inInstance)
 	return true;
 }
 
-void RenderSurface::destroy(VkInstance inInstance)
+void VulkanSurface::destroy(VkInstance inInstance)
 {
 	vkDestroySurfaceKHR(inInstance, surface, nullptr);
 }

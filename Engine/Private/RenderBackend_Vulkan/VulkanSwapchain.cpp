@@ -1,15 +1,15 @@
-#include "RenderBackend_Vulkan/RenderSwapchain.h"
+#include "RenderBackend_Vulkan/VulkanSwapchain.h"
 
 #include <algorithm>
 #include <iostream>
 
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
-#include "RenderBackend_Vulkan/CommandContext.h"
-#include "RenderBackend_Vulkan/RenderDevice.h"
-#include "RenderBackend_Vulkan/RenderImage.h"
+#include "RenderBackend_Vulkan/VulkanCommandQueue.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
+#include "RenderBackend_Vulkan/VulkanImage.h"
 
-bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSurface)
+bool VulkanSwapchain::initialize(const VulkanDevice& inDevice, VkSurfaceKHR inSurface)
 {
 	device = inDevice.getDevice();
 
@@ -72,7 +72,7 @@ bool RenderSwapchain::initialize(const RenderDevice& inDevice, VkSurfaceKHR inSu
 	return createImageViews(inSurface);
 }
 
-void RenderSwapchain::shutdown()
+void VulkanSwapchain::shutdown()
 {
 	for (auto imageView : getImageViews())
 	{
@@ -82,12 +82,12 @@ void RenderSwapchain::shutdown()
 	vkDestroySwapchainKHR(device, swapchain, nullptr);
 }
 
-bool RenderSwapchain::createImageViews(VkSurfaceKHR inSurface)
+bool VulkanSwapchain::createImageViews(VkSurfaceKHR inSurface)
 {
 	imageViews.resize(images.size());
 	for (size_t i = 0; i < images.size(); ++i)
 	{
-		imageViews[i] = RenderImage::createImageView(device, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		imageViews[i] = VulkanImage::createImageView(device, images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		if (imageViews[i] == VK_NULL_HANDLE)
 		{
 			return false;
@@ -97,7 +97,7 @@ bool RenderSwapchain::createImageViews(VkSurfaceKHR inSurface)
 	return true;
 }
 
-RenderSwapchain::SwapchainSupportDetails RenderSwapchain::querySwapchainSupport(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface) 
+VulkanSwapchain::SwapchainSupportDetails VulkanSwapchain::querySwapchainSupport(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface) 
 {
 	SwapchainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(inPhysicalDevice, inSurface, &details.capabilities);
@@ -121,7 +121,7 @@ RenderSwapchain::SwapchainSupportDetails RenderSwapchain::querySwapchainSupport(
 	return details;
 }
 
-VkSurfaceFormatKHR RenderSwapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& inAvailableFormats)
+VkSurfaceFormatKHR VulkanSwapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& inAvailableFormats)
 {
 	for (const auto& availableFormat : inAvailableFormats)
 	{
@@ -135,7 +135,7 @@ VkSurfaceFormatKHR RenderSwapchain::chooseSwapSurfaceFormat(const std::vector<Vk
 	return inAvailableFormats[0];
 }
 
-VkPresentModeKHR RenderSwapchain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& inAvailablePresentModes)
+VkPresentModeKHR VulkanSwapchain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& inAvailablePresentModes)
 {
 	for (const auto& availablePresentMode : inAvailablePresentModes)
 	{
@@ -148,7 +148,7 @@ VkPresentModeKHR RenderSwapchain::chooseSwapPresentMode(const std::vector<VkPres
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D RenderSwapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& inCapabilities)
+VkExtent2D VulkanSwapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& inCapabilities)
 {
 	if (inCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 	{

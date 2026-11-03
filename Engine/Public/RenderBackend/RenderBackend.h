@@ -8,8 +8,8 @@
 #include "Render/Resources/Mesh.h"
 #include "RenderBackend/RenderBackendDef.h"
 
-class RenderDevice;
-class RenderPipeline;
+class VulkanDevice;
+class VulkanPipeline;
 class Scene;
 
 class RenderBackend
@@ -25,8 +25,8 @@ public:
 	bool initialize();
 	void shutdown();
 	std::string getName();
-	RenderDevice& getDevice();
-	RenderPipeline& getGeometryPipeline();
+	VulkanDevice& getDevice();
+	VulkanPipeline& getGeometryPipeline();
 
 	//
 	static void getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints);

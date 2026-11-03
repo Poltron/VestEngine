@@ -8,7 +8,7 @@
 
 class ResourcesManager;
 
-class Mesh_Vulkan
+class VulkanMesh
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;
@@ -18,15 +18,15 @@ class Mesh_Vulkan
 	GPUHandle indexBuffer;
 
 public:
-	Mesh_Vulkan() = delete;
-	Mesh_Vulkan(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices, std::vector<ResourceHandle>&& inTextures);
-	~Mesh_Vulkan();
+	VulkanMesh() = delete;
+	VulkanMesh(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices, std::vector<ResourceHandle>&& inTextures);
+	~VulkanMesh();
 	
-	Mesh_Vulkan(const Mesh_Vulkan& inOther) = delete;
-	Mesh_Vulkan& operator=(const Mesh_Vulkan& inOther) = delete;
+	VulkanMesh(const VulkanMesh& inOther) = delete;
+	VulkanMesh& operator=(const VulkanMesh& inOther) = delete;
 
-	Mesh_Vulkan(Mesh_Vulkan&& inOther) noexcept;
-	Mesh_Vulkan& operator=(Mesh_Vulkan&& inOther) noexcept;
+	VulkanMesh(VulkanMesh&& inOther) noexcept;
+	VulkanMesh& operator=(VulkanMesh&& inOther) noexcept;
 
 	GPUHandle getVertexBuffer() const { return vertexBuffer; }
 	GPUHandle getIndexBuffer() const { return indexBuffer; }

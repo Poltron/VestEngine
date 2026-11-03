@@ -1,8 +1,8 @@
-#include "RenderBackend_Vulkan/RenderDescriptorPool.h"
+#include "RenderBackend_Vulkan/VulkanDescriptorPool.h"
 
-#include "RenderBackend_Vulkan/RenderBuffer.h"
-#include "RenderBackend_Vulkan/RenderDevice.h"
-#include "RenderBackend_Vulkan/RenderImage.h"
+#include "RenderBackend_Vulkan/VulkanBuffer.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
+#include "RenderBackend_Vulkan/VulkanImage.h"
 
 namespace
 {
@@ -24,7 +24,7 @@ namespace
 		}
 	}
 
-	void createWriteDescriptorBuffer(const RenderBuffer& inBuffer, const VkDeviceSize inDataSize, const VkDescriptorSet& inDescriptorSet, uint32_t inBinding, uint32_t inDstArrayElement, VkDescriptorBufferInfo& outBufferInfos, VkWriteDescriptorSet& outWriteDescriptorSet)
+	void createWriteDescriptorBuffer(const VulkanBuffer& inBuffer, const VkDeviceSize inDataSize, const VkDescriptorSet& inDescriptorSet, uint32_t inBinding, uint32_t inDstArrayElement, VkDescriptorBufferInfo& outBufferInfos, VkWriteDescriptorSet& outWriteDescriptorSet)
 	{
 		outBufferInfos.buffer = inBuffer.getBuffer();
 		outBufferInfos.offset = 0;
@@ -66,7 +66,7 @@ namespace
 	}
 }
 
-bool RenderDescriptorPool::initialize(const RenderDevice& inDevice, const std::vector<DescriptorPoolElement>& inPoolElements, uint32_t inMaxSets)
+bool VulkanDescriptorPool::initialize(const VulkanDevice& inDevice, const std::vector<DescriptorPoolElement>& inPoolElements, uint32_t inMaxSets)
 {
 	device = inDevice.getDevice();
 
@@ -95,12 +95,12 @@ bool RenderDescriptorPool::initialize(const RenderDevice& inDevice, const std::v
 	return true;
 }
 
-void RenderDescriptorPool::shutdown()
+void VulkanDescriptorPool::shutdown()
 {
 	vkDestroyDescriptorPool(device, pool, nullptr);
 }
 
-bool RenderDescriptorPool::createDescriptorSets(RenderDevice& inDevice
+bool VulkanDescriptorPool::createDescriptorSets(VulkanDevice& inDevice
 	, const std::vector<VkDescriptorSetLayout>& inLayouts
 	, const std::vector<DescriptorSetLayoutElement>& inLayoutElements
 	, const DescriptorSetLayoutElementValues& inLayoutValues
@@ -139,7 +139,7 @@ bool RenderDescriptorPool::createDescriptorSets(RenderDevice& inDevice
 				{
 					bufferInfos.push_back({});
 
-					const RenderBuffer& buffer = inDevice.getBuffer(inLayoutValues.buffers[writeIndex].bufferHandle);
+					const VulkanBuffer& buffer = inDevice.getBuffer(inLayoutValues.buffers[writeIndex].bufferHandle);
 					createWriteDescriptorBuffer(buffer, inLayoutValues.buffers[writeIndex].dataSize, outDescriptorSets[descriptorSetIndex], layoutElement.binding, layoutElement.dstArrayElement, bufferInfos.back(), writeDescriptors[writeIndex]);
 					break;
 				}
@@ -178,12 +178,12 @@ bool RenderDescriptorPool::createDescriptorSets(RenderDevice& inDevice
 	return true;
 }
 
-void RenderDescriptorPool::releaseDescriptorSet(uint32_t inCount, const VkDescriptorSet* inSets)
+void VulkanDescriptorPool::releaseDescriptorSet(uint32_t inCount, const VkDescriptorSet* inSets)
 {
 	vkFreeDescriptorSets(device, pool, inCount, inSets);
 }
 
-bool RenderDescriptorPool::createDescriptorSetLayout(VkDevice inDevice
+bool VulkanDescriptorPool::createDescriptorSetLayout(VkDevice inDevice
 	, const std::vector<DescriptorSetLayoutElement>& inLayoutElements
 	, VkDescriptorSetLayout& outDescriptorSetLayout)
 {
@@ -205,7 +205,7 @@ bool RenderDescriptorPool::createDescriptorSetLayout(VkDevice inDevice
 }
 
 
-std::vector<DescriptorSetLayoutElement> RenderDescriptorPool::getFrameDescriptorSetLayoutElements()
+std::vector<DescriptorSetLayoutElement> VulkanDescriptorPool::getFrameDescriptorSetLayoutElements()
 {
 	DescriptorSetLayoutElement element0;
 	element0.binding = 0;
@@ -217,7 +217,7 @@ std::vector<DescriptorSetLayoutElement> RenderDescriptorPool::getFrameDescriptor
 	return { element0 };
 }
 
-std::vector<DescriptorSetLayoutElement> RenderDescriptorPool::getTexturesDescriptorSetLayoutElements()
+std::vector<DescriptorSetLayoutElement> VulkanDescriptorPool::getTexturesDescriptorSetLayoutElements()
 {
 	DescriptorSetLayoutElement element0;
 	element0.binding = 0;
@@ -235,7 +235,7 @@ std::vector<DescriptorSetLayoutElement> RenderDescriptorPool::getTexturesDescrip
 
 	return { element0, element1 };
 }
-std::vector<DescriptorSetLayoutElement> RenderDescriptorPool::getMaterialDescriptorSetLayoutElements()
+std::vector<DescriptorSetLayoutElement> VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements()
 {
 	DescriptorSetLayoutElement element0;
 	element0.binding = 0;

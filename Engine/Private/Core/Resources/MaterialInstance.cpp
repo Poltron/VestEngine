@@ -5,7 +5,7 @@
 #include "Render/Color.h"
 #include "Render/Renderer.h"
 #include "RenderBackend/RenderBackend.h"
-#include "RenderBackend_Vulkan/RenderDevice.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
 
 MaterialInstance::MaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle)
 	: materialHandle(inMaterialHandle), materialBufferHandle(0, 0)

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <array>
 #include <functional>
-#include <vulkan/vulkan.h>
 
 #include "Core/Ensure.h"
 #include "Render/GPUHandle.h"
 #include "Render/Vertex.h"
+#include "Render/Resources/Texture.h"
 
 struct FrameData
 {
@@ -16,7 +15,7 @@ struct FrameData
 
 struct TextureData
 {
-	alignas(128) VkImageView textures[16];
+	alignas(128) TextureView textures[16];
 };
 
 // todo: should not exist, this should be dynamic on the material side
@@ -44,21 +43,6 @@ struct ShaderStageInfo
 	EShaderStageFlagBits stage;
 };
 typedef uint8_t ShaderStageFlags;
-
-// todo : vk specific, should be moved 
-inline VkShaderStageFlags getShaderStageFlags(ShaderStageFlags inShaderStageFlags)
-{
-	VkShaderStageFlags shader = 0;
-	if (inShaderStageFlags & EShaderStageFlagBits::FRAGMENT)
-	{
-		shader = shader | VK_SHADER_STAGE_FRAGMENT_BIT;
-	}
-	if (inShaderStageFlags & EShaderStageFlagBits::VERTEX)
-	{
-		shader = shader | VK_SHADER_STAGE_VERTEX_BIT;
-	}
-	return shader;
-}
 
 enum class EShaderParameterType : uint8_t
 {

@@ -4,7 +4,7 @@
 #include "RenderBackend_OpenGL/RenderBackend_OpenGL.inl"
 #else
 	#ifdef RENDER_VULKAN
-	#include "RenderBackend_Vulkan/RenderBackend_Vulkan.inl"
+	#include "RenderBackend_Vulkan/VulkanRenderBackend.inl"
 	#else
 	#error Graphic API not supported
 	#endif

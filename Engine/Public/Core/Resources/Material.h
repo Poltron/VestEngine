@@ -3,7 +3,7 @@
 #include <string>
 
 #include "Core/ResourceHandle.h"
-#include "RenderBackend_Vulkan/ShaderStructs.h"
+#include "Render/ShaderStructs.h"
 
 enum class EMaterialBlendMode
 {

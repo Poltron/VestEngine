@@ -1,10 +1,10 @@
-#include "RenderBackend_Vulkan/RenderImage.h"
+#include "RenderBackend_Vulkan/VulkanImage.h"
 
 #include <iostream>
 
-#include "RenderBackend_Vulkan/RenderDevice.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
 
-VkImageView RenderImage::createImageView(VkDevice inDevice
+VkImageView VulkanImage::createImageView(VkDevice inDevice
 	, VkImage inTextureImage
 	, VkFormat inFormat
 	, VkImageAspectFlags inAspectFlags)

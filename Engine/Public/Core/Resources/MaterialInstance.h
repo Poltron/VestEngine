@@ -6,7 +6,7 @@
 
 #include "Core/ResourceHandle.h"
 #include "Render/GPUHandle.h"
-#include "RenderBackend_Vulkan/ShaderStructs.h"
+#include "RenderBackend_Vulkan/VulkanShaderHelper.h"
 
 class Material;
 

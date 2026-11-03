@@ -2,21 +2,18 @@
 
 #include <optional>
 #include <set>
-#include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "Core/Allocators/StackAllocator.h"
 #include "Core/ResourceHandle.h"
 #include "Core/Resources/Material.h"
-#include "Core/Resources/MaterialInstance.h"
 #include "Render/GPUHandle.h"
-#include "RenderBackend_Vulkan/CommandContext.h"
-#include "RenderBackend_Vulkan/RenderDescriptorPool.h"
-#include "RenderBackend_Vulkan/RenderConfig.h"
+#include "RenderBackend_Vulkan/VulkanCommandQueue.h"
+#include "RenderBackend_Vulkan/VulkanDescriptorPool.h"
 
-class RenderImage;
-class RenderBuffer;
+class VulkanImage;
+class VulkanInstance;
+class VulkanBuffer;
 
 enum class EQueueFamily : uint8_t
 {
@@ -45,19 +42,19 @@ struct QueueFamilyIndices
 	}
 };
 
-class RenderDevice
+class VulkanDevice
 {
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device = VK_NULL_HANDLE;
 	QueueFamilyIndices queueFamilyIndices;
 
-	std::vector<CommandContext> commandContexts;
+	std::vector<VulkanCommandQueue> VulkanCommandQueues;
 
-	std::vector<RenderBuffer> renderBuffers;
-	std::vector<RenderImage> images;
+	std::vector<VulkanBuffer> VulkanBuffers;
+	std::vector<VulkanImage> images;
 	VkSampler sampler;
 	
-	RenderDescriptorPool descriptorPool;
+	VulkanDescriptorPool descriptorPool;
 
 	uint32_t minUniformBufferOffsetAlignment;
 	uint32_t maxUniformBufferRange;
@@ -79,11 +76,11 @@ public:
 	VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
 	VkDevice getDevice() const { return device; }
 	const QueueFamilyIndices& getQueueFamilyIndices() const { return queueFamilyIndices; }
-	RenderDescriptorPool getDescriptorPool() const { return descriptorPool; }
+	VulkanDescriptorPool getDescriptorPool() const { return descriptorPool; }
 
-	CommandContext& getGraphicsCommandContext() { return commandContexts[(uint8_t)EQueueFamily::GRAPHICS]; }
-	CommandContext& getPresentCommandContext() { return commandContexts[(uint8_t)EQueueFamily::PRESENT]; }
-	CommandContext& getTransferCommandContext() { return commandContexts[(uint8_t)EQueueFamily::TRANSFER]; }
+	VulkanCommandQueue& getGraphicsVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS]; }
+	VulkanCommandQueue& getPresentVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT]; }
+	VulkanCommandQueue& getTransferVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER]; }
 
 	GPUHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
 	VkDescriptorSet getFrameBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
@@ -97,22 +94,22 @@ public:
 	VkDescriptorSetLayout getMaterialDescriptorSetLayout() const { return materialDescriptorSetLayout; }
 
 public:
-	bool initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers);
+	bool initialize(const VulkanInstance& inInstance, VkSurfaceKHR inSurface);
 	void shutdown();
-	void createCommandContexts(const QueueFamilyIndices& inQueueFamilyIndices);
+	void createVulkanCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices);
 
 	// resources
 	//
 	GPUHandle createAndFillBuffer(size_t inSize, void* inData, EBufferType inType);
 	GPUHandle createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
-	RenderBuffer& getBuffer(GPUHandle inHandle);
-	const RenderBuffer& getBuffer(GPUHandle inHandle) const;
+	VulkanBuffer& getBuffer(GPUHandle inHandle);
+	const VulkanBuffer& getBuffer(GPUHandle inHandle) const;
 	void destroyBuffer(GPUHandle inHandle);
 
 	//
 	GPUHandle createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
-	RenderImage& getImage(GPUHandle inHandle);
-	const RenderImage& getImage(GPUHandle inHandle) const;
+	VulkanImage& getImage(GPUHandle inHandle);
+	const VulkanImage& getImage(GPUHandle inHandle) const;
 	void destroyImage(GPUHandle inHandle);
 
 	// rendering data, descriptor sets
@@ -144,7 +141,7 @@ private:
 	bool checkDeviceExtensionSupport(VkPhysicalDevice inPhysicalDevice);
 	int ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface);
 	bool pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice);
-	bool createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers);
+	bool createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface);
 
 	bool createFrameData(uint8_t inFrameCount
 		, VkDeviceSize inBufferSize
@@ -152,8 +149,7 @@ private:
 		, std::vector<VkDescriptorSet>& outBufferDescriptorSets);
 
 	bool createTextureSampler();
-	bool createTextureData(uint8_t inTexturesCount
-		, VkDescriptorSet& outDescriptorSet);
+	bool createTextureData(VkDescriptorSet& outDescriptorSet);
 
 	bool createMaterialData(VkDeviceSize inBufferSize
 		, GPUHandle& outBufferHandle

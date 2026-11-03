@@ -2,6 +2,15 @@
 
 #include <string>
 #include "Render/GPUHandle.h"
+#include "RenderBackend/RenderBackendDef.h"
+
+#ifdef RENDER_OPENGL
+// todo
+using TextureView = GLuint;
+#elif defined(RENDER_VULKAN)
+#include <vulkan/vulkan.h>
+using TextureView = VkImageView;
+#endif
 
 class Texture
 {
@@ -22,7 +31,7 @@ public:
 
 private:
 	void loadTexture();
-
+	
 	GPUHandle handle;
 	std::string type;
 	std::string path;

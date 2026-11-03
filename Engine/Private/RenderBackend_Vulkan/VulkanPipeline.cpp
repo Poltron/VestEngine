@@ -1,4 +1,4 @@
-#include "RenderBackend_Vulkan/RenderPipeline.h"
+#include "RenderBackend_Vulkan/VulkanPipeline.h"
 
 #include <array>
 #include <vector>
@@ -6,7 +6,7 @@
 #include "Core/Ensure.h"
 #include "Core/FileSystem.h"
 
-#include "RenderBackend_Vulkan/RenderDevice.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
 
 namespace
 {
@@ -120,7 +120,7 @@ namespace
 	}
 }
 
-bool RenderPipeline::initialize(RenderDevice& inDevice
+bool VulkanPipeline::initialize(VulkanDevice& inDevice
 	, VkRenderPass inRenderPass
 	, VkExtent2D inSwapchainExtent
 	, const std::vector<ShaderStageInfo>& inShaderStageInfos
@@ -144,14 +144,14 @@ bool RenderPipeline::initialize(RenderDevice& inDevice
 	return true;
 }
 
-void RenderPipeline::destroy()
+void VulkanPipeline::destroy()
 {
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 }
 
-bool RenderPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, const std::vector<VkPushConstantRange>& inPushConstantRanges, VkPipelineLayout& outPipelineLayout)
+bool VulkanPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, const std::vector<VkPushConstantRange>& inPushConstantRanges, VkPipelineLayout& outPipelineLayout)
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -169,7 +169,7 @@ bool RenderPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayou
 	return true;
 }
 
-bool RenderPipeline::createPipeline(VkExtent2D inSwapchainExtent, VkRenderPass inRenderPass, const std::vector<ShaderStageInfo>& inShaderStageInfos, uint32_t inVertexSize, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, VkPipeline& outPipeline)
+bool VulkanPipeline::createPipeline(VkExtent2D inSwapchainExtent, VkRenderPass inRenderPass, const std::vector<ShaderStageInfo>& inShaderStageInfos, uint32_t inVertexSize, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, VkPipeline& outPipeline)
 {
 	uint32_t binding = 0;
 

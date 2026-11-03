@@ -31,26 +31,26 @@
 #include "Render/GPUHandle.h"
 #include "Render/Renderer.h"
 #include "RenderBackend/RenderBackend.h"
-#include "RenderBackend_Vulkan/CommandContext.h"
-#include "RenderBackend_Vulkan/GeometryRenderPass.h"
-#include "RenderBackend_Vulkan/RenderBuffer.h"
-#include "RenderBackend_Vulkan/RenderDevice.h"
-#include "RenderBackend_Vulkan/RenderImage.h"
-#include "RenderBackend_Vulkan/RenderInstance.h"
-#include "RenderBackend_Vulkan/RenderPipeline.h"
-#include "RenderBackend_Vulkan/RenderSurface.h"
-#include "RenderBackend_Vulkan/RenderSwapchain.h"
+#include "RenderBackend_Vulkan/VulkanCommandQueue.h"
+#include "RenderBackend_Vulkan/VulkanGeometryRenderPass.h"
+#include "RenderBackend_Vulkan/VulkanBuffer.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
+#include "RenderBackend_Vulkan/VulkanImage.h"
+#include "RenderBackend_Vulkan/VulkanInstance.h"
+#include "RenderBackend_Vulkan/VulkanPipeline.h"
+#include "RenderBackend_Vulkan/VulkanSurface.h"
+#include "RenderBackend_Vulkan/VulkanSwapchain.h"
 
 struct RenderBackend::Impl
 {
-	RenderInstance instance;
-	RenderSurface surface;
+	VulkanInstance instance;
+	VulkanSurface surface;
 
-	RenderDevice device;
-	RenderSwapchain swapchain;
+	VulkanDevice device;
+	VulkanSwapchain swapchain;
 
-	GeometryRenderPass geometryRenderPass;
-	RenderPipeline geometryPipeline;
+	VulkanGeometryRenderPass geometryRenderPass;
+	VulkanPipeline geometryPipeline;
 
 	// sync primitives
 	std::vector<VkCommandBuffer> graphicsCommandBuffers;
@@ -93,7 +93,7 @@ namespace
 	}
 
 	void bindRenderPass(VkCommandBuffer inCommandBuffer
-		, GeometryRenderPass inGeometryRenderPass
+		, VulkanGeometryRenderPass inGeometryRenderPass
 		, VkExtent2D inSwapchainExtent
 		, uint32_t inImageIndex)
 	{
@@ -120,7 +120,7 @@ namespace
 	}
 
 	void bindPipeline(VkCommandBuffer inCommandBuffer
-		, RenderPipeline inGeometryPipeline
+		, VulkanPipeline inGeometryPipeline
 		, VkExtent2D inSwapchainExtent)
 	{
 		vkCmdBindPipeline(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inGeometryPipeline.getPipeline());
@@ -140,7 +140,7 @@ namespace
 		vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
 	}
 
-	BufferHandle pushFrameData(RenderDevice& inDevice, uint32_t inFrameId)
+	BufferHandle pushFrameData(VulkanDevice& inDevice, uint32_t inFrameId)
 	{
 		FrameData frameData{};
 		frameData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
@@ -150,17 +150,17 @@ namespace
 		return inDevice.pushFrameData((void*)&frameData, sizeof(FrameData), inFrameId);
 	}
 
-	void bindDescriptorSets(RenderDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, const MaterialInstance& inMaterialInstance, uint32_t inFrameId)
+	void bindDescriptorSets(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, const MaterialInstance& inMaterialInstance, uint32_t inFrameId)
 	{
 		std::vector<uint32_t> dynamicOffsets;
 		std::vector<VkDescriptorSet> descriptorSets;
 
-		// Set 0 : Frame
+		// Set 0 : Frame Data
 		const BufferHandle frameDataHandle = pushFrameData(inDevice, inFrameId);
 		dynamicOffsets.push_back(frameDataHandle.offset);
 		descriptorSets.push_back(inDevice.getFrameBufferDescriptorSet(inFrameId));
 
-		// Set 1 : Textures Data
+		// Set 1 : Texture Data
 		descriptorSets.push_back(inDevice.getTextureDescriptorSet());
 
 		// Set 2 : Material Data
@@ -171,12 +171,12 @@ namespace
 	}
 
 	// todo
-	const RenderPipeline* getPipelineForMaterial(const Material* inMaterial, const RenderPipeline* inRenderPipeline)
+	const VulkanPipeline* getPipelineForMaterial(const Material* inMaterial, const VulkanPipeline* inVulkanPipeline)
 	{
-		return inRenderPipeline;
+		return inVulkanPipeline;
 	}
 
-	BufferHandle pushInstanceData(RenderDevice& inDevice, uint32_t inFrameId, const glm::mat4& inModelMat)
+	BufferHandle pushInstanceData(VulkanDevice& inDevice, uint32_t inFrameId, const glm::mat4& inModelMat)
 	{
 		InstanceData instanceData{};
 		//instanceData.model = glm::rotate(inModelMat, (float)platform::getTime() * glm::radians(90.0f), glm::vec3(0, 0, 1));
@@ -185,10 +185,10 @@ namespace
 		return inDevice.pushFrameData((void*)&instanceData, sizeof(InstanceData), inFrameId);
 	}
 
-	bool recordCommandBuffer(RenderDevice& inDevice
+	bool recordCommandBuffer(VulkanDevice& inDevice
 		, VkCommandBuffer inCommandBuffer
-		, const RenderPipeline& inGeometryPipeline
-		, const GeometryRenderPass& inGeometryRenderPass
+		, const VulkanPipeline& inGeometryPipeline
+		, const VulkanGeometryRenderPass& inGeometryRenderPass
 		, VkExtent2D inSwapchainExtent
 		, uint32_t inImageIndex
 		, uint32_t inFrameId)
@@ -196,9 +196,9 @@ namespace
 		beginCommandBuffer(inCommandBuffer);
 		bindRenderPass(inCommandBuffer, inGeometryRenderPass, inSwapchainExtent, inImageIndex);
 
-		RenderBuffer& currentFrameBuffer = inDevice.getBuffer(inDevice.getFrameBufferHandle(inFrameId));
+		VulkanBuffer& currentFrameBuffer = inDevice.getBuffer(inDevice.getFrameBufferHandle(inFrameId));
 
-		const RenderPipeline* boundPipeline = nullptr;
+		const VulkanPipeline* boundPipeline = nullptr;
 		const ComponentManager<MeshRendererComponent>& meshRenderers = engine::getScene()->getMeshRendererComponents();
 		const ComponentManager<WorldTransformComponent>& worldTransforms = engine::getScene()->getWorldTransformComponents();
 		for (size_t i = 0; i < meshRenderers.size(); ++i)
@@ -212,7 +212,7 @@ namespace
 			Material* material = engine::getResources()->getMaterial(materialInstance->getMaterial());
 			ensure(material);
 
-			const RenderPipeline* pipelineNeeded = getPipelineForMaterial(material, &inGeometryPipeline);
+			const VulkanPipeline* pipelineNeeded = getPipelineForMaterial(material, &inGeometryPipeline);
 			if (boundPipeline != pipelineNeeded)
 			{
 				ensure(pipelineNeeded != nullptr);
@@ -230,12 +230,12 @@ namespace
 			ensure(worldTransform);
 			for (size_t j = 0; j < meshes.size(); ++j)
 			{
-				const RenderBuffer& vertexBuffer = inDevice.getBuffer(meshes[j].getVertexBuffer());
+				const VulkanBuffer& vertexBuffer = inDevice.getBuffer(meshes[j].getVertexBuffer());
 				const VkBuffer vertexBuffers[] = { vertexBuffer.getBuffer() };
 				const VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
 
-				const RenderBuffer& indexBuffer = inDevice.getBuffer(meshes[j].getIndexBuffer());
+				const VulkanBuffer& indexBuffer = inDevice.getBuffer(meshes[j].getIndexBuffer());
 				vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 				VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
@@ -376,7 +376,7 @@ namespace
 		return 0;
 	}
 
-	void recreateSwapchain(RenderDevice& inDevice, VkSurfaceKHR inSurface, RenderSwapchain& inSwapchain, GeometryRenderPass& inRenderPass)
+	void recreateSwapchain(VulkanDevice& inDevice, VkSurfaceKHR inSurface, VulkanSwapchain& inSwapchain, VulkanGeometryRenderPass& inRenderPass)
 	{
 		vkDeviceWaitIdle(inDevice.getDevice());
 
@@ -399,12 +399,12 @@ void RenderBackend::getContextRequirements(std::vector<std::pair<contextHints::R
 	outHints.push_back({ contextHints::Requirements::ClientAPI, (uint8_t)contextHints::EClientAPI::NONE });
 }
 
-RenderDevice& RenderBackend::getDevice()
+VulkanDevice& RenderBackend::getDevice()
 {
 	return impl->device;
 }
 
-RenderPipeline& RenderBackend::getGeometryPipeline()
+VulkanPipeline& RenderBackend::getGeometryPipeline()
 {
 	return impl->geometryPipeline;
 }
@@ -421,7 +421,7 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!impl->device.initialize(impl->instance.getInstance(), impl->surface.getSurface(), impl->instance.isValidationEnabled(), validationLayers))
+	if (!impl->device.initialize(impl->instance, impl->surface.getSurface()))
 	{
 		return false;
 	}
@@ -431,7 +431,7 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!impl->device.getGraphicsCommandContext().createCommandBuffers(renderConfig::getFrameCount(), impl->graphicsCommandBuffers))
+	if (!impl->device.getGraphicsVulkanCommandQueue().createCommandBuffers(renderConfig::getFrameCount(), impl->graphicsCommandBuffers))
 	{
 		return false;
 	}
@@ -558,7 +558,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	result = vkQueueSubmit(impl->device.getGraphicsCommandContext().getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
+	result = vkQueueSubmit(impl->device.getGraphicsVulkanCommandQueue().getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
 	if (result != VK_SUCCESS)
 	{
 		return;
@@ -575,7 +575,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(impl->device.getPresentCommandContext().getQueue(), &presentInfo);
+	vkQueuePresentKHR(impl->device.getPresentVulkanCommandQueue().getQueue(), &presentInfo);
 	
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || impl->bFramebufferResized)
 	{
@@ -681,8 +681,8 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 		return false;
 	}
 
-	RenderBuffer& renderBuffer = impl->device.getBuffer(dataBufferHandle);
-	renderBuffer.mapAndFill((void*)inData, imageSize);
+	VulkanBuffer& VulkanBuffer = impl->device.getBuffer(dataBufferHandle);
+	VulkanBuffer.mapAndFill((void*)inData, imageSize);
 
 	// note: format forced at texture level
 	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
@@ -698,18 +698,18 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 
 	VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	RenderImage& renderImage = impl->device.getImage(imageHandle);
-	impl->device.getTransferCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
-	impl->device.getTransferCommandContext().executeCopyBufferToImageCommand(renderBuffer.getBuffer(), renderImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
+	VulkanImage& VulkanImage = impl->device.getImage(imageHandle);
+	impl->device.getTransferVulkanCommandQueue().executeTransitionImageLayoutCommand(VulkanImage.getImage(), format, oldLayout, newLayout);
+	impl->device.getTransferVulkanCommandQueue().executeCopyBufferToImageCommand(VulkanBuffer.getBuffer(), VulkanImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
 
 	oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	impl->device.getGraphicsCommandContext().executeTransitionImageLayoutCommand(renderImage.getImage(), format, oldLayout, newLayout);
+	impl->device.getGraphicsVulkanCommandQueue().executeTransitionImageLayoutCommand(VulkanImage.getImage(), format, oldLayout, newLayout);
 	impl->device.destroyBuffer(dataBufferHandle);
 
 	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
-	VkImageView view = RenderImage::createImageView(impl->device.getDevice(), renderImage.getImage(), format, aspectFlags);
-	renderImage.setTextureView(view);
+	VkImageView view = VulkanImage::createImageView(impl->device.getDevice(), VulkanImage.getImage(), format, aspectFlags);
+	VulkanImage.setTextureView(view);
 
 	return imageHandle;
 }

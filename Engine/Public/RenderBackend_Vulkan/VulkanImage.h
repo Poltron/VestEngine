@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-class RenderImage
+class VulkanImage
 {
 	VkDevice device = VK_NULL_HANDLE;
 
@@ -16,7 +16,7 @@ public:
 	VkDeviceMemory getMemory() const { return memory; }
 	VkImageView getView() const { return view; }
 
-	RenderImage(VkDevice inDevice, VkImage inImage, VkDeviceMemory inMemory)
+	VulkanImage(VkDevice inDevice, VkImage inImage, VkDeviceMemory inMemory)
 		: device(inDevice), image(inImage), memory(inMemory)
 	{ }
 

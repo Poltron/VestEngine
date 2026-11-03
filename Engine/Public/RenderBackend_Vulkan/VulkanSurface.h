@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-class RenderSurface
+class VulkanSurface
 {
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	

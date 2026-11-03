@@ -1,12 +1,5 @@
 #include "ECS/Components/MeshRendererComponent.h"
 
-#include "Core/Engine.h"
-#include "Core/ResourcesManager.h"
-#include "Render/Renderer.h"
-#include "RenderBackend/RenderBackend.h"
-#include "RenderBackend_Vulkan/RenderDevice.h"
-#include "RenderBackend_Vulkan/RenderPipeline.h"
-
 MeshRendererComponent::MeshRendererComponent()
 	: entity(ENTITY_INVALID), model(ResourceHandle::invalid), materialInstance(ResourceHandle::invalid)//, bOutline(false)
 {}

@@ -1,4 +1,4 @@
-#include "RenderBackend_Vulkan/RenderDevice.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
 
 #include <algorithm>
 #include <iostream>
@@ -7,12 +7,15 @@
 #include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
 #include "Core/ResourceHandle.h"
+#include "Render/ShaderStructs.h"
 #include "Render/Resources/Texture.h"
-#include "RenderBackend_Vulkan/CommandContext.h"
-#include "RenderBackend_Vulkan/RenderBuffer.h"
-#include "RenderBackend_Vulkan/RenderImage.h"
-#include "RenderBackend_Vulkan/RenderSwapchain.h"
-#include "RenderBackend_Vulkan/ShaderStructs.h"
+#include "RenderBackend_Vulkan/VulkanCommandQueue.h"
+#include "RenderBackend_Vulkan/VulkanBuffer.h"
+#include "RenderBackend_Vulkan/VulkanConfig.h"
+#include "RenderBackend_Vulkan/VulkanImage.h"
+#include "RenderBackend_Vulkan/VulkanInstance.h"
+#include "RenderBackend_Vulkan/VulkanSwapchain.h"
+#include "RenderBackend_Vulkan/VulkanShaderHelper.h"
 
 namespace
 {
@@ -42,19 +45,19 @@ namespace
 	}
 }
 
-bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers)
+bool VulkanDevice::initialize(const VulkanInstance& inInstance, VkSurfaceKHR inSurface)
 {
-	if (!pickPhysicalDevice(inInstance, inSurface, physicalDevice))
+	if (!pickPhysicalDevice(inInstance.getInstance(), inSurface, physicalDevice))
 	{
 		return false;
 	}
 
-	if (!createLogicalDevice(inInstance, inSurface, bInEnableValidationLayers, inValidationLayers))
+	if (!createLogicalDevice(inInstance.getInstance(), inSurface))
 	{
 		return false;
 	}
 
-	createCommandContexts(queueFamilyIndices);
+	createVulkanCommandQueues(queueFamilyIndices);
 
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
@@ -84,7 +87,7 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 		return false;
 	}
 
-	if (!createTextureData(renderConfig::getTextureArraySize(), textureDescriptorSet))
+	if (!createTextureData(textureDescriptorSet))
 	{
 		return false;
 	}
@@ -97,7 +100,7 @@ bool RenderDevice::initialize(VkInstance inInstance, VkSurfaceKHR inSurface, boo
 	return true;
 }
 
-void RenderDevice::shutdown()
+void VulkanDevice::shutdown()
 {
 	vkDestroySampler(device, sampler, nullptr);
 
@@ -108,9 +111,9 @@ void RenderDevice::shutdown()
 
 	descriptorPool.releaseDescriptorSet((uint32_t)frameUniformBufferDescriptorSets.size(), frameUniformBufferDescriptorSets.data());
 
-	for (size_t i = 0; i < commandContexts.size(); ++i)
+	for (size_t i = 0; i < VulkanCommandQueues.size(); ++i)
 	{
-		commandContexts[i].free();
+		VulkanCommandQueues[i].free();
 	}
 
 	descriptorPool.shutdown();
@@ -118,24 +121,24 @@ void RenderDevice::shutdown()
 	vkDestroyDevice(device, nullptr);
 }
 
-void RenderDevice::createCommandContexts(const QueueFamilyIndices& inQueueFamilyIndices)
+void VulkanDevice::createVulkanCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices)
 {
-	commandContexts.resize((uint8_t)EQueueFamily::COUNT);
+	VulkanCommandQueues.resize((uint8_t)EQueueFamily::COUNT);
 
 	const uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
-	CommandContext& graphicsCommandContext = commandContexts[(uint8_t)EQueueFamily::GRAPHICS];
-	graphicsCommandContext.create(device, graphicsFamily);
+	VulkanCommandQueue& graphicsVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS];
+	graphicsVulkanCommandQueue.create(device, graphicsFamily);
 
 	const uint32_t presentFamily = queueFamilyIndices.presentFamily.value();
-	CommandContext& presentCommandContext = commandContexts[(uint8_t)EQueueFamily::PRESENT];
-	presentCommandContext.create(device, presentFamily);
+	VulkanCommandQueue& presentVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT];
+	presentVulkanCommandQueue.create(device, presentFamily);
 
 	const uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
-	CommandContext& transferCommandContext = commandContexts[(uint8_t)EQueueFamily::TRANSFER];
-	transferCommandContext.create(device, transferFamily);
+	VulkanCommandQueue& transferVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER];
+	transferVulkanCommandQueue.create(device, transferFamily);
 }
 
-GPUHandle RenderDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
+GPUHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
 {
 	const QueueFamilyIndices& indices = getQueueFamilyIndices();
 	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
@@ -147,7 +150,7 @@ GPUHandle RenderDevice::createAndFillBuffer(size_t inSize, void* inData, EBuffer
 		return false;
 	}
 
-	RenderBuffer& stagingBuffer = getBuffer(stagingBufferHandle);
+	VulkanBuffer& stagingBuffer = getBuffer(stagingBufferHandle);
 	stagingBuffer.mapAndFill(inData, inSize);
 
 	usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | getVkBufferType(inType);
@@ -159,22 +162,22 @@ GPUHandle RenderDevice::createAndFillBuffer(size_t inSize, void* inData, EBuffer
 		return false;
 	}
 
-	const RenderBuffer& vertexBuffer = getBuffer(vertexBufferHandle);
-	CommandContext commandContext = getTransferCommandContext();
-	if (!commandContext.isValid())
+	const VulkanBuffer& vertexBuffer = getBuffer(vertexBufferHandle);
+	VulkanCommandQueue VulkanCommandQueue = getTransferVulkanCommandQueue();
+	if (!VulkanCommandQueue.isValid())
 	{
-		commandContext = getGraphicsCommandContext();
+		VulkanCommandQueue = getGraphicsVulkanCommandQueue();
 	}
 
 	// note: need to do this cause previous buffer allocation has underlying vector reallocating so previous ref is stale
 	stagingBuffer = getBuffer(stagingBufferHandle);
-	commandContext.executeCopyBufferCommand(stagingBuffer.getBuffer(), vertexBuffer.getBuffer(), inSize);
+	VulkanCommandQueue.executeCopyBufferCommand(stagingBuffer.getBuffer(), vertexBuffer.getBuffer(), inSize);
 	destroyBuffer(stagingBufferHandle);
 
 	return vertexBufferHandle;
 }
 
-GPUHandle RenderDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
+GPUHandle VulkanDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
 {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -211,7 +214,7 @@ GPUHandle RenderDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inU
 	allocInfo.allocationSize = memRequirements.size;
 
 	uint32_t memoryType = 0;
-	RenderDevice::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, inProperties, memoryType);
+	VulkanDevice::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, inProperties, memoryType);
 	allocInfo.memoryTypeIndex = memoryType;
 
 	result = vkAllocateMemory(device, &allocInfo, nullptr, &memory);
@@ -228,63 +231,63 @@ GPUHandle RenderDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inU
 		return GPUHandle::invalid;
 	}
 
-	renderBuffers.push_back(RenderBuffer(device, buffer, memory, allocInfo.allocationSize));
-	return GPUHandle((uint32_t)(renderBuffers.size() - 1));
+	VulkanBuffers.push_back(VulkanBuffer(device, buffer, memory, allocInfo.allocationSize));
+	return GPUHandle((uint32_t)(VulkanBuffers.size() - 1));
 }
 
-RenderBuffer& RenderDevice::getBuffer(GPUHandle inHandle)
+VulkanBuffer& VulkanDevice::getBuffer(GPUHandle inHandle)
 {
-	return renderBuffers.at(inHandle.id);
+	return VulkanBuffers.at(inHandle.id);
 }
 
-const RenderBuffer& RenderDevice::getBuffer(GPUHandle inHandle) const
+const VulkanBuffer& VulkanDevice::getBuffer(GPUHandle inHandle) const
 {
-	return renderBuffers.at(inHandle.id);
+	return VulkanBuffers.at(inHandle.id);
 }
 
-void RenderDevice::destroyBuffer(GPUHandle handle)
+void VulkanDevice::destroyBuffer(GPUHandle handle)
 {
-	RenderBuffer& renderBuffer = renderBuffers.at(handle.id);
-	vkDestroyBuffer(device, renderBuffer.getBuffer(), nullptr);
-	vkFreeMemory(device, renderBuffer.getMemory(), nullptr);
+	VulkanBuffer& VulkanBuffer = VulkanBuffers.at(handle.id);
+	vkDestroyBuffer(device, VulkanBuffer.getBuffer(), nullptr);
+	vkFreeMemory(device, VulkanBuffer.getMemory(), nullptr);
 }
 
-void RenderDevice::resetFrameData(uint32_t inFrameId)
+void VulkanDevice::resetFrameData(uint32_t inFrameId)
 {
-	RenderBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
+	VulkanBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
 	buffer.reset();
 }
 
-BufferHandle RenderDevice::pushFrameData(void* inData, uint32_t inSize, uint32_t inFrameId)
+BufferHandle VulkanDevice::pushFrameData(void* inData, uint32_t inSize, uint32_t inFrameId)
 {
-	RenderBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
+	VulkanBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
 	return buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
 }
 
-VkDescriptorSet RenderDevice::getMaterialDescriptorSet(uint32_t inHandle) const
+VkDescriptorSet VulkanDevice::getMaterialDescriptorSet(uint32_t inHandle) const
 {
 	return materialDescriptorSet;
 }
 
-BufferHandle RenderDevice::pushMaterialData(void* inData, uint32_t inSize)
+BufferHandle VulkanDevice::pushMaterialData(void* inData, uint32_t inSize)
 {
-	RenderBuffer& buffer = getBuffer(materialBuffer);
+	VulkanBuffer& buffer = getBuffer(materialBuffer);
 	return buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
 }
 
-const uint8_t* RenderDevice::getMaterialInstanceBuffer(uint32_t inOffset) const
+const uint8_t* VulkanDevice::getMaterialInstanceBuffer(uint32_t inOffset) const
 {
 	const uint8_t* memory = (uint8_t*)getBuffer(materialBuffer).getMappedMemory();
 	return memory + inOffset;
 }
 
-uint32_t RenderDevice::getMaterialInstanceCompatibleDescriptorSet()
+uint32_t VulkanDevice::getMaterialInstanceCompatibleDescriptorSet()
 {
 	// todo
 	return 0;
 }
 
-void RenderDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos)
+void VulkanDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos)
 {
 	if (inBlendMode == EMaterialBlendMode::OPAQUE && inType == EMaterialType::UNLIT)
 	{
@@ -296,13 +299,13 @@ void RenderDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMateria
 	}
 }
 
-bool RenderDevice::checkCompatiblePipeline(const std::vector<ShaderStageInfo>& inShaderStageInfos) const
+bool VulkanDevice::checkCompatiblePipeline(const std::vector<ShaderStageInfo>& inShaderStageInfos) const
 {
 	// should be in the renderbackend, can't check pipeline from inside the device
 	return true;
 }
 
-bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
+bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
 	, GPUHandle& outBufferHandle
 	, VkDescriptorSet& outBufferDescriptorSet)
 {
@@ -314,8 +317,8 @@ bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
 	outBufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
 	getBuffer(outBufferHandle).map(inBufferSize);
 
-	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getMaterialDescriptorSetLayoutElements();
-	if (!RenderDescriptorPool::createDescriptorSetLayout(device, layoutElements, materialDescriptorSetLayout))
+	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements();
+	if (!VulkanDescriptorPool::createDescriptorSetLayout(device, layoutElements, materialDescriptorSetLayout))
 	{
 		return false;
 	}
@@ -334,9 +337,9 @@ bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
 	return true;
 }
 
-//DescriptorSetHandle RenderDevice::createMaterialDescriptorSet(GPUHandle inBuffer, size_t inBufferSize)
+//DescriptorSetHandle VulkanDevice::createMaterialDescriptorSet(GPUHandle inBuffer, size_t inBufferSize)
 //{
-//	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getMaterialDescriptorSetLayoutElements();
+//	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements();
 //
 //	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), 1);
 //	layoutValues.buffers[0] = { inBuffer, inBufferSize };
@@ -345,7 +348,7 @@ bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
 //	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { materialDescriptorSetLayout };
 //	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, 1, descriptorSets))
 //	{
-//		std::cerr << "RenderDevice::createMaterialDescriptorSets failed" << std::endl;
+//		std::cerr << "VulkanDevice::createMaterialDescriptorSets failed" << std::endl;
 //		return DescriptorSetHandle();
 //	}
 //
@@ -359,7 +362,7 @@ bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
 //	return handle;
 //}
 
-//void RenderDevice::destroyMaterialDescriptorSets(DescriptorSetHandle inHandle)
+//void VulkanDevice::destroyMaterialDescriptorSets(DescriptorSetHandle inHandle)
 //{
 //	if (inHandle.id + inHandle.count > materialDescriptorSets.size())
 //	{
@@ -374,7 +377,7 @@ bool RenderDevice::createMaterialData(VkDeviceSize inBufferSize
 //	}
 //}
 
-GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
+GPUHandle VulkanDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
 {
 	VkImage image;
 	VkDeviceMemory memory;
@@ -420,7 +423,7 @@ GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkForma
 	allocInfo.allocationSize = memRequirements.size;
 
 	uint32_t memoryType;
-	RenderDevice::findMemoryType(getPhysicalDevice(), memRequirements.memoryTypeBits, inProperties, memoryType);
+	VulkanDevice::findMemoryType(getPhysicalDevice(), memRequirements.memoryTypeBits, inProperties, memoryType);
 	allocInfo.memoryTypeIndex = memoryType;
 
 	result = vkAllocateMemory(getDevice(), &allocInfo, nullptr, &memory);
@@ -431,37 +434,38 @@ GPUHandle RenderDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkForma
 	}
 	vkBindImageMemory(getDevice(), image, memory, 0);
 
-	images.push_back(RenderImage(device, image, memory));
+	images.push_back(VulkanImage(device, image, memory));
 	return GPUHandle((uint32_t)(images.size() - 1));
 }
 
-RenderImage& RenderDevice::getImage(GPUHandle inHandle)
+VulkanImage& VulkanDevice::getImage(GPUHandle inHandle)
 {
 	return images.at(inHandle.id);
 }
 
-const RenderImage& RenderDevice::getImage(GPUHandle inHandle) const
+const VulkanImage& VulkanDevice::getImage(GPUHandle inHandle) const
 {
 	return images.at(inHandle.id);
 }
 
-void RenderDevice::destroyImage(GPUHandle inHandle)
+void VulkanDevice::destroyImage(GPUHandle inHandle)
 {
-	RenderImage& renderImage = images.at(inHandle.id);
+	VulkanImage& image = images.at(inHandle.id);
 
-	vkDestroyImage(device, renderImage.getImage(), nullptr);
-	vkDestroyImageView(device, renderImage.getView(), nullptr);
-	vkFreeMemory(device, renderImage.getMemory(), nullptr);
+	vkDestroyImage(device, image.getImage(), nullptr);
+	vkDestroyImageView(device, image.getView(), nullptr);
+	vkFreeMemory(device, image.getMemory(), nullptr);
 
-	renderImage = RenderImage(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+	image = VulkanImage(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
 }
 
-uint32_t RenderDevice::addTexture(ResourceHandle inTexture)
+// todo: texture management
+uint32_t VulkanDevice::addTexture(ResourceHandle inTexture)
 {
 	const Texture* texture = engine::getResources()->getTexture(inTexture);
 	ensure(texture);
 
-	const RenderImage& image = getImage(texture->getHandle());
+	const VulkanImage& image = getImage(texture->getHandle());
 
 	VkDescriptorImageInfo imageInfos;
 	imageInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -484,14 +488,14 @@ uint32_t RenderDevice::addTexture(ResourceHandle inTexture)
 	return textureSlot;
 }
 
-uint8_t RenderDevice::getAvailableTextureSlot()
+uint8_t VulkanDevice::getAvailableTextureSlot()
 {
 	const uint8_t slot = nextTextureAvailableSlot;
 	nextTextureAvailableSlot++;
 	return slot;
 }
 
-bool RenderDevice::createFrameData(uint8_t inFrameCount
+bool VulkanDevice::createFrameData(uint8_t inFrameCount
 	, VkDeviceSize inBufferSize
 	, std::vector<GPUHandle>& outBufferHandles
 	, std::vector<VkDescriptorSet>& outBufferDescriptorSets)
@@ -506,13 +510,13 @@ bool RenderDevice::createFrameData(uint8_t inFrameCount
 		GPUHandle bufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
 		outBufferHandles.push_back(bufferHandle);
 
-		RenderBuffer& buffer = getBuffer(outBufferHandles[i]);
+		VulkanBuffer& buffer = getBuffer(outBufferHandles[i]);
 		buffer.map(inBufferSize);
 	}
 	
-	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getFrameDescriptorSetLayoutElements();
+	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getFrameDescriptorSetLayoutElements();
 
-	if (!RenderDescriptorPool::createDescriptorSetLayout(device, layoutElements, frameUniformBufferLayout))
+	if (!VulkanDescriptorPool::createDescriptorSetLayout(device, layoutElements, frameUniformBufferLayout))
 	{
 		return false;
 	}
@@ -530,7 +534,7 @@ bool RenderDevice::createFrameData(uint8_t inFrameCount
 	return true;
 }
 
-bool RenderDevice::createTextureSampler()
+bool VulkanDevice::createTextureSampler()
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -564,8 +568,7 @@ bool RenderDevice::createTextureSampler()
 	return true;
 }
 
-bool RenderDevice::createTextureData(uint8_t inTexturesCount
-	, VkDescriptorSet& outDescriptorSet)
+bool VulkanDevice::createTextureData(VkDescriptorSet& outDescriptorSet)
 {
 	if (!createTextureSampler())
 	{
@@ -573,14 +576,14 @@ bool RenderDevice::createTextureData(uint8_t inTexturesCount
 	}
 
 	const uint32_t descriptorSetCount = 1;
-	std::vector<DescriptorSetLayoutElement> layoutElements = RenderDescriptorPool::getTexturesDescriptorSetLayoutElements();
-	if (!RenderDescriptorPool::createDescriptorSetLayout(device, layoutElements, textureDescriptorSetLayout))
+	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getTexturesDescriptorSetLayoutElements();
+	if (!VulkanDescriptorPool::createDescriptorSetLayout(device, layoutElements, textureDescriptorSetLayout))
 	{
 		return false;
 	}
 
 	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), descriptorSetCount);
-	layoutValues.textures[0].count = inTexturesCount;
+	layoutValues.textures[0] = {};
 	layoutValues.samplers[1].sampler = sampler;
 
 	std::vector<VkDescriptorSet> descriptorSets;
@@ -593,7 +596,7 @@ bool RenderDevice::createTextureData(uint8_t inTexturesCount
 	return true;
 }
 
-QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface)
+QueueFamilyIndices VulkanDevice::findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface)
 {
 	QueueFamilyIndices indices;
 
@@ -628,7 +631,7 @@ QueueFamilyIndices RenderDevice::findQueueFamilies(VkPhysicalDevice inDevice, Vk
 	return indices;
 }
 
-bool RenderDevice::findMemoryType(VkPhysicalDevice inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType)
+bool VulkanDevice::findMemoryType(VkPhysicalDevice inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(inPhysicalDevice, &memProperties);
@@ -646,7 +649,7 @@ bool RenderDevice::findMemoryType(VkPhysicalDevice inPhysicalDevice, uint32_t in
 	return false;
 }
 
-bool RenderDevice::checkDeviceExtensionSupport(VkPhysicalDevice inPhysicalDevice)
+bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice inPhysicalDevice)
 {
 	uint32_t extensionCount;
 	vkEnumerateDeviceExtensionProperties(inPhysicalDevice, nullptr, &extensionCount, nullptr);
@@ -662,7 +665,7 @@ bool RenderDevice::checkDeviceExtensionSupport(VkPhysicalDevice inPhysicalDevice
 	return requiredExtensions.empty();
 }
 
-int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface)
+int VulkanDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface)
 {
 	QueueFamilyIndices indices = findQueueFamilies(inPhysicalDevice, inSurface);
 	if (!indices.isComplete())
@@ -676,7 +679,7 @@ int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfac
 		return 0;
 	}
 
-	RenderSwapchain::SwapchainSupportDetails swapchainDetails = RenderSwapchain::querySwapchainSupport(inPhysicalDevice, inSurface);
+	VulkanSwapchain::SwapchainSupportDetails swapchainDetails = VulkanSwapchain::querySwapchainSupport(inPhysicalDevice, inSurface);
 	if (swapchainDetails.formats.empty() || swapchainDetails.presentModes.empty())
 	{
 		return 0;
@@ -721,7 +724,7 @@ int RenderDevice::ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfac
 	return score;
 }
 
-bool RenderDevice::pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice)
+bool VulkanDevice::pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice)
 {
 	uint32_t physicalDeviceCount = 0;
 	vkEnumeratePhysicalDevices(inInstance, &physicalDeviceCount, nullptr);
@@ -760,7 +763,7 @@ bool RenderDevice::pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurf
 	return true;
 }
 
-bool RenderDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, bool bInEnableValidationLayers, const std::vector<const char*>& inValidationLayers)
+bool VulkanDevice::createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface)
 {
 	queueFamilyIndices = findQueueFamilies(physicalDevice, inSurface);
 

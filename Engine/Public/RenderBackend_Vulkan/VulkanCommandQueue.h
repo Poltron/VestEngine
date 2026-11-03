@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vulkan/vulkan.h>
 
-class CommandContext
+class VulkanCommandQueue
 {
 	VkDevice device;
 
@@ -201,7 +201,7 @@ public:
 
 	void executeCopyBufferCommand(VkBuffer inSrcBuffer, VkBuffer inDstBuffer, VkDeviceSize inSize)
 	{
-		VkCommandBuffer commandBuffer = CommandContext::beginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = VulkanCommandQueue::beginSingleTimeCommands();
 
 		VkBufferCopy copyRegion{};
 		copyRegion.srcOffset = 0;
@@ -209,12 +209,12 @@ public:
 		copyRegion.size = inSize;
 		vkCmdCopyBuffer(commandBuffer, inSrcBuffer, inDstBuffer, 1, &copyRegion);
 
-		CommandContext::endSingleTimeCommands(commandBuffer);
+		VulkanCommandQueue::endSingleTimeCommands(commandBuffer);
 	}
 
 	void executeCopyBufferToImageCommand(VkBuffer inBuffer, VkImage inImage, uint32_t inWidth, uint32_t inHeight)
 	{
-		VkCommandBuffer commandBuffer = CommandContext::beginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = VulkanCommandQueue::beginSingleTimeCommands();
 
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
@@ -231,6 +231,6 @@ public:
 
 		vkCmdCopyBufferToImage(commandBuffer, inBuffer, inImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-		CommandContext::endSingleTimeCommands(commandBuffer);
+		VulkanCommandQueue::endSingleTimeCommands(commandBuffer);
 	}
 };

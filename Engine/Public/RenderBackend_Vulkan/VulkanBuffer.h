@@ -4,7 +4,7 @@
 
 #include "Core/Ensure.h"
 
-class RenderBuffer
+class VulkanBuffer
 {
 	VkDevice device = VK_NULL_HANDLE;
 
@@ -23,7 +23,7 @@ public:
 	void* getMappedMemory() const { return mappedMemory; }
 	bool isMapped() const { return mappedMemory != nullptr; }
 
-	RenderBuffer(VkDevice inDevice, VkBuffer inBuffer, VkDeviceMemory inMemory, VkDeviceSize inSize)
+	VulkanBuffer(VkDevice inDevice, VkBuffer inBuffer, VkDeviceMemory inMemory, VkDeviceSize inSize)
 		: device(inDevice), buffer(inBuffer), memory(inMemory), size(inSize), mappedMemory(nullptr), offset(0)
 	{}
 
