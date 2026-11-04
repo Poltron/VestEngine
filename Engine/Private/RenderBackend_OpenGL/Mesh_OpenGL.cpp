@@ -1,24 +1,24 @@
-#include "RenderBackend_OpenGL/Mesh_OpenGL.h"
+#include "RenderBackend_OpenGL/OpenGLMesh.h"
 
 #include "glm/detail/type_vec3.hpp"
 
 #include "Core/ResourcesManager.h"
 #include "RenderBackend/RenderBackend.h"
 
-Mesh_OpenGL::Mesh_OpenGL(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
+OpenGLMesh::OpenGLMesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures)
 	: vertices(inVertices), indices(inIndices), textures(inTextures), VAO(GPUHandle::invalid), VBO(GPUHandle::invalid), EBO(GPUHandle::invalid)
 {
 	setupMesh();
 }
 
-Mesh_OpenGL::~Mesh_OpenGL()
+OpenGLMesh::~OpenGLMesh()
 {
 	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTEX_ARRAY, VAO);
 	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTICES, VBO);
 	render::getRenderBackend()->deleteGPUBuffer(EBufferType::INDICES, EBO);
 }
 
-Mesh_OpenGL::Mesh_OpenGL(Mesh_OpenGL&& inOther) noexcept
+OpenGLMesh::OpenGLMesh(OpenGLMesh&& inOther) noexcept
 	: VAO(inOther.VAO), VBO(inOther.VBO), EBO(inOther.EBO)
 {
 	vertices.clear();
@@ -34,7 +34,7 @@ Mesh_OpenGL::Mesh_OpenGL(Mesh_OpenGL&& inOther) noexcept
 	inOther.EBO = GPUHandle::invalid;
 }
 
-Mesh_OpenGL& Mesh_OpenGL::operator=(Mesh_OpenGL&& inOther) noexcept
+OpenGLMesh& OpenGLMesh::operator=(OpenGLMesh&& inOther) noexcept
 {
 	if (this != &inOther)
 	{
@@ -57,7 +57,7 @@ Mesh_OpenGL& Mesh_OpenGL::operator=(Mesh_OpenGL&& inOther) noexcept
 	return *this;
 }
 
-void Mesh_OpenGL::setupMesh()
+void OpenGLMesh::setupMesh()
 {
 	VAO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTEX_ARRAY);
 	VBO = render::getRenderBackend()->createGPUBuffer(EBufferType::VERTICES);
@@ -87,7 +87,7 @@ void Mesh_OpenGL::setupMesh()
 	render::getRenderBackend()->bindGPUBuffer(EBufferType::VERTEX_ARRAY, 0);
 }
 
-void Mesh_OpenGL::bindTextures(const ResourcesManager& inResourcesManager) const
+void OpenGLMesh::bindTextures(const ResourcesManager& inResourcesManager) const
 {
 	for (std::vector<ResourceHandle>::size_type i = 0; i < textures.size(); ++i)
 	{

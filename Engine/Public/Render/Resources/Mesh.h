@@ -78,8 +78,8 @@ namespace static_mesh
 }
 
 #ifdef RENDER_OPENGL
-	#include "RenderBackend_OpenGL/Mesh_OpenGL.h"
-	using Mesh = Mesh_OpenGL;
+	#include "RenderBackend_OpenGL/OpenGLMesh.h"
+	using Mesh = OpenGLMesh;
 #elif defined(RENDER_VULKAN)
 	#include "RenderBackend_Vulkan/VulkanMesh.h"
 	using Mesh = VulkanMesh;

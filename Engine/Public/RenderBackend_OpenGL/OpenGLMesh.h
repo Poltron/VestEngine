@@ -8,7 +8,7 @@
 
 class ResourcesManager;
 
-class Mesh_OpenGL
+class OpenGLMesh
 {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
@@ -27,15 +27,15 @@ public:
 	size_t getIndicesSize() const { return indices.size(); }
 	
 public:
-	Mesh_OpenGL() = delete;
-	Mesh_OpenGL(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures);
-	~Mesh_OpenGL();
+	OpenGLMesh() = delete;
+	OpenGLMesh(std::vector<Vertex>&& inVertices, std::vector<unsigned int>&& inIndices, std::vector<ResourceHandle>&& inTextures);
+	~OpenGLMesh();
 	
-	Mesh_OpenGL(const Mesh_OpenGL& inOther) = delete;
-	Mesh_OpenGL& operator=(const Mesh_OpenGL& inOther) = delete;
+	OpenGLMesh(const OpenGLMesh& inOther) = delete;
+	OpenGLMesh& operator=(const OpenGLMesh& inOther) = delete;
 
-	Mesh_OpenGL(Mesh_OpenGL&& inOther) noexcept;
-	Mesh_OpenGL& operator=(Mesh_OpenGL&& inOther) noexcept;
+	OpenGLMesh(OpenGLMesh&& inOther) noexcept;
+	OpenGLMesh& operator=(OpenGLMesh&& inOther) noexcept;
 
 	void bindTextures(const ResourcesManager& inResourcesManager) const;
 	
