@@ -6,7 +6,7 @@
 #include "assimp/scene.h"
 
 #include "Core/ResourceHandle.h"
-#include "Render/Resources/Mesh.h"
+#include "Core/Resources/Mesh.h"
 
 class ResourcesManager;
 class Shader;

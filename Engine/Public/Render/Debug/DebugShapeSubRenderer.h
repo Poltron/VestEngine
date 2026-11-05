@@ -24,8 +24,8 @@ enum class EDebugShapeMesh : unsigned int
 
 class DebugShapeSubRenderer
 {
-	GPUHandle debugPrimitiveShaderHandle = GPUHandle::invalid;
-	GPUHandle debugMeshShaderHandle = GPUHandle::invalid;
+	GPUAllocHandle debugPrimitiveShaderHandle = GPUAllocHandle::invalid;
+	GPUAllocHandle debugMeshShaderHandle = GPUAllocHandle::invalid;
 
 	std::vector<DebugShapePrimitive> debugShapePrimitives;
 	std::vector<DebugShapePrimitiveInstance> pointDebugShapeInstances;
@@ -46,10 +46,10 @@ public:
 	void render(Renderer& inRenderer, FrameInfo& inFrameInfo);
 	void updateDebugShapes(Scene& inScene, double inDeltaTime);
 
-	GPUHandle getDebugPrimitiveShader() { return debugPrimitiveShaderHandle; }
-	void setDebugPrimitiveShader(GPUHandle inHandle) { debugPrimitiveShaderHandle = inHandle; }
-	GPUHandle getDebugMeshShader() { return debugMeshShaderHandle; }
-	void setDebugMeshShader(GPUHandle inHandle) { debugMeshShaderHandle = inHandle; }
+	GPUAllocHandle getDebugPrimitiveShader() { return debugPrimitiveShaderHandle; }
+	void setDebugPrimitiveShader(GPUAllocHandle inHandle) { debugPrimitiveShaderHandle = inHandle; }
+	GPUAllocHandle getDebugMeshShader() { return debugMeshShaderHandle; }
+	void setDebugMeshShader(GPUAllocHandle inHandle) { debugMeshShaderHandle = inHandle; }
 
 	void addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor);
 	void addLine(const glm::vec3& inStart, const glm::vec3& inEnd, float inSize, const glm::vec3& inColor);

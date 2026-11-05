@@ -15,7 +15,7 @@ class VulkanGeometryRenderPass
 
 	VkRenderPass renderPass;
 	std::vector<VkFramebuffer> framebuffers;
-	GPUHandle depthBufferHandle = GPUHandle::invalid;
+	GPUAllocHandle depthBufferHandle = GPUAllocHandle::invalid;
 
 public:
 	VkRenderPass getRenderPass() const { return renderPass; }

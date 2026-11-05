@@ -7,7 +7,6 @@
 #include "Core/Maths.h"
 #include "Core/Scene.h"
 #include "ECS/Entity.h"
-#include "ECS/EntityManager.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/SphereColliderComponent.h"
 #include "Render/Renderer.h"

@@ -8,7 +8,7 @@
 #include "Core/ResourcesManager.h"
 #include "Core/ResourceHandle.h"
 #include "Render/ShaderStructs.h"
-#include "Render/Resources/Texture.h"
+#include "Core/Resources/Texture.h"
 #include "RenderBackend_Vulkan/VulkanCommandQueue.h"
 #include "RenderBackend_Vulkan/VulkanBuffer.h"
 #include "RenderBackend_Vulkan/VulkanConfig.h"
@@ -138,13 +138,13 @@ void VulkanDevice::createVulkanCommandQueues(const QueueFamilyIndices& inQueueFa
 	transferVulkanCommandQueue.create(device, transferFamily);
 }
 
-GPUHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
+GPUAllocHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
 {
 	const QueueFamilyIndices& indices = getQueueFamilyIndices();
 	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	GPUHandle stagingBufferHandle = createBuffer(inSize, usage, queueFamilyIndices, propertyFlags);
+	GPUAllocHandle stagingBufferHandle = createBuffer(inSize, usage, queueFamilyIndices, propertyFlags);
 	if (!stagingBufferHandle.isValid())
 	{
 		return false;
@@ -156,7 +156,7 @@ GPUHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBuffer
 	usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | getVkBufferType(inType);
 	propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	queueFamilyIndices.push_back(indices.graphicsFamily.value());
-	GPUHandle vertexBufferHandle = createBuffer(inSize, usage, queueFamilyIndices, propertyFlags);
+	GPUAllocHandle vertexBufferHandle = createBuffer(inSize, usage, queueFamilyIndices, propertyFlags);
 	if (!vertexBufferHandle.isValid())
 	{
 		return false;
@@ -177,7 +177,7 @@ GPUHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBuffer
 	return vertexBufferHandle;
 }
 
-GPUHandle VulkanDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
+GPUAllocHandle VulkanDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
 {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -221,33 +221,33 @@ GPUHandle VulkanDevice::createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inU
 	if (result != VK_SUCCESS)
 	{
 		std::cerr << "Error: vkAllocateMemory failed" << std::endl;
-		return GPUHandle::invalid;
+		return GPUAllocHandle::invalid;
 	}
 
 	result = vkBindBufferMemory(device, buffer, memory, 0);
 	if (result != VK_SUCCESS)
 	{
 		std::cerr << "Error: vkBindBufferMemory failed" << std::endl;
-		return GPUHandle::invalid;
+		return GPUAllocHandle::invalid;
 	}
 
-	VulkanBuffers.push_back(VulkanBuffer(device, buffer, memory, allocInfo.allocationSize));
-	return GPUHandle((uint32_t)(VulkanBuffers.size() - 1));
+	buffers.push_back(VulkanBuffer(device, buffer, memory, allocInfo.allocationSize));
+	return GPUAllocHandle((uint32_t)(buffers.size() - 1));
 }
 
-VulkanBuffer& VulkanDevice::getBuffer(GPUHandle inHandle)
+VulkanBuffer& VulkanDevice::getBuffer(GPUAllocHandle inHandle)
 {
-	return VulkanBuffers.at(inHandle.id);
+	return buffers.at(inHandle.id);
 }
 
-const VulkanBuffer& VulkanDevice::getBuffer(GPUHandle inHandle) const
+const VulkanBuffer& VulkanDevice::getBuffer(GPUAllocHandle inHandle) const
 {
-	return VulkanBuffers.at(inHandle.id);
+	return buffers.at(inHandle.id);
 }
 
-void VulkanDevice::destroyBuffer(GPUHandle handle)
+void VulkanDevice::destroyBuffer(GPUAllocHandle handle)
 {
-	VulkanBuffer& VulkanBuffer = VulkanBuffers.at(handle.id);
+	VulkanBuffer& VulkanBuffer = buffers.at(handle.id);
 	vkDestroyBuffer(device, VulkanBuffer.getBuffer(), nullptr);
 	vkFreeMemory(device, VulkanBuffer.getMemory(), nullptr);
 }
@@ -306,7 +306,7 @@ bool VulkanDevice::checkCompatiblePipeline(const std::vector<ShaderStageInfo>& i
 }
 
 bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
-	, GPUHandle& outBufferHandle
+	, GPUAllocHandle& outBufferHandle
 	, VkDescriptorSet& outBufferDescriptorSet)
 {
 	constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -337,7 +337,7 @@ bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
 	return true;
 }
 
-//DescriptorSetHandle VulkanDevice::createMaterialDescriptorSet(GPUHandle inBuffer, size_t inBufferSize)
+//DescriptorSetHandle VulkanDevice::createMaterialDescriptorSet(GPUAllocHandle inBuffer, size_t inBufferSize)
 //{
 //	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements();
 //
@@ -377,7 +377,7 @@ bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
 //	}
 //}
 
-GPUHandle VulkanDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
+GPUAllocHandle VulkanDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
 {
 	VkImage image;
 	VkDeviceMemory memory;
@@ -435,20 +435,20 @@ GPUHandle VulkanDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkForma
 	vkBindImageMemory(getDevice(), image, memory, 0);
 
 	images.push_back(VulkanImage(device, image, memory));
-	return GPUHandle((uint32_t)(images.size() - 1));
+	return GPUAllocHandle((uint32_t)(images.size() - 1));
 }
 
-VulkanImage& VulkanDevice::getImage(GPUHandle inHandle)
+VulkanImage& VulkanDevice::getImage(GPUAllocHandle inHandle)
 {
 	return images.at(inHandle.id);
 }
 
-const VulkanImage& VulkanDevice::getImage(GPUHandle inHandle) const
+const VulkanImage& VulkanDevice::getImage(GPUAllocHandle inHandle) const
 {
 	return images.at(inHandle.id);
 }
 
-void VulkanDevice::destroyImage(GPUHandle inHandle)
+void VulkanDevice::destroyImage(GPUAllocHandle inHandle)
 {
 	VulkanImage& image = images.at(inHandle.id);
 
@@ -465,7 +465,7 @@ uint32_t VulkanDevice::addTexture(ResourceHandle inTexture)
 	const Texture* texture = engine::getResources()->getTexture(inTexture);
 	ensure(texture);
 
-	const VulkanImage& image = getImage(texture->getHandle());
+	const VulkanImage& image = getImage(texture->getProxyHandle());
 
 	VkDescriptorImageInfo imageInfos;
 	imageInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -497,7 +497,7 @@ uint8_t VulkanDevice::getAvailableTextureSlot()
 
 bool VulkanDevice::createFrameData(uint8_t inFrameCount
 	, VkDeviceSize inBufferSize
-	, std::vector<GPUHandle>& outBufferHandles
+	, std::vector<GPUAllocHandle>& outBufferHandles
 	, std::vector<VkDescriptorSet>& outBufferDescriptorSets)
 {
 	constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -507,7 +507,7 @@ bool VulkanDevice::createFrameData(uint8_t inFrameCount
 
 	for (size_t i = 0; i < inFrameCount; ++i)
 	{
-		GPUHandle bufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
+		GPUAllocHandle bufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
 		outBufferHandles.push_back(bufferHandle);
 
 		VulkanBuffer& buffer = getBuffer(outBufferHandles[i]);

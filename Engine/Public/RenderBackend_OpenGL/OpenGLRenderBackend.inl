@@ -245,7 +245,7 @@ void RenderBackend::setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned
 	glStencilFunc(func, (GLint)inValue, (GLuint)inMask);
 }
 
-GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
+GPUAllocHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
 {
 	std::string content;
 	File::readFile(inVertexPath.data(), content);
@@ -289,10 +289,10 @@ GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::strin
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	return GPUHandle(ID);
+	return GPUAllocHandle(ID);
 }
 
-void RenderBackend::useShaderProgram(GPUHandle inHandle)
+void RenderBackend::useShaderProgram(GPUAllocHandle inHandle)
 {
 	ZoneScoped;
 
@@ -379,7 +379,7 @@ void RenderBackend::setMat4(std::string_view inName, glm::f32* inValue)
 	glUniformMatrix4fv(location, 1, GL_FALSE, inValue);
 }
 
-void RenderBackend::setTexture(std::string_view inName, GPUHandle inValue)
+void RenderBackend::setTexture(std::string_view inName, GPUAllocHandle inValue)
 {
 	int location = glGetUniformLocation(impl->currentShaderProgram, inName.data());
 	if (!isUniformLocationValid(location, inName.data()))
@@ -391,7 +391,7 @@ void RenderBackend::setTexture(std::string_view inName, GPUHandle inValue)
 }
 
 //
-void RenderBackend::drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
+void RenderBackend::drawArrays(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
 {
 	bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
 
@@ -409,7 +409,7 @@ void RenderBackend::drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, 
 	}
 }
 
-void RenderBackend::drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
+void RenderBackend::drawArraysInstanced(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
 {
 	bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
 
@@ -427,7 +427,7 @@ void RenderBackend::drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimit
 	}
 }
 
-void RenderBackend::drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
+void RenderBackend::drawElements(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
 {
 	bindGPUBuffer(EBufferType::VERTEX_ARRAY, inVAO);
 
@@ -554,11 +554,11 @@ void RenderBackend::drawGeometry(Scene& inScene)
 }
 
 //
-GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t inHeight, ETextureFormat inInternalFormat)
+GPUAllocHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t inHeight, ETextureFormat inInternalFormat)
 {
 	GLenum glInternalFormat = getOpenGLTextureFormat(inInternalFormat);
 
-	GPUHandle handle;
+	GPUAllocHandle handle;
 	glGenTextures(1, &handle.id);
 	glBindTexture(GL_TEXTURE_2D, handle.id);
 	glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, (GLsizei)inWidth, (GLsizei)inHeight, 0, glInternalFormat, GL_UNSIGNED_BYTE, inData);
@@ -583,7 +583,7 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 	return handle;
 }
 
-void RenderBackend::bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex)
+void RenderBackend::bindTexture(GPUAllocHandle inHandle, std::string_view inType, size_t inIndex)
 {
 	glActiveTexture(GL_TEXTURE0 + (GLenum)inIndex);
 	glBindTexture(GL_TEXTURE_2D, inHandle.id);
@@ -599,7 +599,7 @@ void RenderBackend::bindTexture(GPUHandle inHandle, std::string_view inType, siz
 	}
 }
 
-void RenderBackend::deleteTexture(GPUHandle inHandle)
+void RenderBackend::deleteTexture(GPUAllocHandle inHandle)
 {
 	glDeleteTextures(1, &inHandle.id);
 
@@ -613,9 +613,9 @@ void RenderBackend::deleteTexture(GPUHandle inHandle)
 }
 
 //
-GPUHandle RenderBackend::createGPUBuffer(EBufferType inType)
+GPUAllocHandle RenderBackend::createGPUBuffer(EBufferType inType)
 {
-	GPUHandle handle = {};
+	GPUAllocHandle handle = {};
 	switch (inType)
 	{
 	case EBufferType::VERTEX_ARRAY:
@@ -653,7 +653,7 @@ void RenderBackend::allocateGPUBuffer(EBufferType inType, size_t inCapacity, voi
 	}
 }
 
-void RenderBackend::bindGPUBuffer(EBufferType inType, GPUHandle inHandle)
+void RenderBackend::bindGPUBuffer(EBufferType inType, GPUAllocHandle inHandle)
 {
 	switch (inType)
 	{
@@ -677,7 +677,7 @@ void RenderBackend::bindGPUBuffer(EBufferType inType, GPUHandle inHandle)
 	}
 }
 
-void RenderBackend::deleteGPUBuffer(EBufferType inType, GPUHandle inHandle)
+void RenderBackend::deleteGPUBuffer(EBufferType inType, GPUAllocHandle inHandle)
 {
 	switch (inType)
 	{

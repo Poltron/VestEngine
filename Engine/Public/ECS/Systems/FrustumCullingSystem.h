@@ -1,4 +1,5 @@
 #pragma once
+
 #include "ECS/Systems/ISystem.h"
 
 class Scene;

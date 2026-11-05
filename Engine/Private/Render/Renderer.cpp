@@ -13,6 +13,7 @@
 #include "Core/Maths.h"
 #include "Core/Scene.h"
 #include "Core/ResourcesManager.h"
+#include "Core/Resources/Mesh.h"
 #include "Core/Resources/Model.h"
 #include "ECS/Components/DirectionalLightComponent.h"
 #include "ECS/Components/MeshRendererComponent.h"
@@ -23,7 +24,6 @@
 #include "Platform/Platform.h"
 #include "Platform/WindowManager.h"
 #include "Render/Color.h"
-#include "Render/Resources/Mesh.h"
 #include "RenderBackend/RenderBackend.h"
 
 class VestRenderer final : public Renderer
@@ -66,26 +66,34 @@ void Renderer::render(Scene& inScene, double inDeltaTime)
 		return;
 	}
 
-	// todo: this should output list of non-culled items from frustum culling
 	frustumCullingSystem.update(inScene, inDeltaTime);
 	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
 
-	renderMainPass(inScene);
+	std::vector<RenderedMesh> renderedMeshes;
+	renderMainPass(inScene, renderedMeshes);
 	renderDebugPass(inScene);
 }
 
-void Renderer::renderMainPass(Scene& inScene)
+void Renderer::renderMainPass(Scene& inScene, std::vector<RenderedMesh>& inRenderedMeshes)
 {
-	// todo: instead of sorting all mesh renderers, sort the frustum culling output items, by mat then mesh
-	std::sort(inScene.getMeshRendererComponents().getData()
-		, inScene.getMeshRendererComponents().getData() + inScene.getMeshRendererComponents().size()
-		, [](const MeshRendererComponent& inA, const MeshRendererComponent& inB)
+	std::sort(inRenderedMeshes.begin(), inRenderedMeshes.end(),
+		[](const auto& inA, const auto& inB)
 		{
-			return inA.materialInstance.handle < inB.materialInstance.handle;
+			return inA.materialHash < inB.materialHash;
 		});
-	inScene.getMeshRendererComponents().rebuildLookupTable();
 
-	// todo: after sorting, loop on drawn items and add commands to the commandrecorder
+	const ComponentManager<MeshRendererComponent>& meshRendererComponents = engine::getScene()->getMeshRendererComponents();
+	for (size_t i = 0; i < inRenderedMeshes.size(); ++i)
+	{
+		const RenderedMesh& mesh = inRenderedMeshes[i];
+		
+		CommandHeader header;
+		header.type = ECommandType::DrawIndexed;
+		header.size = sizeof(DrawIndexCommand);
+		DrawIndexCommand command;
+
+		render::getCommandRecorder()->add(header, &command);
+	}
 
 	render::getRenderBackend()->drawGeometry(inScene);
 }
@@ -143,7 +151,7 @@ void Renderer::loadDefaultMaterials()
 	//std::string renderBackendName = render::getRenderBackend()->getName();
 	//const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/default.vert";
 	//const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/lit.frag";
-	//GPUHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
+	//GPUAllocHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
 	//g_Renderer->setLitShader(litShader);
 	
 	const ShaderParameters& shaderParameters = shader::getUnlitMaterialShaderParameters();
@@ -160,7 +168,7 @@ void Renderer::loadDefaultMaterials()
 	g_Renderer->setUnlitMaterial(unlitMatHandle);
 
 	//const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/color.frag";
-	//GPUHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
+	//GPUAllocHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
 	//g_Renderer->setSolidColorShader(solidColorShader);
 
 	std::cout << "Loaded default shaders successfully." << std::endl;
@@ -169,6 +177,28 @@ void Renderer::loadDefaultMaterials()
 void Renderer::updateDebugShapes(Scene& inScene, double inDeltaTime)
 {
 	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
+}
+
+GPUProxyHandle Renderer::createMeshProxy(const Mesh* inMesh)
+{
+	meshProxies.emplace_back(inMesh);
+	return GPUProxyHandle((uint32_t)meshProxies.size() - 1);
+}
+
+void Renderer::destroyMeshProxy(GPUProxyHandle inProxyHandle)
+{
+	// todo
+}
+
+GPUProxyHandle Renderer::createTextureProxy(const Texture* inTexture)
+{
+	textureProxies.emplace_back(inTexture);
+	return GPUProxyHandle((uint32_t)textureProxies.size() - 1);
+}
+
+void Renderer::destroyTextureProxy(GPUProxyHandle inProxyHandle)
+{
+	// todo
 }
 
 void Renderer::updateLightParameters(Scene& inScene)

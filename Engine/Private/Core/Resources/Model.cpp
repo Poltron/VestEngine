@@ -7,7 +7,7 @@
 
 #include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
-#include "Render/Resources/Mesh.h"
+#include "Core/Resources/Mesh.h"
 #include "Render/Vertex.h"
 
 

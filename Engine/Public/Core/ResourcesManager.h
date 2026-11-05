@@ -7,7 +7,7 @@
 #include "Core/Resources/Model.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/MaterialInstance.h"
-#include "Render/Resources/Texture.h"
+#include "Core/Resources/Texture.h"
 
 #define MAX_RESOURCES 10
 #define MAX_MATINSTANCES 100

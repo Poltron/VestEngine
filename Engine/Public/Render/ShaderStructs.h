@@ -5,7 +5,7 @@
 #include "Core/Ensure.h"
 #include "Render/GPUHandle.h"
 #include "Render/Vertex.h"
-#include "Render/Resources/Texture.h"
+#include "Render/Resources/TextureProxy.h"
 
 struct FrameData
 {

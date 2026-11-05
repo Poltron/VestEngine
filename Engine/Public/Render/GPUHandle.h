@@ -5,21 +5,23 @@
 
 #define GPURESOURCE_INVALID_ID UINT32_MAX
 
-struct GPUHandle
+struct GPUAllocHandle
 {
 	uint32_t id;
 
-	GPUHandle(uint32_t inId)
+	GPUAllocHandle(uint32_t inId)
 		: id(inId)
 	{}
 
 	bool isValid() const
 	{
-		return id != UINT32_MAX;
+		return id != GPURESOURCE_INVALID_ID;
 	}
 
-	static GPUHandle invalid;
+	static GPUAllocHandle invalid;
 };
+
+using GPUProxyHandle = GPUAllocHandle;
 
 struct BufferHandle
 {

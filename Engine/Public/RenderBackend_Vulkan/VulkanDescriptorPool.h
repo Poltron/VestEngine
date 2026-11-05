@@ -57,19 +57,19 @@ struct DescriptorSetLayoutElement
 
 struct DescriptorSetLayoutElementBufferValue
 {
-	GPUHandle bufferHandle = GPUHandle::invalid;
+	GPUAllocHandle bufferHandle = GPUAllocHandle::invalid;
 	VkDeviceSize dataSize;
 };
 
 struct DescriptorSetLayoutElementTextureValue
 {
-	std::array<GPUHandle, renderConfig::getTextureArraySize()> imageHandles;
+	std::array<GPUAllocHandle, renderConfig::getTextureArraySize()> imageHandles;
 
 	DescriptorSetLayoutElementTextureValue()
-		: imageHandles({ GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
-			, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
-			, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid
-			, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid, GPUHandle::invalid })
+		: imageHandles({ GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
+			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
+			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
+			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid })
 	{}
 };
 

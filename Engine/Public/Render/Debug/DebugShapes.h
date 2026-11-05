@@ -14,8 +14,8 @@ struct DebugShapePrimitiveInstance
 
 class DebugShapePrimitive
 {
-	GPUHandle VAO;
-	GPUHandle VBO;
+	GPUAllocHandle VAO;
+	GPUAllocHandle VBO;
 
 	size_t capacity;
 	size_t instanceCount;
@@ -31,8 +31,8 @@ public:
 	DebugShapePrimitive(DebugShapePrimitive&& inOther) noexcept;
 	DebugShapePrimitive& operator=(DebugShapePrimitive&& inOther) noexcept;
 
-	GPUHandle getVAO() const { return VAO; }
-	GPUHandle getVBO() const { return VBO; }
+	GPUAllocHandle getVAO() const { return VAO; }
+	GPUAllocHandle getVBO() const { return VBO; }
 
 	void resetInstanceCount();
 	void updateVBO(std::vector<DebugShapePrimitiveInstance>& inInstances);
@@ -60,9 +60,9 @@ class DebugShapeMesh
 {
 	std::vector<glm::vec3> vertices;
 
-	GPUHandle VAO;
-	GPUHandle VBOmesh;
-	GPUHandle VBOinstances;
+	GPUAllocHandle VAO;
+	GPUAllocHandle VBOmesh;
+	GPUAllocHandle VBOinstances;
 
 	size_t capacity;
 	size_t instanceCount;
@@ -78,9 +78,9 @@ public:
 	DebugShapeMesh(DebugShapeMesh&& inOther) noexcept;
 	DebugShapeMesh& operator=(DebugShapeMesh&& inOther) noexcept;
 
-	GPUHandle getVAO() const { return VAO; }
-	GPUHandle getVBOMesh() const { return VBOmesh; }
-	GPUHandle getVBOInstances() const { return VBOinstances; }
+	GPUAllocHandle getVAO() const { return VAO; }
+	GPUAllocHandle getVBOMesh() const { return VBOmesh; }
+	GPUAllocHandle getVBOInstances() const { return VBOinstances; }
 	size_t getInstanceCount() const { return instanceCount; }
 	size_t getSize() const { return instanceCount * sizeof(DebugShapeMeshInstance); }
 

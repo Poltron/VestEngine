@@ -50,7 +50,7 @@ class VulkanDevice
 
 	std::vector<VulkanCommandQueue> VulkanCommandQueues;
 
-	std::vector<VulkanBuffer> VulkanBuffers;
+	std::vector<VulkanBuffer> buffers;
 	std::vector<VulkanImage> images;
 	VkSampler sampler;
 	
@@ -59,14 +59,14 @@ class VulkanDevice
 	uint32_t minUniformBufferOffsetAlignment;
 	uint32_t maxUniformBufferRange;
 
-	std::vector<GPUHandle> frameUniformBuffers;
+	std::vector<GPUAllocHandle> frameUniformBuffers;
 	std::vector<VkDescriptorSet> frameUniformBufferDescriptorSets;
 	VkDescriptorSetLayout frameUniformBufferLayout;
 
 	VkDescriptorSet textureDescriptorSet;
 	VkDescriptorSetLayout textureDescriptorSetLayout;
 
-	GPUHandle materialBuffer = GPUHandle::invalid;
+	GPUAllocHandle materialBuffer = GPUAllocHandle::invalid;
 	VkDescriptorSet materialDescriptorSet;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
 
@@ -82,14 +82,14 @@ public:
 	VulkanCommandQueue& getPresentVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT]; }
 	VulkanCommandQueue& getTransferVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER]; }
 
-	GPUHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
+	GPUAllocHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
 	VkDescriptorSet getFrameBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
 	VkDescriptorSetLayout getFrameBufferDescriptorSetLayout() const { return frameUniformBufferLayout; }
 
 	VkDescriptorSet getTextureDescriptorSet() const { return textureDescriptorSet; }
 	VkDescriptorSetLayout getTextureDescriptorSetLayout() const { return textureDescriptorSetLayout; }
 
-	GPUHandle getMaterialBufferHandle() const { return materialBuffer; }
+	GPUAllocHandle getMaterialBufferHandle() const { return materialBuffer; }
 	VkDescriptorSet getMaterialBufferDescriptorSet() const { return materialDescriptorSet; }
 	VkDescriptorSetLayout getMaterialDescriptorSetLayout() const { return materialDescriptorSetLayout; }
 
@@ -100,17 +100,17 @@ public:
 
 	// resources
 	//
-	GPUHandle createAndFillBuffer(size_t inSize, void* inData, EBufferType inType);
-	GPUHandle createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
-	VulkanBuffer& getBuffer(GPUHandle inHandle);
-	const VulkanBuffer& getBuffer(GPUHandle inHandle) const;
-	void destroyBuffer(GPUHandle inHandle);
+	GPUAllocHandle createAndFillBuffer(size_t inSize, void* inData, EBufferType inType);
+	GPUAllocHandle createBuffer(VkDeviceSize inSize, VkBufferUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
+	VulkanBuffer& getBuffer(GPUAllocHandle inHandle);
+	const VulkanBuffer& getBuffer(GPUAllocHandle inHandle) const;
+	void destroyBuffer(GPUAllocHandle inHandle);
 
 	//
-	GPUHandle createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
-	VulkanImage& getImage(GPUHandle inHandle);
-	const VulkanImage& getImage(GPUHandle inHandle) const;
-	void destroyImage(GPUHandle inHandle);
+	GPUAllocHandle createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
+	VulkanImage& getImage(GPUAllocHandle inHandle);
+	const VulkanImage& getImage(GPUAllocHandle inHandle) const;
+	void destroyImage(GPUAllocHandle inHandle);
 
 	// rendering data, descriptor sets
 	//
@@ -126,7 +126,7 @@ public:
 	const uint8_t* getMaterialInstanceBuffer(uint32_t inOffset) const;
 	uint32_t getMaterialInstanceCompatibleDescriptorSet();
 
-	//DescriptorSetHandle createMaterialDescriptorSet(GPUHandle inBuffer, size_t inBufferSize);
+	//DescriptorSetHandle createMaterialDescriptorSet(GPUAllocHandle inBuffer, size_t inBufferSize);
 	//void destroyMaterialDescriptorSets(DescriptorSetHandle inHandle);
 	VkDescriptorSet getMaterialDescriptorSet(uint32_t inHandle) const;
 
@@ -145,13 +145,13 @@ private:
 
 	bool createFrameData(uint8_t inFrameCount
 		, VkDeviceSize inBufferSize
-		, std::vector<GPUHandle>& outBufferHandles
+		, std::vector<GPUAllocHandle>& outBufferHandles
 		, std::vector<VkDescriptorSet>& outBufferDescriptorSets);
 
 	bool createTextureSampler();
 	bool createTextureData(VkDescriptorSet& outDescriptorSet);
 
 	bool createMaterialData(VkDeviceSize inBufferSize
-		, GPUHandle& outBufferHandle
+		, GPUAllocHandle& outBufferHandle
 		, VkDescriptorSet& outBufferDescriptorSet);
 };

@@ -150,15 +150,14 @@ namespace
 		return inDevice.pushFrameData((void*)&frameData, sizeof(FrameData), inFrameId);
 	}
 
-	void bindDescriptorSets(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, const MaterialInstance& inMaterialInstance, uint32_t inFrameId)
+	void bindDescriptorSets(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, BufferHandle inFrameData, VkDescriptorSet inFrameBuffer, const MaterialInstance& inMaterialInstance)
 	{
 		std::vector<uint32_t> dynamicOffsets;
 		std::vector<VkDescriptorSet> descriptorSets;
 
 		// Set 0 : Frame Data
-		const BufferHandle frameDataHandle = pushFrameData(inDevice, inFrameId);
-		dynamicOffsets.push_back(frameDataHandle.offset);
-		descriptorSets.push_back(inDevice.getFrameBufferDescriptorSet(inFrameId));
+		dynamicOffsets.push_back(inFrameData.offset);
+		descriptorSets.push_back(inFrameBuffer);
 
 		// Set 1 : Texture Data
 		descriptorSets.push_back(inDevice.getTextureDescriptorSet());
@@ -196,7 +195,9 @@ namespace
 		beginCommandBuffer(inCommandBuffer);
 		bindRenderPass(inCommandBuffer, inGeometryRenderPass, inSwapchainExtent, inImageIndex);
 
-		VulkanBuffer& currentFrameBuffer = inDevice.getBuffer(inDevice.getFrameBufferHandle(inFrameId));
+		const BufferHandle frameDataHandle = pushFrameData(inDevice, inFrameId);
+		VkDescriptorSet frameBufferDescriptorSet = inDevice.getFrameBufferDescriptorSet(inFrameId);
+		VulkanBuffer& frameBuffer = inDevice.getBuffer(inDevice.getFrameBufferHandle(inFrameId));
 
 		const VulkanPipeline* boundPipeline = nullptr;
 		const ComponentManager<MeshRendererComponent>& meshRenderers = engine::getScene()->getMeshRendererComponents();
@@ -219,7 +220,7 @@ namespace
 				bindPipeline(inCommandBuffer, *pipelineNeeded, inSwapchainExtent);
 				boundPipeline = pipelineNeeded;
 				
-				bindDescriptorSets(inDevice, inCommandBuffer, boundPipeline->getPipelineLayout(), *materialInstance, inFrameId);
+				bindDescriptorSets(inDevice, inCommandBuffer, boundPipeline->getPipelineLayout(), frameDataHandle, frameBufferDescriptorSet, *materialInstance);
 			}
 
 			const Model* model = engine::getResources()->getModel(meshRenderer->model);
@@ -230,21 +231,21 @@ namespace
 			ensure(worldTransform);
 			for (size_t j = 0; j < meshes.size(); ++j)
 			{
-				const VulkanBuffer& vertexBuffer = inDevice.getBuffer(meshes[j].getVertexBuffer());
-				const VkBuffer vertexBuffers[] = { vertexBuffer.getBuffer() };
-				const VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
+				//const VulkanBuffer& vertexBuffer = inDevice.getBuffer(meshes[j].getVertexBuffer());
+				//const VkBuffer vertexBuffers[] = { vertexBuffer.getBuffer() };
+				//const VkDeviceSize offsets[] = { 0 };
+				//vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
 
-				const VulkanBuffer& indexBuffer = inDevice.getBuffer(meshes[j].getIndexBuffer());
-				vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+				//const VulkanBuffer& indexBuffer = inDevice.getBuffer(meshes[j].getIndexBuffer());
+				//vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-				VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
+				//VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
 
-				BufferHandle instanceDataHandle = pushInstanceData(inDevice, inFrameId, worldTransform->model);
-				void* dataPtr = (uint8_t*)currentFrameBuffer.getMappedMemory() + instanceDataHandle.offset;
-				vkCmdPushConstants(inCommandBuffer, inGeometryPipeline.getPipelineLayout(), stageFlags, 0, instanceDataHandle.size, dataPtr);
+				//BufferHandle instanceDataHandle = pushInstanceData(inDevice, inFrameId, worldTransform->model);
+				//uint8_t* dataPtr = (uint8_t*)frameBuffer.getMappedMemory() + instanceDataHandle.offset;
+				//vkCmdPushConstants(inCommandBuffer, inGeometryPipeline.getPipelineLayout(), stageFlags, 0, instanceDataHandle.size, dataPtr);
 
-				vkCmdDrawIndexed(inCommandBuffer, (uint32_t)meshes[j].getIndicesSize(), 1, 0, 0, 0);
+				//vkCmdDrawIndexed(inCommandBuffer, (uint32_t)meshes[j].getIndicesSize(), 1, 0, 0, 0);
 			}
 		}
 
@@ -610,12 +611,12 @@ void RenderBackend::setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned
 {
 }
 
-GPUHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
+GPUAllocHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
 {
-	return GPUHandle::invalid;
+	return GPUAllocHandle::invalid;
 }
 
-void RenderBackend::useShaderProgram(GPUHandle inHandle)
+void RenderBackend::useShaderProgram(GPUAllocHandle inHandle)
 {
 	ZoneScoped;
 }
@@ -644,20 +645,20 @@ void RenderBackend::setMat4(std::string_view inName, glm::f32* inValue)
 {
 }
 
-void RenderBackend::setTexture(std::string_view inName, GPUHandle inValue)
+void RenderBackend::setTexture(std::string_view inName, GPUAllocHandle inValue)
 {
 }
 
 //
-void RenderBackend::drawArrays(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
+void RenderBackend::drawArrays(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
 {
 }
 
-void RenderBackend::drawArraysInstanced(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
+void RenderBackend::drawArraysInstanced(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
 {
 }
 
-void RenderBackend::drawElements(GPUHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
+void RenderBackend::drawElements(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
 {
 }
 
@@ -666,7 +667,7 @@ void RenderBackend::drawMesh(const Mesh& inMesh)
 }
 
 //
-GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t inHeight)
+GPUAllocHandle RenderBackend::createTexture(const uint8_t* inData, size_t inWidth, size_t inHeight)
 {
 	// note: texture loading forces RGBA so 4 channels
 	VkDeviceSize imageSize = inWidth * inHeight * 4;
@@ -675,7 +676,7 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	const QueueFamilyIndices& indices = impl->device.getQueueFamilyIndices();
 	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
-	GPUHandle dataBufferHandle = impl->device.createBuffer(imageSize, usage, queueFamilyIndices, properties);
+	GPUAllocHandle dataBufferHandle = impl->device.createBuffer(imageSize, usage, queueFamilyIndices, properties);
 	if (!dataBufferHandle.isValid())
 	{
 		return false;
@@ -690,7 +691,7 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 	usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	queueFamilyIndices.push_back(indices.graphicsFamily.value());
-	GPUHandle imageHandle = impl->device.createImage((uint32_t)inWidth, (uint32_t)inHeight, format, tiling, usage, queueFamilyIndices, properties);
+	GPUAllocHandle imageHandle = impl->device.createImage((uint32_t)inWidth, (uint32_t)inHeight, format, tiling, usage, queueFamilyIndices, properties);
 	if (!imageHandle.isValid())
 	{
 		return false;
@@ -714,30 +715,30 @@ GPUHandle RenderBackend::createTexture(uint8_t* inData, size_t inWidth, size_t i
 	return imageHandle;
 }
 
-void RenderBackend::bindTexture(GPUHandle inHandle, std::string_view inType, size_t inIndex)
+void RenderBackend::bindTexture(GPUAllocHandle inHandle, std::string_view inType, size_t inIndex)
 {
 }
 
-void RenderBackend::deleteTexture(GPUHandle inHandle)
+void RenderBackend::deleteTexture(GPUAllocHandle inHandle)
 {
 	impl->device.destroyImage(inHandle);
 }
 
 //
-GPUHandle RenderBackend::createGPUBuffer(EBufferType inType)
+GPUAllocHandle RenderBackend::createGPUBuffer(EBufferType inType)
 {
-	return GPUHandle::invalid;
+	return GPUAllocHandle::invalid;
 }
 
 void RenderBackend::allocateGPUBuffer(EBufferType inType, size_t inCapacity, void* inData, EBufferUsage inUsage)
 {
 }
 
-void RenderBackend::bindGPUBuffer(EBufferType inType, GPUHandle inHandle)
+void RenderBackend::bindGPUBuffer(EBufferType inType, GPUAllocHandle inHandle)
 {
 }
 
-void RenderBackend::deleteGPUBuffer(EBufferType inType, GPUHandle inHandle)
+void RenderBackend::deleteGPUBuffer(EBufferType inType, GPUAllocHandle inHandle)
 {
 }
 
@@ -753,9 +754,11 @@ void RenderBackend::setVertexLayoutData(unsigned int inLayoutIndex, size_t inSiz
 namespace render
 {
 	RenderBackend* g_renderBackEnd = nullptr;
+	RHICommandRecorder* g_commandRecorder = nullptr;
 
 	bool initializeBackend()
 	{
+		g_commandRecorder = new RHICommandRecorder();
 		g_renderBackEnd = new RenderBackend();
 		return g_renderBackEnd->initialize();
 	}
@@ -773,5 +776,10 @@ namespace render
 	RenderBackend* getRenderBackend()
 	{
 		return g_renderBackEnd;
+	}
+
+	RHICommandRecorder* getCommandRecorder()
+	{
+		return g_commandRecorder;
 	}
 }

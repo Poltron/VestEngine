@@ -1,7 +1,10 @@
 #pragma once
 
+#include <vector>
+
+#include "Core/ResourceHandle.h"
+#include "Render/GPUHandle.h"
 #include "Render/Vertex.h"
-#include "RenderBackend/RenderBackendDef.h"
 
 namespace static_mesh
 {
@@ -77,13 +80,29 @@ namespace static_mesh
 	}
 }
 
-#ifdef RENDER_OPENGL
-	#include "RenderBackend_OpenGL/OpenGLMesh.h"
-	using Mesh = OpenGLMesh;
-#elif defined(RENDER_VULKAN)
-	#include "RenderBackend_Vulkan/VulkanMesh.h"
-	using Mesh = VulkanMesh;
-#else
-	#include "Core/Ensure.h"
-	ensure(false);
-#endif
+class Mesh
+{
+	std::vector<Vertex> vertices;
+	std::vector<uint16_t> indices;
+	std::vector<ResourceHandle> textures;
+
+	GPUProxyHandle proxyHandle;
+
+public:
+	const std::vector<Vertex>& getVertices() const { return vertices; }
+	uint32_t getVertexCount() const { return (uint32_t)vertices.size(); }
+	const std::vector<uint16_t>& getIndices() const{ return indices; }
+	uint32_t getIndexCount() const { return (uint32_t)indices.size(); }
+	const std::vector<ResourceHandle>& getTextures() const{ return textures; }
+	GPUProxyHandle getProxyHandle() const { return proxyHandle; }
+
+	Mesh() = delete;
+	Mesh(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices, std::vector<ResourceHandle>&& inTextures);
+	~Mesh();
+
+	Mesh(const Mesh& inOther) = delete;
+	Mesh& operator=(const Mesh& inOther) = delete;
+
+	Mesh(Mesh&& inOther) noexcept;
+	Mesh& operator=(Mesh&& inOther) noexcept;
+};
