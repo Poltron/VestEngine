@@ -54,7 +54,7 @@ Model& Model::operator=(Model&& inOther) noexcept
 void Model::load(std::string inPath)
 {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(inPath, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(inPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph);
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cout << "ERROR: Assimp " << importer.GetErrorString() << std::endl;
