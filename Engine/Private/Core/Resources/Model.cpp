@@ -122,7 +122,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		loadMaterialTextures(material, aiTextureType_SPECULAR, "specular", textures);
 	}
 
-	return Mesh(std::move(vertices), std::move(indices), std::move(textures));
+	// todo: what should be done with textures ? -> create default materialinstance
+	return Mesh(std::move(vertices), std::move(indices));
 }
 
 void Model::loadMaterialTextures(aiMaterial* inMat, aiTextureType inType, const char* inTypeName, std::vector<ResourceHandle>& outTextures)

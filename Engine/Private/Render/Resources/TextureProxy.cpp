@@ -2,18 +2,19 @@
 
 #include "Core/Resources/Texture.h"
 #include "RenderBackend/RenderBackend.h"
+#include "RenderBackend_Vulkan/VulkanDevice.h"
 
 TextureProxy::TextureProxy(const Texture* inTexture)
 	: handle(GPUAllocHandle::invalid)
 {
-	handle = render::getRenderBackend()->createTexture(inTexture->getData(), inTexture->getWidth(), inTexture->getHeight());
+	handle = render::getRenderBackend()->getDevice().createTexture(inTexture->getData(), inTexture->getWidth(), inTexture->getHeight(), inTexture->getChannelCount());
 }
 
 TextureProxy::~TextureProxy()
 {
 	if (handle.isValid())
 	{
-		render::getRenderBackend()->deleteTexture(handle);
+		render::getRenderBackend()->getDevice().destroyImage(handle);
 	}
 }
 

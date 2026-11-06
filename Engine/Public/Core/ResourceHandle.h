@@ -18,6 +18,11 @@ struct ResourceHandle
 		return handle != RESOURCE_INVALID_ID;
 	}
 
+	bool operator!=(const ResourceHandle& inOther) const
+	{
+		return handle != inOther.handle;
+	}
+
 	bool operator==(const ResourceHandle& inOther) const
 	{
 		return handle == inOther.handle;

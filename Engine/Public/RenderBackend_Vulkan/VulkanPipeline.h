@@ -22,7 +22,7 @@ public:
 	VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
 	VkPipeline getPipeline() const { return pipeline; }
 
-	bool initialize(VulkanDevice& inDevice
+	bool initialize(VkDevice inDevice
 		, VkRenderPass inRenderPass
 		, VkExtent2D inSwapchainExtent
 		, const std::vector<ShaderStageInfo>& inShaderStageInfos
@@ -34,10 +34,10 @@ public:
 
 private:
 	bool createPipelineLayout(const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, const std::vector<VkPushConstantRange>& inPushConstantRanges, VkPipelineLayout& outPipelineLayout);
-	bool createPipeline(VkExtent2D inSwapchainExtent
-		, VkRenderPass inRenderPass
+	bool createPipeline(VkRenderPass inRenderPass
+		, VkExtent2D inSwapchainExtent
 		, const std::vector<ShaderStageInfo>& inShaderStageInfos
-		, uint32_t inVertexSize
 		, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+		, uint32_t inVertexSize
 		, VkPipeline& outPipeline);
 };

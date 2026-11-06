@@ -8,19 +8,11 @@
 #include "Render/Debug/DebugShapeSubRenderer.h"
 #include "Render/FrameInfo.h"
 #include "Render/GPUHandle.h"
+#include "Render/Resources/MaterialProxy.h"
 #include "Render/Resources/MeshProxy.h"
 #include "Render/Resources/TextureProxy.h"
 
 #define MAX_POINT_LIGHTS 3
-
-// todo : need everything for the renderbackend to not need to go into ecs or resources
-struct RenderedMesh
-{
-	GPUProxyHandle mesh = GPUProxyHandle::invalid;
-	// textures
-	uint64_t materialHash;
-	glm::mat4 modelMat;
-};
 
 class Camera;
 class Mesh;
@@ -38,37 +30,16 @@ class Renderer
 
 	std::vector<MeshProxy> meshProxies;
 	std::vector<TextureProxy> textureProxies;
+	std::vector<MaterialProxy> materialProxies;
 
-protected:
 	DebugShapeSubRenderer debugShapeSubRenderer;
 	FrustumCullingSystem frustumCullingSystem;
-
 	FrameInfo frameInfo;
 
 public:
-	void clear();
-	void render(Scene& inScene, double inDeltaTime);
-	void swap();
-
-	void updateDebugShapes(Scene& inScene, double inDeltaTime);
-
-	GPUProxyHandle createMeshProxy(const Mesh* inMesh);
-	void destroyMeshProxy(GPUProxyHandle inProxyHandle);
-	GPUProxyHandle createTextureProxy(const Texture* inTexture);
-	void destroyTextureProxy(GPUProxyHandle inProxyHandle);
-
-private:
-	void renderMainPass(Scene& inScene, std::vector<RenderedMesh>& inRenderedMeshes);
-	void renderDebugPass(Scene& inScene);
-
-//
-public:
-	void drawModel(const Model& inModel);
-
-//
-public:
-	void loadDefaultMaterials();
-	void updateLightParameters(Scene& inScene);
+	Camera& getActiveCamera();
+	const Camera& getActiveCamera() const;
+	void setActiveCamera(Camera* inCamera);
 
 	ResourceHandle getLitMaterial() { return litMaterialHandle; }
 	void setLitMaterial(ResourceHandle inResourceHandle) { litMaterialHandle = inResourceHandle; }
@@ -77,11 +48,38 @@ public:
 	ResourceHandle getSolidColorMaterial() { return solidColorMaterialHandle; }
 	void setSolidColorMaterial(ResourceHandle inResourceHandle) { solidColorMaterialHandle = inResourceHandle; }
 
-	void setActiveCamera(Camera* inCamera);
-	Camera& getActiveCamera();
+	MaterialProxy& getMaterialProxy(GPUProxyHandle inHandle) { return materialProxies[inHandle.id]; }
+	const std::vector<MaterialProxy>& getMaterialProxies() const { return materialProxies; }
+	MeshProxy& getMeshProxy(GPUProxyHandle inHandle) { return meshProxies[inHandle.id]; }
+	const std::vector<MeshProxy>& getMeshProxies() const { return meshProxies; }
+	TextureProxy& getTextureProxy(GPUProxyHandle inHandle) { return textureProxies[inHandle.id]; }
+	const std::vector<TextureProxy>& getTextureProxies() const { return textureProxies; }
 
 	DebugShapeSubRenderer& getDebugShapeSubRenderer() { return debugShapeSubRenderer; }
 	const FrameInfo& getFrameInfo() const { return frameInfo; }
+
+public:
+	void clear();
+	void render(Scene& inScene, double inDeltaTime);
+	void swap();
+
+	void updateDebugShapes(Scene& inScene, double inDeltaTime);
+
+	GPUProxyHandle createMaterialProxy(void* inData, uint32_t inOffset);
+	void destroyMaterialProxy(GPUProxyHandle inProxyHandle);
+	GPUProxyHandle createMeshProxy(const Mesh* inMesh);
+	void destroyMeshProxy(GPUProxyHandle inProxyHandle);
+	GPUProxyHandle createTextureProxy(const Texture* inTexture);
+	void destroyTextureProxy(GPUProxyHandle inProxyHandle);
+
+private:
+	void renderMainPass(Scene& inScene);
+	void renderDebugPass(Scene& inScene);
+
+//
+public:
+	void loadDefaultMaterials();
+	void updateLightParameters(Scene& inScene);
 };
 
 namespace render

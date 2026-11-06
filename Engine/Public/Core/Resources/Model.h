@@ -14,6 +14,8 @@ class Shader;
 class Model
 {
 	std::vector<Mesh> meshes;
+	// todo: makes more sense to have material slots, that 1..X mesh are linked to
+	std::vector<ResourceHandle> materials;
 	std::string directory;
 	std::string path;
 

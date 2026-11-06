@@ -8,12 +8,14 @@
 #include "Core/ResourceHandle.h"
 #include "Core/Resources/Material.h"
 #include "Render/GPUHandle.h"
-#include "RenderBackend_Vulkan/VulkanCommandQueue.h"
 #include "RenderBackend_Vulkan/VulkanDescriptorPool.h"
+#include "Render/Resources/MaterialProxy.h"
 
+class VulkanBuffer;
+class VulkanCommandQueue;
 class VulkanImage;
 class VulkanInstance;
-class VulkanBuffer;
+class VulkanPipeline;
 
 enum class EQueueFamily : uint8_t
 {
@@ -46,8 +48,8 @@ class VulkanDevice
 {
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device = VK_NULL_HANDLE;
-	QueueFamilyIndices queueFamilyIndices;
 
+	QueueFamilyIndices queueFamilyIndices;
 	std::vector<VulkanCommandQueue> VulkanCommandQueues;
 
 	std::vector<VulkanBuffer> buffers;
@@ -63,14 +65,16 @@ class VulkanDevice
 	std::vector<VkDescriptorSet> frameUniformBufferDescriptorSets;
 	VkDescriptorSetLayout frameUniformBufferLayout;
 
-	VkDescriptorSet textureDescriptorSet;
+	std::vector<VkDescriptorSet> textureDescriptorSets;
 	VkDescriptorSetLayout textureDescriptorSetLayout;
 
-	GPUAllocHandle materialBuffer = GPUAllocHandle::invalid;
-	VkDescriptorSet materialDescriptorSet;
+	std::vector<GPUAllocHandle> materialBuffers;
+	std::vector<VkDescriptorSet> materialDescriptorSets;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
 
 	uint8_t nextTextureAvailableSlot;
+
+	std::vector<VulkanPipeline> pipelines;
 
 public:
 	VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
@@ -78,20 +82,22 @@ public:
 	const QueueFamilyIndices& getQueueFamilyIndices() const { return queueFamilyIndices; }
 	VulkanDescriptorPool getDescriptorPool() const { return descriptorPool; }
 
-	VulkanCommandQueue& getGraphicsVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS]; }
-	VulkanCommandQueue& getPresentVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT]; }
-	VulkanCommandQueue& getTransferVulkanCommandQueue() { return VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER]; }
+	VulkanCommandQueue& getGraphicsCommandQueue();
+	VulkanCommandQueue& getPresentVulkanCommandQueue();
+	VulkanCommandQueue& getTransferCommandQueue();
 
 	GPUAllocHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
 	VkDescriptorSet getFrameBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
 	VkDescriptorSetLayout getFrameBufferDescriptorSetLayout() const { return frameUniformBufferLayout; }
 
-	VkDescriptorSet getTextureDescriptorSet() const { return textureDescriptorSet; }
+	VkDescriptorSet getTextureDescriptorSet(uint32_t inHandle) const { return textureDescriptorSets[inHandle]; }
 	VkDescriptorSetLayout getTextureDescriptorSetLayout() const { return textureDescriptorSetLayout; }
 
-	GPUAllocHandle getMaterialBufferHandle() const { return materialBuffer; }
-	VkDescriptorSet getMaterialBufferDescriptorSet() const { return materialDescriptorSet; }
+	GPUAllocHandle getMaterialBufferHandle(uint32_t inHandle) const { return materialBuffers[inHandle]; }
+	VkDescriptorSet getMaterialBufferDescriptorSet(uint32_t inHandle) const { return materialDescriptorSets[inHandle]; }
 	VkDescriptorSetLayout getMaterialDescriptorSetLayout() const { return materialDescriptorSetLayout; }
+
+	const VulkanPipeline& getPipeline(uint32_t inHandle) const;
 
 public:
 	bool initialize(const VulkanInstance& inInstance, VkSurfaceKHR inSurface);
@@ -107,6 +113,7 @@ public:
 	void destroyBuffer(GPUAllocHandle inHandle);
 
 	//
+	GPUAllocHandle createTexture(const uint8_t* inData, size_t inWidth, size_t inHeight, size_t inNrChannels);
 	GPUAllocHandle createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties);
 	VulkanImage& getImage(GPUAllocHandle inHandle);
 	const VulkanImage& getImage(GPUAllocHandle inHandle) const;
@@ -115,7 +122,7 @@ public:
 	// rendering data, descriptor sets
 	//
 	void resetFrameData(uint32_t inFrameId);
-	BufferHandle pushFrameData(void* inData, uint32_t inSize, uint32_t inFrameId);
+	BufferHandle pushFrameData(void* inData, uint32_t inSize, VulkanBuffer& inBuffer);
 
 	//
 	uint32_t addTexture(ResourceHandle inTexture);
@@ -123,16 +130,21 @@ public:
 
 	//
 	BufferHandle pushMaterialData(void* inData, uint32_t inSize);
-	const uint8_t* getMaterialInstanceBuffer(uint32_t inOffset) const;
+	const uint8_t* getMaterialInstanceBuffer(BufferHandle inHandle) const;
 	uint32_t getMaterialInstanceCompatibleDescriptorSet();
 
-	//DescriptorSetHandle createMaterialDescriptorSet(GPUAllocHandle inBuffer, size_t inBufferSize);
-	//void destroyMaterialDescriptorSets(DescriptorSetHandle inHandle);
-	VkDescriptorSet getMaterialDescriptorSet(uint32_t inHandle) const;
+	// pipelines
+	uint32_t createPipeline(VkRenderPass inRenderPass
+		, VkExtent2D inSwapchainExtent
+		, const std::vector<ShaderStageInfo>& inShaderStageInfos
+		, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+		, uint32_t inVertexSize
+		, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
+		, const std::vector<VkPushConstantRange>& inPushConstantRanges);
 
 	// should be in renderbackend
 	void getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos);
-	bool checkCompatiblePipeline(const std::vector<ShaderStageInfo>& inShaderStageInfos) const;
+	uint32_t getCompatiblePipeline(const MaterialProxy& inMaterialProxy) const;
 
 private:
 	static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface);

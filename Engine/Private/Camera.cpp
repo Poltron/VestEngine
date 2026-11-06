@@ -175,17 +175,17 @@ void Camera::setPosition(const glm::vec3& inPosition)
 	bDirty = true;
 }
 
-glm::mat4& Camera::getProjectionMatrix()
+const glm::mat4& Camera::getProjectionMatrix() const
 {
 	return projection;
 }
 
-glm::mat4& Camera::getViewMatrix()
+const glm::mat4& Camera::getViewMatrix() const
 {
 	return view;
 }
 
-glm::mat4& Camera::getViewProjectionMatrix()
+const glm::mat4& Camera::getViewProjectionMatrix() const
 {
 	return viewProjection;
 }

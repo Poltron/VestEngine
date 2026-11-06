@@ -13,14 +13,11 @@ class Material;
 class MaterialInstance
 {
 	ResourceHandle materialHandle;
-
-	BufferHandle materialBufferHandle;
-	uint32_t descriptorSetHandle;
+	GPUProxyHandle proxyHandle;
 
 public:
-	BufferHandle getMaterialBufferHandle() const { return materialBufferHandle; }
-	uint32_t getDescriptorSetHandle() const { return descriptorSetHandle; }
 	ResourceHandle getMaterial() const { return materialHandle; }
+	GPUProxyHandle getProxyHandle() const { return proxyHandle; }
 
 	MaterialInstance() = delete;
 	MaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle);

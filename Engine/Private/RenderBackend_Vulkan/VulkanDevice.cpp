@@ -7,13 +7,17 @@
 #include "Core/Engine.h"
 #include "Core/ResourcesManager.h"
 #include "Core/ResourceHandle.h"
-#include "Render/ShaderStructs.h"
 #include "Core/Resources/Texture.h"
+#include "Render/Renderer.h"
+#include "Render/Resources/MaterialProxy.h"
+#include "Render/Resources/TextureProxy.h"
+#include "Render/ShaderStructs.h"
 #include "RenderBackend_Vulkan/VulkanCommandQueue.h"
 #include "RenderBackend_Vulkan/VulkanBuffer.h"
 #include "RenderBackend_Vulkan/VulkanConfig.h"
 #include "RenderBackend_Vulkan/VulkanImage.h"
 #include "RenderBackend_Vulkan/VulkanInstance.h"
+#include "RenderBackend_Vulkan/VulkanPipeline.h"
 #include "RenderBackend_Vulkan/VulkanSwapchain.h"
 #include "RenderBackend_Vulkan/VulkanShaderHelper.h"
 
@@ -44,6 +48,16 @@ namespace
 		return 0;
 	}
 }
+
+
+VulkanCommandQueue& VulkanDevice::getGraphicsCommandQueue()
+{ return VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS]; }
+VulkanCommandQueue& VulkanDevice::getPresentVulkanCommandQueue()
+{ return VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT]; }
+VulkanCommandQueue& VulkanDevice::getTransferCommandQueue()
+{ return VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER]; }
+const VulkanPipeline& VulkanDevice::getPipeline(uint32_t inHandle) const
+{ return pipelines[inHandle]; }
 
 bool VulkanDevice::initialize(const VulkanInstance& inInstance, VkSurfaceKHR inSurface)
 {
@@ -87,12 +101,15 @@ bool VulkanDevice::initialize(const VulkanInstance& inInstance, VkSurfaceKHR inS
 		return false;
 	}
 
-	if (!createTextureData(textureDescriptorSet))
+	textureDescriptorSets.resize(1);
+	if (!createTextureData(textureDescriptorSets[0]))
 	{
 		return false;
 	}
 
-	if (!createMaterialData(renderConfig::getMaterialBufferSize(), materialBuffer, materialDescriptorSet))
+	materialBuffers.resize(1);
+	materialDescriptorSets.resize(1);
+	if (!createMaterialData(renderConfig::getMaterialBufferSize(), materialBuffers[0], materialDescriptorSets[0]))
 	{
 		return false;
 	}
@@ -107,6 +124,11 @@ void VulkanDevice::shutdown()
 	for (size_t i = 0; i < frameUniformBuffers.size(); ++i)
 	{
 		destroyBuffer(frameUniformBuffers[i]);
+	}
+
+	for (size_t i = 0; i < pipelines.size(); ++i)
+	{
+		pipelines[i].destroy();
 	}
 
 	descriptorPool.releaseDescriptorSet((uint32_t)frameUniformBufferDescriptorSets.size(), frameUniformBufferDescriptorSets.data());
@@ -126,16 +148,16 @@ void VulkanDevice::createVulkanCommandQueues(const QueueFamilyIndices& inQueueFa
 	VulkanCommandQueues.resize((uint8_t)EQueueFamily::COUNT);
 
 	const uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
-	VulkanCommandQueue& graphicsVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS];
-	graphicsVulkanCommandQueue.create(device, graphicsFamily);
+	VulkanCommandQueue& GraphicsCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS];
+	GraphicsCommandQueue.create(device, graphicsFamily);
 
 	const uint32_t presentFamily = queueFamilyIndices.presentFamily.value();
 	VulkanCommandQueue& presentVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT];
 	presentVulkanCommandQueue.create(device, presentFamily);
 
 	const uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
-	VulkanCommandQueue& transferVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER];
-	transferVulkanCommandQueue.create(device, transferFamily);
+	VulkanCommandQueue& TransferCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER];
+	TransferCommandQueue.create(device, transferFamily);
 }
 
 GPUAllocHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
@@ -163,10 +185,10 @@ GPUAllocHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EB
 	}
 
 	const VulkanBuffer& vertexBuffer = getBuffer(vertexBufferHandle);
-	VulkanCommandQueue VulkanCommandQueue = getTransferVulkanCommandQueue();
+	VulkanCommandQueue VulkanCommandQueue = getTransferCommandQueue();
 	if (!VulkanCommandQueue.isValid())
 	{
-		VulkanCommandQueue = getGraphicsVulkanCommandQueue();
+		VulkanCommandQueue = getGraphicsCommandQueue();
 	}
 
 	// note: need to do this cause previous buffer allocation has underlying vector reallocating so previous ref is stale
@@ -258,33 +280,56 @@ void VulkanDevice::resetFrameData(uint32_t inFrameId)
 	buffer.reset();
 }
 
-BufferHandle VulkanDevice::pushFrameData(void* inData, uint32_t inSize, uint32_t inFrameId)
+BufferHandle VulkanDevice::pushFrameData(void* inData, uint32_t inSize, VulkanBuffer& inBuffer)
 {
-	VulkanBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
-	return buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
-}
-
-VkDescriptorSet VulkanDevice::getMaterialDescriptorSet(uint32_t inHandle) const
-{
-	return materialDescriptorSet;
+	return inBuffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
 }
 
 BufferHandle VulkanDevice::pushMaterialData(void* inData, uint32_t inSize)
 {
-	VulkanBuffer& buffer = getBuffer(materialBuffer);
-	return buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
+	// todo: should be determined dynamically, but right now there's only one
+	const uint32_t bufferHandle = 0; // is there space left in this buffer ?
+	VulkanBuffer& buffer = getBuffer(materialBuffers[bufferHandle]);
+	BufferHandle handle = buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
+	handle.handle = bufferHandle;
+	return handle;
 }
 
-const uint8_t* VulkanDevice::getMaterialInstanceBuffer(uint32_t inOffset) const
+const uint8_t* VulkanDevice::getMaterialInstanceBuffer(BufferHandle inHandle) const
 {
-	const uint8_t* memory = (uint8_t*)getBuffer(materialBuffer).getMappedMemory();
-	return memory + inOffset;
+	const uint8_t* memory = (uint8_t*)getBuffer(materialBuffers[inHandle.handle]).getMappedMemory();
+	return memory + inHandle.offset;
 }
 
 uint32_t VulkanDevice::getMaterialInstanceCompatibleDescriptorSet()
 {
 	// todo
 	return 0;
+}
+
+// pipelines
+uint32_t VulkanDevice::createPipeline(VkRenderPass inRenderPass
+	, VkExtent2D inSwapchainExtent
+	, const std::vector<ShaderStageInfo>& inShaderStageInfos
+	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+	, uint32_t inVertexSize
+	, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
+	, const std::vector<VkPushConstantRange>& inPushConstantRanges)
+{
+	pipelines.push_back({});
+	uint32_t handle = (uint32_t)pipelines.size() - 1;
+	VulkanPipeline& pipeline = pipelines.at(handle);
+
+	pipeline.initialize(device
+		, inRenderPass
+		, inSwapchainExtent
+		, inShaderStageInfos
+		, inVertexInputAttributeDescs
+		, inVertexSize
+		, inDescriptorSetLayouts
+		, inPushConstantRanges);
+
+	return handle;
 }
 
 void VulkanDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos)
@@ -299,10 +344,10 @@ void VulkanDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMateria
 	}
 }
 
-bool VulkanDevice::checkCompatiblePipeline(const std::vector<ShaderStageInfo>& inShaderStageInfos) const
+uint32_t VulkanDevice::getCompatiblePipeline(const MaterialProxy& inMaterialProxy) const
 {
 	// should be in the renderbackend, can't check pipeline from inside the device
-	return true;
+	return 0;
 }
 
 bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
@@ -333,49 +378,56 @@ bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
 		return false;
 	}
 
-	materialDescriptorSet = descriptorSets[0];
+	outBufferDescriptorSet = descriptorSets[0];
 	return true;
 }
 
-//DescriptorSetHandle VulkanDevice::createMaterialDescriptorSet(GPUAllocHandle inBuffer, size_t inBufferSize)
-//{
-//	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements();
-//
-//	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), 1);
-//	layoutValues.buffers[0] = { inBuffer, inBufferSize };
-//
-//	std::vector<VkDescriptorSet> descriptorSets;
-//	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { materialDescriptorSetLayout };
-//	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, 1, descriptorSets))
-//	{
-//		std::cerr << "VulkanDevice::createMaterialDescriptorSets failed" << std::endl;
-//		return DescriptorSetHandle();
-//	}
-//
-//	DescriptorSetHandle handle((uint32_t)materialDescriptorSets.size(), (uint32_t)descriptorSets.size());
-//
-//	for (VkDescriptorSet descriptorSet : descriptorSets)
-//	{
-//		materialDescriptorSets.push_back(descriptorSet);
-//	}
-//
-//	return handle;
-//}
+GPUAllocHandle VulkanDevice::createTexture(const uint8_t* inData, size_t inWidth, size_t inHeight, size_t inNrChannels)
+{
+	VkDeviceSize imageSize = inWidth * inHeight * inNrChannels;
 
-//void VulkanDevice::destroyMaterialDescriptorSets(DescriptorSetHandle inHandle)
-//{
-//	if (inHandle.id + inHandle.count > materialDescriptorSets.size())
-//	{
-//		return;
-//	}
-//
-//	vkFreeDescriptorSets(device, descriptorPool.getPool(), inHandle.count, &materialDescriptorSets[inHandle.id]);
-//
-//	for (uint32_t i = 0; i < inHandle.count; ++i)
-//	{
-//		materialDescriptorSets[inHandle.id + i] = VK_NULL_HANDLE;
-//	}
-//}
+	VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	const QueueFamilyIndices& indices = getQueueFamilyIndices();
+	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
+	GPUAllocHandle dataBufferHandle = createBuffer(imageSize, usage, queueFamilyIndices, properties);
+	if (!dataBufferHandle.isValid())
+	{
+		return false;
+	}
+
+	VulkanBuffer& VulkanBuffer = getBuffer(dataBufferHandle);
+	VulkanBuffer.mapAndFill((void*)inData, imageSize);
+
+	// note: format forced at texture level
+	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+	VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+	usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	queueFamilyIndices.push_back(indices.graphicsFamily.value());
+	GPUAllocHandle imageHandle = createImage((uint32_t)inWidth, (uint32_t)inHeight, format, tiling, usage, queueFamilyIndices, properties);
+	if (!imageHandle.isValid())
+	{
+		return false;
+	}
+
+	VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	VulkanImage& VulkanImage = getImage(imageHandle);
+	getTransferCommandQueue().executeTransitionImageLayoutCommand(VulkanImage.getImage(), format, oldLayout, newLayout);
+	getTransferCommandQueue().executeCopyBufferToImageCommand(VulkanBuffer.getBuffer(), VulkanImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
+
+	oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	getGraphicsCommandQueue().executeTransitionImageLayoutCommand(VulkanImage.getImage(), format, oldLayout, newLayout);
+	destroyBuffer(dataBufferHandle);
+
+	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	VkImageView view = VulkanImage::createImageView(device, VulkanImage.getImage(), format, aspectFlags);
+	VulkanImage.setTextureView(view);
+
+	return imageHandle;
+}
 
 GPUAllocHandle VulkanDevice::createImage(uint32_t inWidth, uint32_t inHeight, VkFormat inFormat, VkImageTiling inTiling, VkImageUsageFlags inUsage, const std::vector<uint32_t>& inQueueIndices, VkMemoryPropertyFlags inProperties)
 {
@@ -459,24 +511,29 @@ void VulkanDevice::destroyImage(GPUAllocHandle inHandle)
 	image = VulkanImage(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
 }
 
-// todo: texture management
 uint32_t VulkanDevice::addTexture(ResourceHandle inTexture)
 {
 	const Texture* texture = engine::getResources()->getTexture(inTexture);
 	ensure(texture);
+	
+	TextureProxy& textureProxy = render::getRenderer()->getTextureProxy(texture->getProxyHandle());
 
-	const VulkanImage& image = getImage(texture->getProxyHandle());
+	const VulkanImage& image = getImage(textureProxy.getHandle());
 
 	VkDescriptorImageInfo imageInfos;
 	imageInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	imageInfos.sampler = VK_NULL_HANDLE;
 	imageInfos.imageView = image.getView();
 
+	// todo: texture management
+	// > check if there is an available slot, if not create a new descriptorSet
+	// > reserve multiple slots in the same descriptorset
 	uint32_t textureSlot = getAvailableTextureSlot();
+	VkDescriptorSet set = getTextureDescriptorSet(0);
 
 	VkWriteDescriptorSet writeDescriptorSet{};
 	writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writeDescriptorSet.dstSet = getTextureDescriptorSet();
+	writeDescriptorSet.dstSet = set;
 	writeDescriptorSet.dstBinding = 0;
 	writeDescriptorSet.dstArrayElement = textureSlot;
 	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
@@ -592,7 +649,7 @@ bool VulkanDevice::createTextureData(VkDescriptorSet& outDescriptorSet)
 		return false;
 	}
 
-	textureDescriptorSet = descriptorSets[0];
+	outDescriptorSet = descriptorSets[0];
 	return true;
 }
 

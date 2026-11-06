@@ -120,7 +120,7 @@ namespace
 	}
 }
 
-bool VulkanPipeline::initialize(VulkanDevice& inDevice
+bool VulkanPipeline::initialize(VkDevice inDevice
 	, VkRenderPass inRenderPass
 	, VkExtent2D inSwapchainExtent
 	, const std::vector<ShaderStageInfo>& inShaderStageInfos
@@ -129,14 +129,14 @@ bool VulkanPipeline::initialize(VulkanDevice& inDevice
 	, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 	, const std::vector<VkPushConstantRange>& inPushConstantRanges)
 {
-	device = inDevice.getDevice();
+	device = inDevice;
 
 	if (!createPipelineLayout(inDescriptorSetLayouts, inPushConstantRanges, pipelineLayout))
 	{
 		return false;
 	}
 
-	if (!createPipeline(inSwapchainExtent, inRenderPass, inShaderStageInfos, inVertexSize, inVertexInputAttributeDescs, pipeline))
+	if (!createPipeline(inRenderPass, inSwapchainExtent, inShaderStageInfos, inVertexInputAttributeDescs, inVertexSize, pipeline))
 	{
 		return false;
 	}
@@ -151,7 +151,9 @@ void VulkanPipeline::destroy()
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 }
 
-bool VulkanPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts, const std::vector<VkPushConstantRange>& inPushConstantRanges, VkPipelineLayout& outPipelineLayout)
+bool VulkanPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
+	, const std::vector<VkPushConstantRange>& inPushConstantRanges
+	, VkPipelineLayout& outPipelineLayout)
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -169,7 +171,12 @@ bool VulkanPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayou
 	return true;
 }
 
-bool VulkanPipeline::createPipeline(VkExtent2D inSwapchainExtent, VkRenderPass inRenderPass, const std::vector<ShaderStageInfo>& inShaderStageInfos, uint32_t inVertexSize, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, VkPipeline& outPipeline)
+bool VulkanPipeline::createPipeline(VkRenderPass inRenderPass
+	, VkExtent2D inSwapchainExtent
+	, const std::vector<ShaderStageInfo>& inShaderStageInfos
+	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+	, uint32_t inVertexSize
+	, VkPipeline& outPipeline)
 {
 	uint32_t binding = 0;
 

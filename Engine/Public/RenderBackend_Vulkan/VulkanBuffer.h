@@ -69,7 +69,7 @@ public:
 	{
 		ensure(getSize() >= offset + inSize);
 
-		BufferHandle handle(offset, inSize);
+		BufferHandle handle(GPURESOURCE_INVALID_ID, offset, inSize);
 		offset += getPaddedSize(inSize, inOffsetAlignment);
 		return handle;
 	}

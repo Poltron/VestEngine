@@ -274,7 +274,7 @@ namespace demoScene
 		std::vector<Vertex> vertices = static_mesh::getCube();
 		std::vector<uint16_t> indices;
 		std::vector<ResourceHandle> textures = { containerTexture, containerSpecularTexture };
-		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
+		Mesh mesh(std::move(vertices), std::move(indices));
 
 		std::vector<Mesh> meshes;
 		meshes.push_back(std::move(mesh));
@@ -374,7 +374,7 @@ namespace demoScene
 		std::vector<Vertex> vertices = static_mesh::getPlaneVertices();
 		std::vector<uint16_t> indices = static_mesh::getPlaneIndices();
 		std::vector<ResourceHandle> textures = { albedo };
-		Mesh mesh(std::move(vertices), std::move(indices), std::move(textures));
+		Mesh mesh(std::move(vertices), std::move(indices));
 
 		std::vector<Mesh> meshes;
 		meshes.push_back(std::move(mesh));
@@ -425,6 +425,9 @@ namespace demoScene
 		const ResourceHandle unlitMaterialHandle = render::getRenderer()->getUnlitMaterial();
 		const Material* unlitMaterial = engine::getResources()->getMaterial(unlitMaterialHandle);
 
+		// todo: texture loaded by hand, but loading a model should provide the ability to create a default mat instance
+		ResourceHandle textureHandle = engine::getResources()->loadTexture(File::getResourcesDir() + "Models/kenney-cube-pets/Textures/colormap.png", "diffuse");
+
 		for (size_t i = 0; i < animalModelsTotal; ++i)
 		{
 			const ResourceHandle modelHandle = engine::getResources()->loadModel(File::getResourcesDir() + animals[i]);
@@ -433,7 +436,7 @@ namespace demoScene
 			MaterialInstance* matInstance = engine::getResources()->getMaterialInstance(matInstanceHandle);
 
 			const Mesh& mesh = model->getMeshes()[0];
-			matInstance->setTexture("diffuse", mesh.getTextures()[0]);
+			matInstance->setTexture("diffuse", textureHandle);
 			
 			for (size_t j = 0; j < totalPerMesh; ++j)
 			{

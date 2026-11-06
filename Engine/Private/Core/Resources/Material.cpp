@@ -16,9 +16,9 @@ Material::Material(EMaterialBlendMode inBlendMode, EMaterialType inType, const S
 	: blendMode(inBlendMode), type(inType), defaultMaterialInstance(ResourceHandle::invalid), shaderParameters(inShaderParameters)
 {
 	// todo: this should be when recording a command using a specific material, check if the appropriate pipeline is up
-	std::vector<ShaderStageInfo> shaderStageInfos;
-	render::getRenderBackend()->getDevice().getShaderForMaterial(blendMode, type, shaderStageInfos);
-	render::getRenderBackend()->getDevice().checkCompatiblePipeline(shaderStageInfos);	
+	//std::vector<ShaderStageInfo> shaderStageInfos;
+	//render::getRenderBackend()->getDevice().getShaderForMaterial(blendMode, type, shaderStageInfos);
+	//render::getRenderBackend()->getDevice().get(shaderStageInfos);	
 }
 
 void Material::createDefaultMaterialInstance(ResourceHandle inMaterialHandle)

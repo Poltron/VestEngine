@@ -2,12 +2,9 @@
 
 #include <vector>
 
-#include "Core/ResourceHandle.h"
 #include "Render/GPUHandle.h"
-#include "Render/Vertex.h"
 
 class Mesh;
-class ResourcesManager;
 
 class VulkanMeshProxy
 {
@@ -30,9 +27,6 @@ public:
 	GPUAllocHandle getVertexBuffer() const { return vertexBuffer; }
 	GPUAllocHandle getIndexBuffer() const { return indexBuffer; }
 
-	size_t getVertexCount() const { return vertexCount; }
-	size_t getIndexCount() const { return indexCount; }
-
-private:
-	void setupMesh();
+	uint32_t getVertexCount() const { return vertexCount; }
+	uint32_t getIndexCount() const { return indexCount; }
 };

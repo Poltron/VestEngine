@@ -9,6 +9,10 @@ struct GPUAllocHandle
 {
 	uint32_t id;
 
+	GPUAllocHandle()
+		: id(invalid.id)
+	{}
+
 	GPUAllocHandle(uint32_t inId)
 		: id(inId)
 	{}
@@ -25,11 +29,16 @@ using GPUProxyHandle = GPUAllocHandle;
 
 struct BufferHandle
 {
+	uint32_t handle;
 	uint32_t offset;
 	uint32_t size;
 
-	BufferHandle(uint32_t inOffset, uint32_t inSize)
-		: offset(inOffset), size(inSize)
+	BufferHandle()
+		: BufferHandle(invalid.handle, invalid.offset, invalid.size)
+	{}
+
+	BufferHandle(uint32_t inHandle, uint32_t inOffset, uint32_t inSize)
+		: handle(inHandle), offset(inOffset), size(inSize)
 	{}
 
 	bool isValid() const

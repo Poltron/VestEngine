@@ -12,21 +12,27 @@ VulkanMeshProxy::VulkanMeshProxy(const Mesh* inMesh)
 {
 	VulkanDevice& VulkanDevice = render::getRenderBackend()->getDevice();
 
-	vertexCount = sizeof(Vertex) * inMesh->getVertexCount();
-	vertexBuffer = VulkanDevice.createAndFillBuffer(vertexCount, (void*)inMesh->getVertices().data(), EBufferType::VERTICES);
+	vertexCount = inMesh->getVertexCount();
+	vertexBuffer = VulkanDevice.createAndFillBuffer(sizeof(Vertex) * vertexCount, (void*)inMesh->getVertices().data(), EBufferType::VERTICES);
 
-	indexCount = sizeof(uint16_t) * inMesh->getIndexCount();
-	indexBuffer = VulkanDevice.createAndFillBuffer(indexCount, (void*)inMesh->getIndices().data(), EBufferType::INDICES);
+	indexCount = inMesh->getIndexCount();
+	indexBuffer = VulkanDevice.createAndFillBuffer(sizeof(uint16_t) * indexCount, (void*)inMesh->getIndices().data(), EBufferType::INDICES);
 }
 
 VulkanMeshProxy::~VulkanMeshProxy()
 {
-	render::getRenderBackend()->deleteGPUBuffer(EBufferType::VERTICES, vertexBuffer);
-	render::getRenderBackend()->deleteGPUBuffer(EBufferType::INDICES, indexBuffer);
+	if (vertexBuffer.isValid())
+	{
+		render::getRenderBackend()->getDevice().destroyBuffer(vertexBuffer);
+	}
+	if (indexBuffer.isValid())
+	{
+		render::getRenderBackend()->getDevice().destroyBuffer(indexBuffer);
+	}
 }
 
 VulkanMeshProxy::VulkanMeshProxy(VulkanMeshProxy&& inOther) noexcept
-	: vertexBuffer(inOther.vertexBuffer), vertexCount(0), indexBuffer(inOther.indexBuffer), indexCount(0)
+	: vertexBuffer(inOther.vertexBuffer), vertexCount(inOther.vertexCount), indexBuffer(inOther.indexBuffer), indexCount(inOther.indexCount)
 {
 	inOther.vertexBuffer = GPUAllocHandle::invalid;
 	inOther.vertexCount = 0;
@@ -39,7 +45,7 @@ VulkanMeshProxy& VulkanMeshProxy::operator=(VulkanMeshProxy&& inOther) noexcept
 	if (this != &inOther)
 	{
 		vertexBuffer = inOther.vertexBuffer;
-		vertexCount = inOther.vertexCount;;
+		vertexCount = inOther.vertexCount;
 		indexBuffer = inOther.indexBuffer;
 		indexCount = inOther.indexCount;
 

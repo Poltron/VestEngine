@@ -14,15 +14,17 @@ Texture::Texture(std::string inPath, std::string inType)
 
 	stbi_set_flip_vertically_on_load(true);
 
-	uint8_t* tmpData = stbi_load(path.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
+	uint8_t* tmpData = stbi_load(path.c_str(), &width, &height, &channelCount, STBI_rgb_alpha);
 	if (!tmpData)
 	{
 		std::cout << "ERROR: Failed to load texture: " << path << std::endl;
 		return;
 	}
 
-	// note: 4 channels forced
-	size_t size = width * height * 4;
+	// note: STBI_rgb_alpha forces 4 channels
+	channelCount = 4;
+
+	size_t size = width * height * channelCount;
 	data.resize(size);
 	memcpy(data.data(), tmpData, size);
 

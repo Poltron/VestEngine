@@ -69,33 +69,84 @@ void Renderer::render(Scene& inScene, double inDeltaTime)
 	frustumCullingSystem.update(inScene, inDeltaTime);
 	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
 
-	std::vector<RenderedMesh> renderedMeshes;
-	renderMainPass(inScene, renderedMeshes);
+	renderMainPass(inScene);
 	renderDebugPass(inScene);
 }
 
-void Renderer::renderMainPass(Scene& inScene, std::vector<RenderedMesh>& inRenderedMeshes)
+void Renderer::renderMainPass(Scene& inScene)
 {
-	std::sort(inRenderedMeshes.begin(), inRenderedMeshes.end(),
-		[](const auto& inA, const auto& inB)
-		{
-			return inA.materialHash < inB.materialHash;
-		});
+	//std::sort(inRenderedMeshes.begin(), inRenderedMeshes.end(),
+	//	[](const auto& inA, const auto& inB)
+	//	{
+	//		return inA.materialHash < inB.materialHash;
+	//	});
 
-	const ComponentManager<MeshRendererComponent>& meshRendererComponents = engine::getScene()->getMeshRendererComponents();
-	for (size_t i = 0; i < inRenderedMeshes.size(); ++i)
 	{
-		const RenderedMesh& mesh = inRenderedMeshes[i];
-		
-		CommandHeader header;
-		header.type = ECommandType::DrawIndexed;
-		header.size = sizeof(DrawIndexCommand);
-		DrawIndexCommand command;
+		CommandHeader startHeader;
+		startHeader.type = ECommandType::StartRenderpass;
+		startHeader.size = sizeof(StartRenderpassCommand);
 
-		render::getCommandRecorder()->add(header, &command);
+		StartRenderpassCommand startCommand;
+		startCommand.passId = 0; // todo: remove magic number
+		render::getCommandRecorder()->add(&startHeader, &startCommand);
 	}
 
-	render::getRenderBackend()->drawGeometry(inScene);
+	ResourceHandle boundMaterialInstance = ResourceHandle::invalid;
+
+	const ComponentManager<MeshRendererComponent>& meshRendererComponents = engine::getScene()->getMeshRendererComponents();
+	for (size_t i = 0; i < meshRendererComponents.size(); ++i)
+	{
+		const MeshRendererComponent* mesh = meshRendererComponents.at(i);
+		ensure(mesh != nullptr);
+		const SphereColliderComponent* sphere = inScene.getSphereColliderComponents().get(mesh->entity);
+		if (!sphere || !sphere->bInFrustum)
+		{
+			continue;
+		}
+
+		const MaterialInstance* materialInstance = engine::getResources()->getMaterialInstance(mesh->materialInstance);
+		if (boundMaterialInstance != mesh->materialInstance)
+		{
+			CommandHeader bindMatHeader;
+			bindMatHeader.type = ECommandType::BindMaterial;
+			bindMatHeader.size = sizeof(BindMaterialCommand);
+
+			BindMaterialCommand bindMatCommand;
+			bindMatCommand.material = materialInstance->getProxyHandle();
+			render::getCommandRecorder()->add(&bindMatHeader, &bindMatCommand);
+
+			boundMaterialInstance = mesh->materialInstance;
+		}
+
+		const WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(mesh->entity);
+		ensure(worldTransform);
+
+		CommandHeader drawHeader;
+		drawHeader.type = ECommandType::DrawIndexed;
+		drawHeader.size = sizeof(DrawIndexCommand);
+
+		DrawIndexCommand drawCommand;
+		const Model* model = engine::getResources()->getModel(mesh->model);
+		for (const auto& mesh : model->getMeshes())
+		{
+			drawCommand.mesh = mesh.getProxyHandle();
+			drawCommand.model = worldTransform->model;
+			drawCommand.material = materialInstance->getProxyHandle();
+			render::getCommandRecorder()->add(&drawHeader, &drawCommand);
+		}
+	}
+
+	{
+		CommandHeader header;
+		header.type = ECommandType::EndRenderpass;
+		header.size = sizeof(EndRenderpassCommand);
+
+		EndRenderpassCommand endCommand;
+		endCommand.passId = 0; // todo: remove magic number
+		render::getCommandRecorder()->add(&header, &endCommand);
+	}
+
+	render::getRenderBackend()->render(inScene);
 }
 
 void Renderer::renderDebugPass(Scene& inScene)
@@ -130,14 +181,10 @@ Camera& Renderer::getActiveCamera()
 	return *activeCamera;
 }
 
-void Renderer::drawModel(const Model& inModel)
+const Camera& Renderer::getActiveCamera() const
 {
-	const auto& meshes = inModel.getMeshes();
-	for (size_t meshIndex = 0; meshIndex < inModel.getMeshes().size(); ++meshIndex)
-	{
-		getRenderBackend()->drawMesh(meshes[meshIndex]);
-		frameInfo.drawCalls++;
-	}
+	ensure(activeCamera);
+	return *activeCamera;
 }
 
 void Renderer::loadDefaultMaterials()
@@ -177,6 +224,17 @@ void Renderer::loadDefaultMaterials()
 void Renderer::updateDebugShapes(Scene& inScene, double inDeltaTime)
 {
 	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
+}
+
+GPUProxyHandle Renderer::createMaterialProxy(void* inData, uint32_t inOffset)
+{
+	materialProxies.emplace_back(inData, inOffset);
+	return GPUProxyHandle((uint32_t)materialProxies.size() - 1);
+}
+
+void Renderer::destroyMaterialProxy(GPUProxyHandle inProxyHandle)
+{
+	// todo
 }
 
 GPUProxyHandle Renderer::createMeshProxy(const Mesh* inMesh)

@@ -2,10 +2,8 @@
 
 #include <algorithm>
 #include <iostream>
-#include <fstream>
 #include <optional>
 #include <set>
-#include <sstream>
 #include <stddef.h>
 #include <string>
 #include <string_view>
@@ -19,7 +17,6 @@
 #include "Core/Ensure.h"
 #include "Core/Engine.h"
 #include "Core/Scene.h"
-#include "Core/FileSystem.h"
 #include "Core/ResourcesManager.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/MaterialInstance.h"
@@ -31,10 +28,11 @@
 #include "Render/GPUHandle.h"
 #include "Render/Renderer.h"
 #include "RenderBackend/RenderBackend.h"
+#include "RenderBackend/RHICommandRecorder.h"
 #include "RenderBackend_Vulkan/VulkanCommandQueue.h"
-#include "RenderBackend_Vulkan/VulkanGeometryRenderPass.h"
 #include "RenderBackend_Vulkan/VulkanBuffer.h"
 #include "RenderBackend_Vulkan/VulkanDevice.h"
+#include "RenderBackend_Vulkan/VulkanGeometryRenderPass.h"
 #include "RenderBackend_Vulkan/VulkanImage.h"
 #include "RenderBackend_Vulkan/VulkanInstance.h"
 #include "RenderBackend_Vulkan/VulkanPipeline.h"
@@ -50,7 +48,6 @@ struct RenderBackend::Impl
 	VulkanSwapchain swapchain;
 
 	VulkanGeometryRenderPass geometryRenderPass;
-	VulkanPipeline geometryPipeline;
 
 	// sync primitives
 	std::vector<VkCommandBuffer> graphicsCommandBuffers;
@@ -60,6 +57,30 @@ struct RenderBackend::Impl
 
 	uint32_t currentFrameId = 0;
 	bool bFramebufferResized = false;
+};
+
+struct PipelineState
+{
+	uint32_t pipelineHandle = GPURESOURCE_INVALID_ID;
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+
+	BufferHandle frameBuffer = BufferHandle::invalid;
+	VkDescriptorSet frameDescriptorSet = VK_NULL_HANDLE;
+	VkDescriptorSet textureDescriptorSet = VK_NULL_HANDLE;
+	BufferHandle materialBuffer = BufferHandle::invalid;
+	VkDescriptorSet materialDescriptorSet = VK_NULL_HANDLE;
+
+	void reset()
+	{
+		pipelineHandle = GPURESOURCE_INVALID_ID;
+		pipelineLayout = VK_NULL_HANDLE;
+
+		frameBuffer = BufferHandle::invalid;
+		frameDescriptorSet = VK_NULL_HANDLE;
+		textureDescriptorSet = VK_NULL_HANDLE;
+		materialBuffer = BufferHandle::invalid;
+		materialDescriptorSet = VK_NULL_HANDLE;
+	}
 };
 
 namespace
@@ -92,33 +113,6 @@ namespace
 		return true;
 	}
 
-	void bindRenderPass(VkCommandBuffer inCommandBuffer
-		, VulkanGeometryRenderPass inGeometryRenderPass
-		, VkExtent2D inSwapchainExtent
-		, uint32_t inImageIndex)
-	{
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = inGeometryRenderPass.getRenderPass();
-		renderPassInfo.framebuffer = inGeometryRenderPass.getFramebuffers()[inImageIndex];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = inSwapchainExtent;
-
-		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0, 0, 0, 1 };
-		clearValues[1].depthStencil = { 1, 0 };
-
-		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
-		renderPassInfo.pClearValues = clearValues.data();
-
-		vkCmdBeginRenderPass(inCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
-
-	void unbindRenderPass(VkCommandBuffer inCommandBuffer)
-	{
-		vkCmdEndRenderPass(inCommandBuffer);
-	}
-
 	void bindPipeline(VkCommandBuffer inCommandBuffer
 		, VulkanPipeline inGeometryPipeline
 		, VkExtent2D inSwapchainExtent)
@@ -140,117 +134,74 @@ namespace
 		vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
 	}
 
-	BufferHandle pushFrameData(VulkanDevice& inDevice, uint32_t inFrameId)
+	BufferHandle pushFrameData(VulkanDevice& inDevice, VulkanBuffer& inBuffer)
 	{
 		FrameData frameData{};
 		frameData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
 		frameData.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
 		frameData.proj[1][1] *= -1;
 
-		return inDevice.pushFrameData((void*)&frameData, sizeof(FrameData), inFrameId);
+		return inDevice.pushFrameData((void*)&frameData, sizeof(FrameData), inBuffer);
 	}
 
-	void bindDescriptorSets(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, BufferHandle inFrameData, VkDescriptorSet inFrameBuffer, const MaterialInstance& inMaterialInstance)
+	void bindDescriptorSets(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, BufferHandle inFrameData, VkDescriptorSet inFrameBuffer, const MaterialProxy& inMaterialProxy, PipelineState& outPipelineState)
 	{
 		std::vector<uint32_t> dynamicOffsets;
 		std::vector<VkDescriptorSet> descriptorSets;
 
 		// Set 0 : Frame Data
-		dynamicOffsets.push_back(inFrameData.offset);
+		outPipelineState.frameDescriptorSet = inFrameBuffer;
 		descriptorSets.push_back(inFrameBuffer);
+		outPipelineState.frameBuffer = inFrameData;
+		dynamicOffsets.push_back(inFrameData.offset);
 
 		// Set 1 : Texture Data
-		descriptorSets.push_back(inDevice.getTextureDescriptorSet());
+		outPipelineState.textureDescriptorSet = inDevice.getTextureDescriptorSet(inMaterialProxy.getTextureDescriptorSetHandle());
+		descriptorSets.push_back(outPipelineState.textureDescriptorSet);
 
 		// Set 2 : Material Data
-		dynamicOffsets.push_back(inMaterialInstance.getMaterialBufferHandle().offset);
-		descriptorSets.push_back(inDevice.getMaterialBufferDescriptorSet());
+		outPipelineState.materialDescriptorSet = inDevice.getMaterialBufferDescriptorSet(inMaterialProxy.getMaterialDescriptorSetHandle());
+		descriptorSets.push_back(outPipelineState.materialDescriptorSet);
+		outPipelineState.materialBuffer = inMaterialProxy.getMaterialBufferHandle();
+		dynamicOffsets.push_back(outPipelineState.materialBuffer.offset);
 
-		vkCmdBindDescriptorSets(inCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineLayout, 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), (uint32_t)dynamicOffsets.size(), dynamicOffsets.data());
+		vkCmdBindDescriptorSets(inCommandBuffer
+			, VK_PIPELINE_BIND_POINT_GRAPHICS
+			, inPipelineLayout
+			, 0
+			, (uint32_t)descriptorSets.size()
+			, descriptorSets.data()
+			, (uint32_t)dynamicOffsets.size()
+			, dynamicOffsets.data());
 	}
 
-	// todo
-	const VulkanPipeline* getPipelineForMaterial(const Material* inMaterial, const VulkanPipeline* inVulkanPipeline)
+	void updateMaterialDescriptorSet(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, const MaterialProxy& inMaterialProxy, PipelineState& outPipelineState)
 	{
-		return inVulkanPipeline;
+		std::vector<uint32_t> dynamicOffsets;
+		std::vector<VkDescriptorSet> descriptorSets;
+
+		// Set 2 : Material Data
+		outPipelineState.materialDescriptorSet = inDevice.getMaterialBufferDescriptorSet(inMaterialProxy.getMaterialDescriptorSetHandle());
+		descriptorSets.push_back(outPipelineState.materialDescriptorSet);
+		outPipelineState.materialBuffer = inMaterialProxy.getMaterialBufferHandle();
+		dynamicOffsets.push_back(outPipelineState.materialBuffer.offset);
+
+		vkCmdBindDescriptorSets(inCommandBuffer
+			, VK_PIPELINE_BIND_POINT_GRAPHICS
+			, inPipelineLayout
+			, 2
+			, (uint32_t)descriptorSets.size()
+			,descriptorSets.data()
+			, (uint32_t)dynamicOffsets.size()
+			, dynamicOffsets.data());
 	}
 
-	BufferHandle pushInstanceData(VulkanDevice& inDevice, uint32_t inFrameId, const glm::mat4& inModelMat)
+	BufferHandle pushInstanceData(VulkanDevice& inDevice, VulkanBuffer& inBuffer, const glm::mat4& inModelMat)
 	{
 		InstanceData instanceData{};
-		//instanceData.model = glm::rotate(inModelMat, (float)platform::getTime() * glm::radians(90.0f), glm::vec3(0, 0, 1));
 		instanceData.model = inModelMat;
 
-		return inDevice.pushFrameData((void*)&instanceData, sizeof(InstanceData), inFrameId);
-	}
-
-	bool recordCommandBuffer(VulkanDevice& inDevice
-		, VkCommandBuffer inCommandBuffer
-		, const VulkanPipeline& inGeometryPipeline
-		, const VulkanGeometryRenderPass& inGeometryRenderPass
-		, VkExtent2D inSwapchainExtent
-		, uint32_t inImageIndex
-		, uint32_t inFrameId)
-	{
-		beginCommandBuffer(inCommandBuffer);
-		bindRenderPass(inCommandBuffer, inGeometryRenderPass, inSwapchainExtent, inImageIndex);
-
-		const BufferHandle frameDataHandle = pushFrameData(inDevice, inFrameId);
-		VkDescriptorSet frameBufferDescriptorSet = inDevice.getFrameBufferDescriptorSet(inFrameId);
-		VulkanBuffer& frameBuffer = inDevice.getBuffer(inDevice.getFrameBufferHandle(inFrameId));
-
-		const VulkanPipeline* boundPipeline = nullptr;
-		const ComponentManager<MeshRendererComponent>& meshRenderers = engine::getScene()->getMeshRendererComponents();
-		const ComponentManager<WorldTransformComponent>& worldTransforms = engine::getScene()->getWorldTransformComponents();
-		for (size_t i = 0; i < meshRenderers.size(); ++i)
-		{
-			const MeshRendererComponent* meshRenderer = meshRenderers.at(i);
-
-			ResourceHandle materialInstanceHandle = meshRenderer->materialInstance;
-			MaterialInstance* materialInstance = engine::getResources()->getMaterialInstance(materialInstanceHandle);
-			ensure(materialInstance);
-
-			Material* material = engine::getResources()->getMaterial(materialInstance->getMaterial());
-			ensure(material);
-
-			const VulkanPipeline* pipelineNeeded = getPipelineForMaterial(material, &inGeometryPipeline);
-			if (boundPipeline != pipelineNeeded)
-			{
-				ensure(pipelineNeeded != nullptr);
-				bindPipeline(inCommandBuffer, *pipelineNeeded, inSwapchainExtent);
-				boundPipeline = pipelineNeeded;
-				
-				bindDescriptorSets(inDevice, inCommandBuffer, boundPipeline->getPipelineLayout(), frameDataHandle, frameBufferDescriptorSet, *materialInstance);
-			}
-
-			const Model* model = engine::getResources()->getModel(meshRenderer->model);
-			ensure(model);
-			const std::vector<Mesh>& meshes = model->getMeshes();
-
-			const WorldTransformComponent* worldTransform = worldTransforms.get(meshRenderer->entity);
-			ensure(worldTransform);
-			for (size_t j = 0; j < meshes.size(); ++j)
-			{
-				//const VulkanBuffer& vertexBuffer = inDevice.getBuffer(meshes[j].getVertexBuffer());
-				//const VkBuffer vertexBuffers[] = { vertexBuffer.getBuffer() };
-				//const VkDeviceSize offsets[] = { 0 };
-				//vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
-
-				//const VulkanBuffer& indexBuffer = inDevice.getBuffer(meshes[j].getIndexBuffer());
-				//vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-				//VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
-
-				//BufferHandle instanceDataHandle = pushInstanceData(inDevice, inFrameId, worldTransform->model);
-				//uint8_t* dataPtr = (uint8_t*)frameBuffer.getMappedMemory() + instanceDataHandle.offset;
-				//vkCmdPushConstants(inCommandBuffer, inGeometryPipeline.getPipelineLayout(), stageFlags, 0, instanceDataHandle.size, dataPtr);
-
-				//vkCmdDrawIndexed(inCommandBuffer, (uint32_t)meshes[j].getIndicesSize(), 1, 0, 0, 0);
-			}
-		}
-
-		unbindRenderPass(inCommandBuffer);
-		return endCommandBuffer(inCommandBuffer);
+		return inDevice.pushFrameData((void*)&instanceData, sizeof(InstanceData), inBuffer);
 	}
 
 	bool createSyncObjects(VkDevice inDevice, std::vector<VkSemaphore>& outImageAvailableSemaphores, std::vector<VkSemaphore>& outRenderFinishedSemaphores, std::vector<VkFence>& outInFlightFences)
@@ -393,6 +344,7 @@ RenderBackend::RenderBackend()
 {
 	// needs to be located following the renderbackend instance
 	impl = new Impl();
+	state = new PipelineState();
 }
 
 void RenderBackend::getContextRequirements(std::vector<std::pair<contextHints::Requirements, uint8_t>>& outHints)
@@ -403,11 +355,6 @@ void RenderBackend::getContextRequirements(std::vector<std::pair<contextHints::R
 VulkanDevice& RenderBackend::getDevice()
 {
 	return impl->device;
-}
-
-VulkanPipeline& RenderBackend::getGeometryPipeline()
-{
-	return impl->geometryPipeline;
 }
 
 bool RenderBackend::initialize()
@@ -432,7 +379,7 @@ bool RenderBackend::initialize()
 		return false;
 	}
 
-	if (!impl->device.getGraphicsVulkanCommandQueue().createCommandBuffers(renderConfig::getFrameCount(), impl->graphicsCommandBuffers))
+	if (!impl->device.getGraphicsCommandQueue().createCommandBuffers(renderConfig::getFrameCount(), impl->graphicsCommandBuffers))
 	{
 		return false;
 	}
@@ -460,17 +407,13 @@ bool RenderBackend::initialize()
 	uint32_t vertexSize = shader::getUnlitMaterialVertexSize();
 	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc = shader::getUnlitMaterialVertexInputs();
 
-	if (!impl->geometryPipeline.initialize(impl->device
-		, impl->geometryRenderPass.getRenderPass()
+	uint32_t pipelineHandle = impl->device.createPipeline(impl->geometryRenderPass.getRenderPass()
 		, impl->swapchain.getExtent()
 		, shaderStageInfos
 		, vertexInputAttributeDesc
 		, vertexSize
 		, descriptorSetLayouts
-		, pushConstantRanges))
-	{
-		return false;
-	}
+		, pushConstantRanges);
 
 	// Commands
 	if (!createSyncObjects(impl->device.getDevice(), impl->imageAvailableSemaphores, impl->renderFinishedSemaphores, impl->inFlightFences))
@@ -494,7 +437,6 @@ void RenderBackend::shutdown()
 
 	impl->swapchain.shutdown();
 
-	impl->geometryPipeline.destroy();
 	impl->geometryRenderPass.free(impl->device);
 
 	impl->device.shutdown();
@@ -511,12 +453,12 @@ std::string RenderBackend::getName()
 void RenderBackend::tracyGPUCollect()
 {}
 
-void RenderBackend::drawGeometry(Scene& inScene)
+void RenderBackend::render(Scene& inScene)
 {
 	vkWaitForFences(impl->device.getDevice(), 1, &impl->inFlightFences[impl->currentFrameId], VK_TRUE, UINT64_MAX);
 
-	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(impl->device.getDevice(), impl->swapchain.get(), UINT64_MAX, impl->imageAvailableSemaphores[impl->currentFrameId], VK_NULL_HANDLE, &imageIndex);
+	uint32_t imageId;
+	VkResult result = vkAcquireNextImageKHR(impl->device.getDevice(), impl->swapchain.get(), UINT64_MAX, impl->imageAvailableSemaphores[impl->currentFrameId], VK_NULL_HANDLE, &imageId);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
@@ -533,15 +475,18 @@ void RenderBackend::drawGeometry(Scene& inScene)
 
 	impl->device.resetFrameData(impl->currentFrameId);
 
-	vkResetCommandBuffer(impl->graphicsCommandBuffers[impl->currentFrameId], 0);
+	VkCommandBuffer commandBuffer = impl->graphicsCommandBuffers[impl->currentFrameId];
+	vkResetCommandBuffer(commandBuffer, 0);
 
-	recordCommandBuffer(impl->device
-		, impl->graphicsCommandBuffers[impl->currentFrameId]
-		, impl->geometryPipeline
-		, impl->geometryRenderPass
-		, impl->swapchain.getExtent()
-		, imageIndex
+	uint8_t* commandData = (uint8_t*)render::getCommandRecorder()->getCommands().get(0);
+	uint32_t commandSize = (uint32_t)render::getCommandRecorder()->getCommands().size();
+	executeCommands(commandBuffer
+		, commandData
+		, commandSize
+		, imageId
 		, impl->currentFrameId);
+	render::getCommandRecorder()->reset();
+	state->reset();
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -559,7 +504,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	result = vkQueueSubmit(impl->device.getGraphicsVulkanCommandQueue().getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
+	result = vkQueueSubmit(impl->device.getGraphicsCommandQueue().getQueue(), 1, &submitInfo, impl->inFlightFences[impl->currentFrameId]);
 	if (result != VK_SUCCESS)
 	{
 		return;
@@ -573,7 +518,7 @@ void RenderBackend::drawGeometry(Scene& inScene)
 	VkSwapchainKHR swapchains[] = { impl->swapchain.get() };
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapchains;
-	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pImageIndices = &imageId;
 	presentInfo.pResults = nullptr;
 
 	vkQueuePresentKHR(impl->device.getPresentVulkanCommandQueue().getQueue(), &presentInfo);
@@ -603,153 +548,142 @@ void RenderBackend::resizeViewport(int inX, int inY, int inWidth, int inHeight)
 	impl->bFramebufferResized = true;
 }
 
-void RenderBackend::setStencilMask(unsigned int inMask)
-{
-}
-
-void RenderBackend::setStencilFunc(EComparisonFunc inFunc, int inValue, unsigned int inMask)
-{
-}
-
-GPUAllocHandle RenderBackend::compileShader(std::string_view inVertexPath, std::string_view inFragmentPath)
-{
-	return GPUAllocHandle::invalid;
-}
-
-void RenderBackend::useShaderProgram(GPUAllocHandle inHandle)
-{
-	ZoneScoped;
-}
-
-void RenderBackend::setBool(std::string_view inName, bool inValue)
-{
-}
-
-void RenderBackend::setInt(std::string_view inName, int inValue)
-{
-}
-
-void RenderBackend::setFloat(std::string_view inName, float inValue)
-{
-}
-
-void RenderBackend::setVec3(std::string_view inName, const glm::vec3& inValue)
-{
-}
-
-void RenderBackend::setVec4(std::string_view inName, float x, float y, float z, float w)
-{
-}
-
-void RenderBackend::setMat4(std::string_view inName, glm::f32* inValue)
-{
-}
-
-void RenderBackend::setTexture(std::string_view inName, GPUAllocHandle inValue)
-{
-}
-
 //
-void RenderBackend::drawArrays(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inCount)
+bool RenderBackend::executeCommands(VkCommandBuffer inCommandBuffer
+	, uint8_t* inCommands
+	, uint32_t inCommandsSize
+	, uint32_t inImageId
+	, uint32_t inFrameId)
 {
-}
-
-void RenderBackend::drawArraysInstanced(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, int inOffset, size_t inSize, size_t inCount)
-{
-}
-
-void RenderBackend::drawElements(GPUAllocHandle inVAO, EPrimitiveMode inPrimitiveMode, size_t inCount, void* inIndices)
-{
-}
-
-void RenderBackend::drawMesh(const Mesh& inMesh)
-{
-}
-
-//
-GPUAllocHandle RenderBackend::createTexture(const uint8_t* inData, size_t inWidth, size_t inHeight)
-{
-	// note: texture loading forces RGBA so 4 channels
-	VkDeviceSize imageSize = inWidth * inHeight * 4;
-
-	VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	const QueueFamilyIndices& indices = impl->device.getQueueFamilyIndices();
-	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value() };
-	GPUAllocHandle dataBufferHandle = impl->device.createBuffer(imageSize, usage, queueFamilyIndices, properties);
-	if (!dataBufferHandle.isValid())
+	if (!beginCommandBuffer(inCommandBuffer))
 	{
 		return false;
 	}
 
-	VulkanBuffer& VulkanBuffer = impl->device.getBuffer(dataBufferHandle);
-	VulkanBuffer.mapAndFill((void*)inData, imageSize);
-
-	// note: format forced at texture level
-	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-	VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
-	usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	queueFamilyIndices.push_back(indices.graphicsFamily.value());
-	GPUAllocHandle imageHandle = impl->device.createImage((uint32_t)inWidth, (uint32_t)inHeight, format, tiling, usage, queueFamilyIndices, properties);
-	if (!imageHandle.isValid())
+	VkDescriptorSet frameBufferDescriptorSet = impl->device.getFrameBufferDescriptorSet(inFrameId);
+	VulkanBuffer& frameBuffer = impl->device.getBuffer(impl->device.getFrameBufferHandle(inFrameId));
+	const BufferHandle frameDataHandle = pushFrameData(impl->device, frameBuffer);
+	
+	size_t offset = 0;
+	while (offset < inCommandsSize)
 	{
-		return false;
+		CommandHeader* header = (CommandHeader*)(inCommands + offset);
+		ensure(header);
+
+		offset += sizeof(CommandHeader);
+		switch (header->type)
+		{
+			case ECommandType::StartRenderpass:
+			{
+				StartRenderpassCommand* startRenderpassCommand = (StartRenderpassCommand*)(inCommands + offset);
+				executeStartRenderpass(inCommandBuffer, startRenderpassCommand, inImageId);
+				offset += sizeof(StartRenderpassCommand);
+				break;
+			}
+			case ECommandType::EndRenderpass:
+			{
+				EndRenderpassCommand* endRenderpassCommand = (EndRenderpassCommand*)(inCommands + offset);
+				executeEndRenderpass(inCommandBuffer, endRenderpassCommand);
+				offset += sizeof(EndRenderpassCommand);
+				break;
+			}
+			case ECommandType::BindMaterial:
+			{
+				BindMaterialCommand* bindMaterialCommand = (BindMaterialCommand*)(inCommands + offset);
+				executeBindMaterial(inCommandBuffer, bindMaterialCommand, frameDataHandle, frameBufferDescriptorSet);
+				offset += sizeof(BindMaterialCommand);
+				break;
+			}
+			case ECommandType::DrawIndexed:
+			{
+				DrawIndexCommand* drawIndexCommand = (DrawIndexCommand*)(inCommands + offset);
+				executeDrawIndexed(inCommandBuffer, drawIndexCommand, frameBuffer);
+				offset += sizeof(DrawIndexCommand);
+				break;
+			}
+		}
 	}
 
-	VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	VulkanImage& VulkanImage = impl->device.getImage(imageHandle);
-	impl->device.getTransferVulkanCommandQueue().executeTransitionImageLayoutCommand(VulkanImage.getImage(), format, oldLayout, newLayout);
-	impl->device.getTransferVulkanCommandQueue().executeCopyBufferToImageCommand(VulkanBuffer.getBuffer(), VulkanImage.getImage(), (uint32_t)inWidth, (uint32_t)inHeight);
-
-	oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	impl->device.getGraphicsVulkanCommandQueue().executeTransitionImageLayoutCommand(VulkanImage.getImage(), format, oldLayout, newLayout);
-	impl->device.destroyBuffer(dataBufferHandle);
-
-	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
-	VkImageView view = VulkanImage::createImageView(impl->device.getDevice(), VulkanImage.getImage(), format, aspectFlags);
-	VulkanImage.setTextureView(view);
-
-	return imageHandle;
+	return endCommandBuffer(inCommandBuffer);
 }
 
-void RenderBackend::bindTexture(GPUAllocHandle inHandle, std::string_view inType, size_t inIndex)
+void RenderBackend::executeStartRenderpass(VkCommandBuffer inCommandBuffer, StartRenderpassCommand* inStartRenderpassCommand, uint8_t inImageIndex)
 {
+	// todo: retrieve renderpass
+	VulkanGeometryRenderPass renderPass = impl->geometryRenderPass;
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = renderPass.getRenderPass();
+	renderPassInfo.framebuffer = renderPass.getFramebuffers()[inImageIndex];
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = impl->swapchain.getExtent();
+
+	std::array<VkClearValue, 2> clearValues = {};
+	clearValues[0].color = { 0, 0, 0, 1 };
+	clearValues[1].depthStencil = { 1, 0 };
+
+	renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(inCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void RenderBackend::deleteTexture(GPUAllocHandle inHandle)
+void RenderBackend::executeEndRenderpass(VkCommandBuffer inCommandBuffer, EndRenderpassCommand* inEndRenderpassCommand)
 {
-	impl->device.destroyImage(inHandle);
+	vkCmdEndRenderPass(inCommandBuffer);
 }
 
-//
-GPUAllocHandle RenderBackend::createGPUBuffer(EBufferType inType)
+void RenderBackend::executeBindMaterial(VkCommandBuffer inCommandBuffer, BindMaterialCommand* inBindMaterialCommand, BufferHandle inFrameBufferHandle, VkDescriptorSet inFrameBufferDescriptorSet)
 {
-	return GPUAllocHandle::invalid;
+	MaterialProxy& materialProxy = render::getRenderer()->getMaterialProxy(inBindMaterialCommand->material);
+	
+	// todo: get compatible pipeline
+	uint32_t pipelineHandle = impl->device.getCompatiblePipeline(materialProxy);
+	const VulkanPipeline* newPipeline = nullptr;
+	if (state->pipelineHandle != pipelineHandle)
+	{
+		newPipeline = &impl->device.getPipeline(pipelineHandle);
+		bindPipeline(inCommandBuffer, *newPipeline, impl->swapchain.getExtent());
+
+
+		if (state->pipelineHandle == GPURESOURCE_INVALID_ID)
+		{
+			bindDescriptorSets(impl->device, inCommandBuffer, newPipeline->getPipelineLayout(), inFrameBufferHandle, inFrameBufferDescriptorSet, materialProxy, *state);
+		}
+
+		state->pipelineLayout = newPipeline->getPipelineLayout();
+		state->pipelineHandle = pipelineHandle;
+	}
+	else
+	{
+		newPipeline = &impl->device.getPipeline(pipelineHandle);
+	}
+
+	updateMaterialDescriptorSet(impl->device, inCommandBuffer, state->pipelineLayout, materialProxy, *state);
 }
 
-void RenderBackend::allocateGPUBuffer(EBufferType inType, size_t inCapacity, void* inData, EBufferUsage inUsage)
+void RenderBackend::executeDrawIndexed(VkCommandBuffer inCommandBuffer, DrawIndexCommand* inDrawIndexCommand, VulkanBuffer& inFrameBuffer)
 {
-}
+	MaterialProxy& materialProxy = render::getRenderer()->getMaterialProxy(inDrawIndexCommand->material);
+	MeshProxy& meshProxy = render::getRenderer()->getMeshProxy(inDrawIndexCommand->mesh);
 
-void RenderBackend::bindGPUBuffer(EBufferType inType, GPUAllocHandle inHandle)
-{
-}
+	const VulkanBuffer& vertexBuffer = impl->device.getBuffer(meshProxy.getVertexBuffer());
+	const VkBuffer vertexBuffers[] = { vertexBuffer.getBuffer() };
+	const VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(inCommandBuffer, 0, 1, vertexBuffers, offsets);
 
-void RenderBackend::deleteGPUBuffer(EBufferType inType, GPUAllocHandle inHandle)
-{
-}
+	const VulkanBuffer& indexBuffer = impl->device.getBuffer(meshProxy.getIndexBuffer());
+	vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-void RenderBackend::setGPUBufferData(EBufferType inType, size_t inOffset, size_t inSize, void* inData)
-{
-}
+	VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
 
-void RenderBackend::setVertexLayoutData(unsigned int inLayoutIndex, size_t inSizeInBytes, size_t inVertexStride, void* inDataOffset, unsigned int inDivisor)
-{
-}
+	BufferHandle instanceDataHandle = pushInstanceData(impl->device, inFrameBuffer, inDrawIndexCommand->model);
+	uint8_t* dataPtr = (uint8_t*)inFrameBuffer.getMappedMemory() + instanceDataHandle.offset;
+	vkCmdPushConstants(inCommandBuffer, state->pipelineLayout, stageFlags, 0, instanceDataHandle.size, dataPtr);
 
+	vkCmdDrawIndexed(inCommandBuffer, meshProxy.getIndexCount(), 1, 0, 0, 0);
+}
 
 namespace render
 {

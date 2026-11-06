@@ -14,7 +14,7 @@ class Texture
 
 	int width;
 	int height;
-	int nrChannels;
+	int channelCount;
 	std::vector<uint8_t> data;
 	EDataFormat format;
 	GPUProxyHandle handle;
@@ -24,6 +24,7 @@ public:
 	const std::string& getPath() const { return path; }
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
+	int getChannelCount() const { return channelCount; }
 	const uint8_t* getData() const { return data.data(); }
 	GPUProxyHandle getProxyHandle() const { return handle; }
 
@@ -36,7 +37,4 @@ public:
 
 	Texture(Texture&& inOther) noexcept;
 	Texture& operator=(Texture&& inOther) noexcept;
-
-private:
-	void loadTexture();
 };

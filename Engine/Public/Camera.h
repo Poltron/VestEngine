@@ -40,9 +40,9 @@ public:
 
 	void setFOV(float inFov);
 
-	glm::mat4& getProjectionMatrix();
-	glm::mat4& getViewMatrix();
-	glm::mat4& getViewProjectionMatrix();
+	const glm::mat4& getProjectionMatrix() const;
+	const glm::mat4& getViewMatrix() const;
+	const glm::mat4& getViewProjectionMatrix() const;
 	const Frustum& getFrustum() const;
 
 	void transformScreenPosToWorld(const glm::vec2& inCursorPos, glm::vec3& outPosition, glm::vec3& outDirection);

@@ -6,8 +6,8 @@
 #include "Core/Resources/Mesh.h"
 #include "Render/Renderer.h"
 
-Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices, std::vector<ResourceHandle>&& inTextures)
-	: vertices(inVertices), indices(inIndices), textures(inTextures), proxyHandle(GPUProxyHandle::invalid)
+Mesh::Mesh(std::vector<Vertex>&& inVertices, std::vector<uint16_t>&& inIndices)
+	: vertices(inVertices), indices(inIndices), proxyHandle(GPUProxyHandle::invalid)
 {
 	proxyHandle = render::getRenderer()->createMeshProxy(this);
 }
@@ -21,11 +21,10 @@ Mesh::~Mesh()
 }
 
 Mesh::Mesh(Mesh&& inOther) noexcept
-	: vertices(inOther.vertices), indices(inOther.indices), textures(inOther.textures), proxyHandle(inOther.proxyHandle)
+	: vertices(inOther.vertices), indices(inOther.indices), proxyHandle(inOther.proxyHandle)
 {
 	inOther.vertices = {};
 	inOther.indices = {};
-	inOther.textures = {};
 	inOther.proxyHandle = GPUProxyHandle::invalid;
 }
 
@@ -35,12 +34,10 @@ Mesh& Mesh::operator=(Mesh&& inOther) noexcept
 	{
 		vertices = inOther.vertices;
 		indices = inOther.indices;
-		textures = inOther.textures;
 		proxyHandle = inOther.proxyHandle;
 		
 		inOther.vertices = {};
 		inOther.indices = {};
-		inOther.textures = {};
 		inOther.proxyHandle = GPUProxyHandle::invalid;
 	}
 	return *this;

@@ -163,8 +163,8 @@ private:
 		}
 		depthBufferImage.setTextureView(view);
 
-		VulkanCommandQueue& graphicsVulkanCommandQueue = inDevice.getGraphicsVulkanCommandQueue();
-		graphicsVulkanCommandQueue.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		VulkanCommandQueue& GraphicsCommandQueue = inDevice.getGraphicsCommandQueue();
+		GraphicsCommandQueue.executeTransitionImageLayoutCommand(depthBufferImage.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		return true;
 	}

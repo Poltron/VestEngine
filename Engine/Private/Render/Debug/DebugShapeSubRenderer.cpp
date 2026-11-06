@@ -15,12 +15,12 @@
 
 void DebugShapeSubRenderer::loadShaders()
 {
-	const std::string debugMeshVertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug_mesh.vert";
-	const std::string debugFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug.frag";
-	debugMeshShaderHandle = render::getRenderBackend()->compileShader(debugMeshVertexPath, debugFragmentPath);
+	//const std::string debugMeshVertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug_mesh.vert";
+	//const std::string debugFragmentPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug.frag";
+	//debugMeshShaderHandle = render::getRenderBackend()->compileShader(debugMeshVertexPath, debugFragmentPath);
 
-	const std::string debugPrimitiveVertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug_primitive.vert";
-	debugPrimitiveShaderHandle = render::getRenderBackend()->compileShader(debugPrimitiveVertexPath, debugFragmentPath);
+	//const std::string debugPrimitiveVertexPath = File::getProjectDir() + "Resources/Shaders/OpenGL/debug_primitive.vert";
+	//debugPrimitiveShaderHandle = render::getRenderBackend()->compileShader(debugPrimitiveVertexPath, debugFragmentPath);
 }
 
 void DebugShapeSubRenderer::loadDebugShapes()
@@ -53,60 +53,60 @@ void DebugShapeSubRenderer::updateDebugShapes(Scene& inScene, double inDeltaTime
 
 void DebugShapeSubRenderer::render(Renderer& inRenderer, FrameInfo& inFrameInfo)
 {
-	//ensure(debugPrimitiveShaderHandle.isValid())
-	render::getRenderBackend()->useShaderProgram(debugPrimitiveShaderHandle);
+	////ensure(debugPrimitiveShaderHandle.isValid())
+	//render::getRenderBackend()->useShaderProgram(debugPrimitiveShaderHandle);
 
-	glm::mat4 viewProjection = inRenderer.getActiveCamera().getProjectionMatrix() * inRenderer.getActiveCamera().getViewMatrix();
-	render::getRenderBackend()->setMat4("uViewProjection", glm::value_ptr(viewProjection));
+	//glm::mat4 viewProjection = inRenderer.getActiveCamera().getProjectionMatrix() * inRenderer.getActiveCamera().getViewMatrix();
+	//render::getRenderBackend()->setMat4("uViewProjection", glm::value_ptr(viewProjection));
 
-	{
-		ZoneScopedN("render point primitives");
+	//{
+	//	ZoneScopedN("render point primitives");
 
-		DebugShapePrimitive& pointPrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::POINT];
-		pointPrimitive.resetInstanceCount();
-		pointPrimitive.updateVBO(pointDebugShapeInstances);
-		render::getRenderBackend()->drawArrays(pointPrimitive.getVAO(), EPrimitiveMode::POINTS, 0, pointDebugShapeInstances.size());
-		inFrameInfo.drawCalls++;
-		inFrameInfo.debugShapesTotal += pointDebugShapeInstances.size();
-	}
+	//	DebugShapePrimitive& pointPrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::POINT];
+	//	pointPrimitive.resetInstanceCount();
+	//	pointPrimitive.updateVBO(pointDebugShapeInstances);
+	//	render::getRenderBackend()->drawArrays(pointPrimitive.getVAO(), EPrimitiveMode::POINTS, 0, pointDebugShapeInstances.size());
+	//	inFrameInfo.drawCalls++;
+	//	inFrameInfo.debugShapesTotal += pointDebugShapeInstances.size();
+	//}
 
-	{
-		ZoneScopedN("render line primitives");
+	//{
+	//	ZoneScopedN("render line primitives");
 
-		DebugShapePrimitive& linePrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::LINE];
-		linePrimitive.resetInstanceCount();
-		linePrimitive.updateVBO(lineDebugShapeInstances);
-		render::getRenderBackend()->drawArrays(linePrimitive.getVAO(), EPrimitiveMode::LINES, 0, lineDebugShapeInstances.size());
-		inFrameInfo.drawCalls++;
-		inFrameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
-	}
+	//	DebugShapePrimitive& linePrimitive = debugShapePrimitives[(unsigned int)EDebugShapePrimitive::LINE];
+	//	linePrimitive.resetInstanceCount();
+	//	linePrimitive.updateVBO(lineDebugShapeInstances);
+	//	render::getRenderBackend()->drawArrays(linePrimitive.getVAO(), EPrimitiveMode::LINES, 0, lineDebugShapeInstances.size());
+	//	inFrameInfo.drawCalls++;
+	//	inFrameInfo.debugShapesTotal += lineDebugShapeInstances.size() / 2;
+	//}
 
-	//ensure(debugMeshShaderHandle.isValid())
-	render::getRenderBackend()->useShaderProgram(debugMeshShaderHandle);
+	////ensure(debugMeshShaderHandle.isValid())
+	//render::getRenderBackend()->useShaderProgram(debugMeshShaderHandle);
 
-	render::getRenderBackend()->setMat4("uViewProjection", glm::value_ptr(viewProjection));
-	{
-		ZoneScopedN("render box meshes");
+	//render::getRenderBackend()->setMat4("uViewProjection", glm::value_ptr(viewProjection));
+	//{
+	//	ZoneScopedN("render box meshes");
 
-		DebugShapeMesh& boxMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::BOX];
-		boxMesh.resetInstances();
-		boxMesh.addInstances(boxDebugShapeInstances);
-		render::getRenderBackend()->drawArraysInstanced(boxMesh.getVAO(), EPrimitiveMode::LINES, 0, boxMesh.getSize(), boxMesh.getInstanceCount());
-		inFrameInfo.drawCalls++;
-		inFrameInfo.debugShapesTotal += boxMesh.getInstanceCount();
-	}
+	//	DebugShapeMesh& boxMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::BOX];
+	//	boxMesh.resetInstances();
+	//	boxMesh.addInstances(boxDebugShapeInstances);
+	//	render::getRenderBackend()->drawArraysInstanced(boxMesh.getVAO(), EPrimitiveMode::LINES, 0, boxMesh.getSize(), boxMesh.getInstanceCount());
+	//	inFrameInfo.drawCalls++;
+	//	inFrameInfo.debugShapesTotal += boxMesh.getInstanceCount();
+	//}
 
-	{
-		ZoneScopedN("render sphere meshes");
+	//{
+	//	ZoneScopedN("render sphere meshes");
 
-		DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
-		sphereMesh.resetInstances();
-		sphereMesh.addInstances(sphereDebugShapeInstances);
-		sphereMesh.addInstances(entitySphereInstances.instances);
-		render::getRenderBackend()->drawArraysInstanced(sphereMesh.getVAO(), EPrimitiveMode::LINES, 0, sphereMesh.getSize(), sphereMesh.getInstanceCount());
-		inFrameInfo.drawCalls++;
-		inFrameInfo.debugShapesTotal += sphereMesh.getInstanceCount();
-	}
+	//	DebugShapeMesh& sphereMesh = debugShapeMeshes[(unsigned int)EDebugShapeMesh::SPHERE];
+	//	sphereMesh.resetInstances();
+	//	sphereMesh.addInstances(sphereDebugShapeInstances);
+	//	sphereMesh.addInstances(entitySphereInstances.instances);
+	//	render::getRenderBackend()->drawArraysInstanced(sphereMesh.getVAO(), EPrimitiveMode::LINES, 0, sphereMesh.getSize(), sphereMesh.getInstanceCount());
+	//	inFrameInfo.drawCalls++;
+	//	inFrameInfo.debugShapesTotal += sphereMesh.getInstanceCount();
+	//}
 }
 
 void DebugShapeSubRenderer::addPoint(const glm::vec3& inPosition, float inSize, const glm::vec3& inColor)
