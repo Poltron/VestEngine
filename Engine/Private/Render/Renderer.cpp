@@ -126,12 +126,13 @@ void Renderer::renderMainPass(Scene& inScene)
 		drawHeader.size = sizeof(DrawIndexCommand);
 
 		DrawIndexCommand drawCommand;
+		drawCommand.model = worldTransform->model;
+		drawCommand.material = materialInstance->getProxyHandle();
+
 		const Model* model = engine::getResources()->getModel(mesh->model);
 		for (const auto& mesh : model->getMeshes())
 		{
 			drawCommand.mesh = mesh.getProxyHandle();
-			drawCommand.model = worldTransform->model;
-			drawCommand.material = materialInstance->getProxyHandle();
 			render::getCommandRecorder()->add(&drawHeader, &drawCommand);
 		}
 	}

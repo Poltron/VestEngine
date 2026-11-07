@@ -6,14 +6,25 @@
 
 class LinearAllocator
 {
+	size_t capacity = 0;
+	size_t alignment = 0;
+
+	uint8_t* base = nullptr;
+	size_t top = 0;
+
 public:
+	size_t size() const { return top; }
+
 	LinearAllocator()
 		: capacity(0), alignment(0), top(0), base(nullptr)
 	{}
 
 	~LinearAllocator()
 	{
-		free(base);
+		if (base != nullptr)
+		{
+			free(base);
+		}
 	}
 
 	LinearAllocator(const LinearAllocator& inOther) = delete;
@@ -37,22 +48,17 @@ public:
 			top = inOther.top;
 			base = inOther.base;
 
-			inOther.capacity = capacity;
-			inOther.alignment = alignment;
-			inOther.top = top;
-			inOther.base = base;
+			inOther.capacity = 0;
+			inOther.alignment = 0;
+			inOther.top = 0;
+			inOther.base = nullptr;
 		}
 		return *this;
 	}
 
-	size_t size() const
-	{
-		return top;
-	}
-
 	void reserve(size_t inCapacity, size_t inAlignment = 1)
 	{
-		uint8_t* newBase = (uint8_t*)malloc(capacity);
+		uint8_t* newBase = (uint8_t*)std::malloc(inCapacity);
 
 		if (base != nullptr)
 		{
@@ -67,11 +73,17 @@ public:
 
 	size_t create(size_t inAllocationSize)
 	{
-		assert(base + top + inAllocationSize < base + capacity);
+		assert(top + inAllocationSize < capacity);
 
 		size_t newAllocOffset = top;
 		top += inAllocationSize;
 		return newAllocOffset;
+	}
+
+	void fill(size_t inOffset, const void* inData, size_t inSize)
+	{
+		assert(inOffset + inSize < capacity);
+		memcpy(get(inOffset), inData, inSize);
 	}
 
 	void clear()
@@ -93,11 +105,4 @@ public:
 	{
 		return base + inOffset;
 	}
-
-private:
-	size_t capacity = 0;
-	size_t alignment = 0;
-
-	uint8_t* base = nullptr;
-	size_t top = 0;
 };

@@ -57,13 +57,15 @@ public:
 	RHICommandRecorder(RHICommandRecorder&& inOther) = delete;
 	RHICommandRecorder& operator=(RHICommandRecorder&& inOther) = delete;
 
-	void add(const CommandHeader* header, const void* inData)
+	void add(const CommandHeader* inHeaderData, const void* inCommandData)
 	{
 		constexpr size_t headerSize = sizeof(CommandHeader);
-		size_t offset = commands.create(headerSize + header->size);
-		uint8_t* ptr = commands.get(offset);
-		memcpy(ptr, header, headerSize);
-		memcpy(ptr + headerSize, inData, header->size);
+
+		size_t offset = commands.create(headerSize + inHeaderData->size);
+		commands.fill(offset, (const void*)inHeaderData, headerSize);
+
+		offset += headerSize;
+		commands.fill(offset, (const void*)inCommandData, inHeaderData->size);
 	}
 
 	void reset()
