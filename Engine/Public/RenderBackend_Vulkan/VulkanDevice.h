@@ -50,7 +50,7 @@ class VulkanDevice
 	VkDevice device = VK_NULL_HANDLE;
 
 	QueueFamilyIndices queueFamilyIndices;
-	std::vector<VulkanCommandQueue> VulkanCommandQueues;
+	std::vector<VulkanCommandQueue> commandQueues;
 
 	std::vector<VulkanBuffer> buffers;
 	std::vector<VulkanImage> images;
@@ -102,7 +102,6 @@ public:
 public:
 	bool initialize(const VulkanInstance& inInstance, VkSurfaceKHR inSurface);
 	void shutdown();
-	void createVulkanCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices);
 
 	// resources
 	//
@@ -154,6 +153,7 @@ private:
 	int ratePhysicalDevice(VkPhysicalDevice inPhysicalDevice, VkSurfaceKHR inSurface);
 	bool pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice);
 	bool createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface);
+	void createCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices);
 
 	bool createFrameData(uint8_t inFrameCount
 		, VkDeviceSize inBufferSize

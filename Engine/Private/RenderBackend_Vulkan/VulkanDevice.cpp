@@ -143,21 +143,21 @@ void VulkanDevice::shutdown()
 	vkDestroyDevice(device, nullptr);
 }
 
-void VulkanDevice::createVulkanCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices)
+void VulkanDevice::createCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices)
 {
-	VulkanCommandQueues.resize((uint8_t)EQueueFamily::COUNT);
+	commandQueues.resize((uint8_t)EQueueFamily::COUNT);
 
 	const uint32_t graphicsFamily = queueFamilyIndices.graphicsFamily.value();
-	VulkanCommandQueue& GraphicsCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS];
-	GraphicsCommandQueue.create(device, graphicsFamily);
+	VulkanCommandQueue& graphicsCommandQueue = commandQueues[(uint8_t)EQueueFamily::GRAPHICS];
+	graphicsCommandQueue.create(device, graphicsFamily);
 
 	const uint32_t presentFamily = queueFamilyIndices.presentFamily.value();
-	VulkanCommandQueue& presentVulkanCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT];
-	presentVulkanCommandQueue.create(device, presentFamily);
+	VulkanCommandQueue& presentCommandQueue = commandQueues[(uint8_t)EQueueFamily::PRESENT];
+	presentCommandQueue.create(device, presentFamily);
 
 	const uint32_t transferFamily = queueFamilyIndices.transferFamily.value();
-	VulkanCommandQueue& TransferCommandQueue = VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER];
-	TransferCommandQueue.create(device, transferFamily);
+	VulkanCommandQueue& transferCommandQueue = commandQueues[(uint8_t)EQueueFamily::TRANSFER];
+	transferCommandQueue.create(device, transferFamily);
 }
 
 GPUAllocHandle VulkanDevice::createAndFillBuffer(size_t inSize, void* inData, EBufferType inType)
