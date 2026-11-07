@@ -73,8 +73,9 @@ public:
 	void destroyTextureProxy(GPUProxyHandle inProxyHandle);
 
 private:
-	void renderMainPass(Scene& inScene);
-	void renderDebugPass(Scene& inScene);
+	void sortMainPass(Scene& inScene, std::vector<RenderedItem>& inOutRenderedItems);
+	void recordMainPass(Scene& inScene, const std::vector<RenderedItem>& inRenderedItems);
+	void recordDebugPass(Scene& inScene);
 
 //
 public:

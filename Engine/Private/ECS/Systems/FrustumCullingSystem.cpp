@@ -6,7 +6,6 @@
 #include "Core/Engine.h"
 #include "Core/Maths.h"
 #include "Core/Scene.h"
-#include "ECS/Entity.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/SphereColliderComponent.h"
 #include "Render/Renderer.h"
@@ -35,7 +34,7 @@ namespace
 	}
 }
 
-void FrustumCullingSystem::update(Scene& inScene, double inDeltaTime)
+void FrustumCullingSystem::update(Scene& inScene, double inDeltaTime, std::vector<RenderedItem>& outRenderedItems)
 {
 	ZoneScoped;
 
@@ -53,5 +52,9 @@ void FrustumCullingSystem::update(Scene& inScene, double inDeltaTime)
 		const float maxScale = glm::sqrt(std::max({ squaredScale.x, squaredScale.y, squaredScale.z }));
 
 		sphere->bInFrustum = isInFrustum(maths::getMatrixTranslation(worldTransform->model), sphere->radius, maxScale, frustum);
+		if (sphere->bInFrustum)
+		{
+			outRenderedItems.push_back({ sphere->entity });
+		}
 	}
 }

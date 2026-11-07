@@ -28,13 +28,13 @@ void RendererInfo::update()
 
 		ImGui::Text(" --- ");
 
-		std::string drawCallsTotal = "Draw calls: ";
-		drawCallsTotal += std::to_string(render::getRenderer()->getFrameInfo().drawCalls);
-		ImGui::Text(drawCallsTotal.c_str());
+		std::string drawIndexedTotal = "Draw: ";
+		drawIndexedTotal += std::to_string(render::getRenderer()->getFrameInfo().drawIndexed);
+		ImGui::Text(drawIndexedTotal.c_str());
 
-		std::string shaderProgramsTotal = "Shader Programs: ";
-		shaderProgramsTotal += std::to_string(render::getRenderer()->getFrameInfo().shaderPrograms);
-		ImGui::Text(shaderProgramsTotal.c_str());
+		std::string bindMatTotal = "Bind mat: ";
+		bindMatTotal += std::to_string(render::getRenderer()->getFrameInfo().bindMat);
+		ImGui::Text(bindMatTotal.c_str());
 
 		ImGui::End();
 	}

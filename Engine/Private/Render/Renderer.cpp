@@ -65,22 +65,44 @@ void Renderer::render(Scene& inScene, double inDeltaTime)
 		std::cout << "ERROR: no active camera" << std::endl;
 		return;
 	}
+	
+	std::vector<RenderedItem> renderedItems;
+	frustumCullingSystem.update(inScene, inDeltaTime, renderedItems);
+	sortMainPass(inScene, renderedItems);
+	recordMainPass(inScene, renderedItems);
 
-	frustumCullingSystem.update(inScene, inDeltaTime);
 	debugShapeSubRenderer.updateDebugShapes(inScene, inDeltaTime);
-
-	renderMainPass(inScene);
-	renderDebugPass(inScene);
+	recordDebugPass(inScene);
 }
 
-void Renderer::renderMainPass(Scene& inScene)
+void Renderer::sortMainPass(Scene& inScene, std::vector<RenderedItem>& inOutRenderedItems)
 {
-	//std::sort(inRenderedMeshes.begin(), inRenderedMeshes.end(),
-	//	[](const auto& inA, const auto& inB)
-	//	{
-	//		return inA.materialHash < inB.materialHash;
-	//	});
+	const ComponentManager<MeshRendererComponent>& meshRendererComponents = engine::getScene()->getMeshRendererComponents();
+	for (size_t i = 0; i < inOutRenderedItems.size(); ++i)
+	{
+		RenderedItem& renderedItem = inOutRenderedItems[i];
 
+		const MeshRendererComponent* meshRenderer = meshRendererComponents.get(renderedItem.entity);
+		ensure(meshRenderer);
+		MaterialInstance* materialInstance = engine::getResources()->getMaterialInstance(meshRenderer->materialInstance);
+		ensure(materialInstance);
+
+		renderedItem.material = materialInstance->getProxyHandle();
+
+		Model* model = engine::getResources()->getModel(meshRenderer->model);
+		ensure(model);
+		renderedItem.mesh = model->getMeshes()[0].getProxyHandle();
+	}
+
+	std::sort(inOutRenderedItems.begin(), inOutRenderedItems.end(),
+		[](const RenderedItem& inA, const RenderedItem& inB)
+		{
+			return inA.material.id < inB.material.id;
+		});
+}
+
+void Renderer::recordMainPass(Scene& inScene, const std::vector<RenderedItem>& inRenderedItems)
+{
 	{
 		CommandHeader startHeader;
 		startHeader.type = ECommandType::StartRenderpass;
@@ -91,34 +113,28 @@ void Renderer::renderMainPass(Scene& inScene)
 		render::getCommandRecorder()->add(&startHeader, &startCommand);
 	}
 
-	ResourceHandle boundMaterialInstance = ResourceHandle::invalid;
+	GPUProxyHandle boundMat = GPUProxyHandle::invalid;
 
 	const ComponentManager<MeshRendererComponent>& meshRendererComponents = engine::getScene()->getMeshRendererComponents();
-	for (size_t i = 0; i < meshRendererComponents.size(); ++i)
+	for (size_t i = 0; i < inRenderedItems.size(); ++i)
 	{
-		const MeshRendererComponent* mesh = meshRendererComponents.at(i);
-		ensure(mesh != nullptr);
-		const SphereColliderComponent* sphere = inScene.getSphereColliderComponents().get(mesh->entity);
-		if (!sphere || !sphere->bInFrustum)
-		{
-			continue;
-		}
+		const RenderedItem& renderedItem = inRenderedItems[i];
 
-		const MaterialInstance* materialInstance = engine::getResources()->getMaterialInstance(mesh->materialInstance);
-		if (boundMaterialInstance != mesh->materialInstance)
+		if (boundMat != renderedItem.material)
 		{
 			CommandHeader bindMatHeader;
 			bindMatHeader.type = ECommandType::BindMaterial;
 			bindMatHeader.size = sizeof(BindMaterialCommand);
 
 			BindMaterialCommand bindMatCommand;
-			bindMatCommand.material = materialInstance->getProxyHandle();
+			bindMatCommand.material = renderedItem.material;
 			render::getCommandRecorder()->add(&bindMatHeader, &bindMatCommand);
+			frameInfo.bindMat++;
 
-			boundMaterialInstance = mesh->materialInstance;
+			boundMat = renderedItem.material;
 		}
 
-		const WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(mesh->entity);
+		const WorldTransformComponent* worldTransform = inScene.getWorldTransformComponents().get(renderedItem.entity);
 		ensure(worldTransform);
 
 		CommandHeader drawHeader;
@@ -127,14 +143,9 @@ void Renderer::renderMainPass(Scene& inScene)
 
 		DrawIndexCommand drawCommand;
 		drawCommand.model = worldTransform->model;
-		drawCommand.material = materialInstance->getProxyHandle();
-
-		const Model* model = engine::getResources()->getModel(mesh->model);
-		for (const auto& mesh : model->getMeshes())
-		{
-			drawCommand.mesh = mesh.getProxyHandle();
-			render::getCommandRecorder()->add(&drawHeader, &drawCommand);
-		}
+		drawCommand.mesh = renderedItem.mesh;
+		render::getCommandRecorder()->add(&drawHeader, &drawCommand);
+		frameInfo.drawIndexed++;
 	}
 
 	{
@@ -150,7 +161,7 @@ void Renderer::renderMainPass(Scene& inScene)
 	render::getRenderBackend()->render(inScene);
 }
 
-void Renderer::renderDebugPass(Scene& inScene)
+void Renderer::recordDebugPass(Scene& inScene)
 {
 	//debugShapeSubRenderer.render(*this, frameInfo);
 }

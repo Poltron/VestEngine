@@ -33,7 +33,6 @@ struct BindMaterialCommand
 struct DrawIndexCommand
 {
 	GPUProxyHandle mesh = GPUProxyHandle::invalid;
-	GPUProxyHandle material = GPUProxyHandle::invalid;
 	glm::mat4 model;
 };
 

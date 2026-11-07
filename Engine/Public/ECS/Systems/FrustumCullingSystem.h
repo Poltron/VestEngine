@@ -1,11 +1,21 @@
 #pragma once
 
-#include "ECS/Systems/ISystem.h"
+#include <vector>
+
+#include "ECS/Entity.h"
+#include "Render/GPUHandle.h"
+
+struct RenderedItem
+{
+	Entity entity;
+	GPUProxyHandle material;
+	GPUProxyHandle mesh;
+};
 
 class Scene;
 
-class FrustumCullingSystem : public ISystem
+class FrustumCullingSystem
 {
 public:
-	virtual void update(Scene& inScene, double inDeltaTime) override;
+	void update(Scene& inScene, double inDeltaTime, std::vector<RenderedItem>& outRenderedItems);
 };

@@ -665,7 +665,6 @@ void RenderBackend::executeBindMaterial(VkCommandBuffer inCommandBuffer, BindMat
 
 void RenderBackend::executeDrawIndexed(VkCommandBuffer inCommandBuffer, DrawIndexCommand* inDrawIndexCommand, VulkanBuffer& inFrameBuffer)
 {
-	MaterialProxy& materialProxy = render::getRenderer()->getMaterialProxy(inDrawIndexCommand->material);
 	MeshProxy& meshProxy = render::getRenderer()->getMeshProxy(inDrawIndexCommand->mesh);
 
 	const VulkanBuffer& vertexBuffer = impl->device.getBuffer(meshProxy.getVertexBuffer());

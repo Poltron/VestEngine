@@ -6,15 +6,15 @@ struct FrameInfo
 	size_t culledMeshTotal;
 	size_t debugShapesTotal;
 
-	size_t shaderPrograms;
-	size_t drawCalls;
+	size_t bindMat;
+	size_t drawIndexed;
 
 	void reset()
 	{
 		renderedMeshTotal = 0;
 		culledMeshTotal = 0;
 		debugShapesTotal = 0;
-		shaderPrograms = 0;
-		drawCalls = 0;
+		bindMat = 0;
+		drawIndexed = 0;
 	}
 };

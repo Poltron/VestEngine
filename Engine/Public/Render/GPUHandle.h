@@ -22,6 +22,11 @@ struct GPUAllocHandle
 		return id != GPURESOURCE_INVALID_ID;
 	}
 
+	bool operator!=(const GPUAllocHandle& inOther) const
+	{
+		return id != inOther.id;
+	}
+
 	static GPUAllocHandle invalid;
 };
 
