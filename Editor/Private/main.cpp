@@ -51,8 +51,14 @@ int main(int argc, char* argv[])
 			{
 				int totalAnimal = atoi(argv[2]);
 				int rowSize = atoi(argv[3]);
+				
+				bool bRandomAnimal = false;
+				if (argc >= 5)
+				{
+					bRandomAnimal = atoi(argv[4]);
+				}
 
-				demoScene::loadAnimals(*scene, totalAnimal, rowSize);
+				demoScene::loadAnimals(*scene, totalAnimal, rowSize, bRandomAnimal);
 			}
 			else if (loadedScene.compare("vulkan") == 0)
 			{

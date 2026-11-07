@@ -13,7 +13,7 @@ namespace demoScene
 	void loadCubesDemo(Scene& inScene);
 	void loadVulkanDemo(Scene& inScene);
 
-	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize);
+	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize, bool bInRandomAnimal);
 	void createAnimal(Scene& inScene);
 	void createAnimal(Scene& inScene, ResourceHandle inModel, ResourceHandle inMaterial, const glm::vec3& inPosition);
 };

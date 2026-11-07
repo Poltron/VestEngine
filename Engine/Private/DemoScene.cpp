@@ -1,5 +1,7 @@
 #include "DemoScene.h"
 
+#include <array>
+
 #include "ECS/ComponentManager.h"
 #include "ECS/Entity.h"
 #include "ECS/HierarchyHelper.h"
@@ -16,7 +18,7 @@
 
 namespace
 {
-	const std::string animals[] =
+	const std::array<std::string, 10> animals[] =
 	{
 		"Models/kenney-cube-pets/animal-bee.obj",
 		"Models/kenney-cube-pets/animal-caterpillar.obj",
@@ -30,8 +32,6 @@ namespace
 		"Models/kenney-cube-pets/animal-tiger.obj"
 	};
 
-	const size_t animalModelsTotal = 10;
-
 	float getRandomFloat(float inMin, float inMax)
 	{
 		float random = (float)(rand()) / (float)(RAND_MAX);
@@ -40,8 +40,8 @@ namespace
 
 	ResourceHandle getRandomAnimalModel()
 	{
-		const size_t index = rand() % animalModelsTotal;
-		const std::string animalModel = File::getResourcesDir() + animals[index];
+		const size_t index = rand() % animals->size();
+		const std::string animalModel = File::getResourcesDir() + animals->at(index);
 		return engine::getResources()->loadModel(animalModel);
 	}
 
@@ -402,7 +402,7 @@ namespace demoScene
 			, glm::vec3(1, 1, 1));
 	}
 
-	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize)
+	void loadAnimals(Scene& inScene, unsigned int inTotal, unsigned inRowSize, bool bInRandomAnimal)
 	{
 		ZoneScoped;
 
@@ -411,15 +411,15 @@ namespace demoScene
 		inScene.getCamera().setPosition(glm::vec3(6.508f, 5.24268f, 3.30692f));
 		inScene.getCamera().setRotation(-154.026f, -42.2807f);
 
-		if (inTotal % animalModelsTotal != 0 && inTotal <= 0 && inRowSize <= 0 )
+		if (inTotal % animals->size() != 0 && inTotal <= 0 && inRowSize <= 0 )
 		{
 			std::cerr << "AnimalTotal must be a multiple of 10 and RowSize > 0" << std::endl;
 			return;
 		}
 
-		const float totalPerMesh = inTotal / float(animalModelsTotal);
+		const float totalPerMesh = inTotal / float(animals->size());
 
-		const float floorStart = animalModelsTotal / -2.0f;
+		const float floorStart = animals->size() / -2.0f;
 		const float rowStart = inRowSize / -2.0f;
 
 		const ResourceHandle unlitMaterialHandle = render::getRenderer()->getUnlitMaterial();
@@ -428,20 +428,40 @@ namespace demoScene
 		// todo: texture loaded by hand, but loading a model should provide the ability to create a default mat instance
 		ResourceHandle textureHandle = engine::getResources()->loadTexture(File::getResourcesDir() + "Models/kenney-cube-pets/Textures/colormap.png", "diffuse");
 
-		for (size_t i = 0; i < animalModelsTotal; ++i)
+		struct LoadedAnimal
 		{
-			const ResourceHandle modelHandle = engine::getResources()->loadModel(File::getResourcesDir() + animals[i]);
+			ResourceHandle model;
+			ResourceHandle material;
+		};
+
+		std::vector<LoadedAnimal> loadedAnimals;
+
+		for (size_t i = 0; i < animals->size(); ++i)
+		{
+			const ResourceHandle modelHandle = engine::getResources()->loadModel(File::getResourcesDir() + animals->at(i));
 			Model* model = engine::getResources()->getModel(modelHandle);
+
 			const ResourceHandle matInstanceHandle = engine::getResources()->createMaterialInstance(unlitMaterial, unlitMaterialHandle);
 			MaterialInstance* matInstance = engine::getResources()->getMaterialInstance(matInstanceHandle);
-
-			const Mesh& mesh = model->getMeshes()[0];
 			matInstance->setTexture("diffuse", textureHandle);
+
+			loadedAnimals.push_back({ modelHandle, matInstanceHandle });
+		}
+
+		for (size_t i = 0; i < animals->size(); ++i)
+		{
+			size_t index = i;
+			if (bInRandomAnimal)
+			{
+				index = rand() % animals->size();
+			}
+
+			const LoadedAnimal& loadedAnimal = loadedAnimals[index];
 			
 			for (size_t j = 0; j < totalPerMesh; ++j)
 			{
 				const glm::vec3 position = glm::vec3(rowStart + j % inRowSize, floorStart + i, rowStart + j / inRowSize);
-				createAnimal(inScene, modelHandle, matInstanceHandle, position);
+				createAnimal(inScene, loadedAnimal.model, loadedAnimal.material, position);
 			}
 		}
 
@@ -461,7 +481,7 @@ namespace demoScene
 
 	void createAnimal(Scene& inScene, ResourceHandle inModel, ResourceHandle inMaterialInstance, const glm::vec3& inPosition)
 	{
-		ResourceHandle model = getRandomAnimalModel();
+		ResourceHandle model = inModel;
 		const glm::vec3 position = inPosition;
 		const glm::quat rotation = glm::quat(glm::radians(glm::vec3(0, 0, 0)));
 		const glm::vec3 scale = glm::vec3(0.2f);
