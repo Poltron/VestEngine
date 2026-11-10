@@ -15,4 +15,6 @@ target_include_directories(spirv-reflect-static PUBLIC ${spirv_reflect_SOURCE_DI
 message(STATUS "spirv_reflect_SOURCE_DIR: ${spirv_reflect_SOURCE_DIR}")
 
 set_target_properties(spirv-reflect-static PROPERTIES FOLDER "ThirdParty")
-target_compile_definitions(spirv-reflect-static PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
+
+# todo: add this, need to add vulkan dependency
+# target_compile_definitions(spirv-reflect-static PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
