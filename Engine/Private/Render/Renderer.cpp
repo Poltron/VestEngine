@@ -204,31 +204,29 @@ void Renderer::loadDefaultMaterials()
 	ZoneScoped;
 	std::cout << "Loading default materials.." << std::endl;
 
-	//debugShapeSubRenderer.loadShaders();
-	//debugShapeSubRenderer.loadDebugShapes();
-
-	//std::string renderBackendName = render::getRenderBackend()->getName();
-	//const std::string vertexPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/default.vert";
-	//const std::string litFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/lit.frag";
-	//GPUAllocHandle litShader = render::getRenderBackend()->compileShader(vertexPath, litFragmentPath);
-	//g_Renderer->setLitShader(litShader);
-	
-	const ShaderParameters& shaderParameters = shader::getUnlitMaterialShaderParameters();
-	ResourceHandle unlitMatHandle = engine::getResources()->createMaterial(EMaterialBlendMode::OPAQUE, EMaterialType::UNLIT, shaderParameters);
-	const Material* material = engine::getResources()->getMaterial(unlitMatHandle);
-
-	ResourceHandle defaultUnlitMatInstanceHandle = engine::getResources()->createMaterialInstance(material, unlitMatHandle);
-	MaterialInstance* unlitMatInstance = engine::getResources()->getMaterialInstance(defaultUnlitMatInstanceHandle);
-
 	ResourceHandle placeholderDiffuse = engine::getResources()->loadTexture(File::getResourcesDir() + "Textures/placeholder.png", "diffuse");
-	unlitMatInstance->setTexture("diffuse", placeholderDiffuse);
-	unlitMatInstance->setVec4("color", glm::vec4(color::red, 1.0));
+	
+	//
+	ResourceHandle litMatHandle = engine::getResources()->loadMaterial("Materials/lit.json");
+	g_Renderer->setLitMaterial(litMatHandle);
 
+	const Material* litMaterial = engine::getResources()->getMaterial(litMatHandle);
+	ResourceHandle defaultLitMatInstanceHandle = engine::getResources()->createMaterialInstance(litMaterial, litMatHandle);
+	MaterialInstance* litMatInstance = engine::getResources()->getMaterialInstance(defaultLitMatInstanceHandle);
+	litMatInstance->setVec4("color", glm::vec4(color::red, 1.0f));
+	litMatInstance->setTexture("diffuse", placeholderDiffuse);
+	litMatInstance->setTexture("specular", placeholderDiffuse);
+	litMatInstance->setFloat("shininess", 1.0f);
+
+	//	
+	ResourceHandle unlitMatHandle = engine::getResources()->loadMaterial("Materials/unlit.json");
 	g_Renderer->setUnlitMaterial(unlitMatHandle);
 
-	//const std::string solidColorFragmentPath = File::getProjectDir() + "Resources/Shaders/" + renderBackendName + "/color.frag";
-	//GPUAllocHandle solidColorShader = render::getRenderBackend()->compileShader(vertexPath, solidColorFragmentPath);
-	//g_Renderer->setSolidColorShader(solidColorShader);
+	const Material* unlitMaterial = engine::getResources()->getMaterial(unlitMatHandle);
+	ResourceHandle defaultUnlitMatInstanceHandle = engine::getResources()->createMaterialInstance(unlitMaterial, unlitMatHandle);
+	MaterialInstance* unlitMatInstance = engine::getResources()->getMaterialInstance(defaultUnlitMatInstanceHandle);
+	unlitMatInstance->setTexture("diffuse", placeholderDiffuse);
+	unlitMatInstance->setVec4("color", glm::vec4(color::red, 1.0));
 
 	std::cout << "Loaded default shaders successfully." << std::endl;
 }

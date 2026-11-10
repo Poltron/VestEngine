@@ -19,7 +19,7 @@ public:
 	~ResourcesManager();
 
 	ResourceHandle loadTexture(std::string inPath, std::string inType);
-	ResourceHandle loadMaterial();
+	ResourceHandle loadMaterial(std::string inPath);
 	ResourceHandle loadModel(std::string inPath);
 	ResourceHandle createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, const ShaderParameters& inShaderParameters);
 	ResourceHandle createMaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle);

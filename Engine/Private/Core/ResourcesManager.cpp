@@ -61,8 +61,9 @@ ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, 
 	ResourceHandle handle(materialHandleCounter);
 	materialsLookup.insert({ handle, &material });
 	materialHandleCounter++;
-
-	material.createDefaultMaterialInstance(handle.handle);
+	
+	GPUAllocHandle pipelineAlloc = material.createPipeline(handle);
+	material.createDefaultMaterialInstance(handle, pipelineAlloc);
 
 	std::cout << "INFO : Created material " << handle.handle << std::endl;
 
@@ -146,22 +147,21 @@ ResourceHandle ResourcesManager::loadTexture(std::string inPath, std::string inT
 	return handle;
 }
 
-ResourceHandle ResourcesManager::loadMaterial()
+ResourceHandle ResourcesManager::loadMaterial(std::string inPath)
 {
 	if (materialHandleCounter > MAX_RESOURCES)
 	{
-		//std::cout << "ERROR : Max shader resources reached" << std::endl;
+		std::cout << "ERROR : Max material resources reached" << std::endl;
 		return ResourceHandle::invalid;
 	}
 
-	//Material material = Material(std::move(inVertexPath), std::move(inFragmentPath));
-	//shaders.push_back(std::move(shader));
+	Material& material = materials.emplace_back(std::move(inPath));
 
-	//ResourceHandle handle(shaderHandleCounter);
-	//shadersLookup.insert({ handle, &shaders.back() });
-	//shaderHandleCounter++;
+	ResourceHandle handle(materialHandleCounter);
+	materialsLookup.insert({ handle, &material });
+	materialHandleCounter++;
 
-	//std::cout << "INFO : Loaded shader " << handle.handle << " ( " << shaders.back().getVertexPath() << " + " << shaders.back().getFragmentPath() << " )" << std::endl;
+	std::cout << "INFO : Loaded material " << handle.handle << " ( " << material.getName() << " )" << std::endl;
 
 	return ResourceHandle::invalid;
 }

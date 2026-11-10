@@ -7,27 +7,71 @@
 #include "Render/Vertex.h"
 #include "Render/Resources/TextureProxy.h"
 
-struct FrameData
+struct alignas(16) CameraData
 {
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
+	glm::mat4 view;
+	glm::mat4 proj;
 };
 
-struct TextureData
+struct alignas(128) TextureData
 {
-	alignas(128) TextureView textures[16];
+	 TextureView textures[16];
+};
+
+struct alignas(16) InstanceData
+{
+	glm::mat4 model;
 };
 
 // todo: should not exist, this should be dynamic on the material side
-struct MaterialData
+// UNLIT SHADER
+struct UnlitMaterialData
 {
-	alignas(16) glm::vec4 color;
-	alignas(4) uint32_t diffuseTexIndex;
+	glm::vec4 color;
+	uint32_t diffuseTexIndex;
 };
 
-struct InstanceData
+// LIT SHADER
+struct AmbientLight
 {
-	alignas(16) glm::mat4 model;
+	glm::vec3 color; // 12
+	float intensity; // 16
+};
+
+struct DirectionalLight
+{
+	glm::vec3 color; // 12
+	glm::vec3 forward; // 24
+	float intensity; // 28
+};
+
+struct alignas(16) PointLight
+{
+	glm::vec3 color; // 12
+	glm::vec3 position; // 24
+	float intensity; // 28
+	float constant; // 32
+	float linear; // 34
+	float quadratic; // 38
+
+	char padding[10]; // 48
+};
+
+struct LightData
+{
+	AmbientLight ambient;
+	DirectionalLight directional;
+	PointLight points[4];
+	uint32_t pointLightCount;
+	glm::vec3 viewPosition;
+} lightData;
+
+struct LitMaterialData
+{
+	glm::vec4 color;
+	uint32_t diffuseTexIndex;
+	uint32_t specularTexIndex;
+	float shininess;
 };
 
 enum EShaderStageFlagBits : uint8_t
@@ -65,8 +109,7 @@ struct ShaderParameters
 {
 	// note: same order as in shader
 	uint32_t size;
-	std::vector<ShaderParameter> vertexParameters;
-	std::vector<ShaderParameter> fragmentParameters;
+	std::vector<ShaderParameter> parameters;
 
 	glm::vec4 getVec4(std::string_view inName, const uint8_t* inBuffer) const
 	{
@@ -170,5 +213,36 @@ namespace shader
 			{ "Resources/Shaders/Vulkan/lit.frag.spv", EShaderStageFlagBits::FRAGMENT }
 		};
 		return shaderStageInfos;
+	}
+
+	inline ShaderParameters getLitMaterialShaderParameters()
+	{
+		ShaderParameters parameters;
+		parameters.size = sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(float);
+		parameters.fragmentParameters =
+		{
+			{ EShaderParameterType::VEC4, "color", 0 },
+			{ EShaderParameterType::UINT, "diffuse", sizeof(uint32_t) },
+			{ EShaderParameterType::UINT, "specular", sizeof(uint32_t) },
+			{ EShaderParameterType::FLOAT, "shininess", sizeof(float) }
+		};
+
+		return parameters;
+	}
+
+	inline std::vector<VertexInputAttributeDesc> getLitMaterialVertexInputs()
+	{
+		const std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc =
+		{
+			{ EDataFormat::R32G32B32, offsetof(Vertex, position) },
+			{ EDataFormat::R32G32B32, offsetof(Vertex, normal) },
+			{ EDataFormat::R32G32, offsetof(Vertex, texCoords) }
+		};
+		return vertexInputAttributeDesc;
+	}
+
+	inline uint32_t getLitMaterialVertexSize()
+	{
+		return sizeof(Vertex);
 	}
 }

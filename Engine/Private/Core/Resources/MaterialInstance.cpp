@@ -80,6 +80,13 @@ glm::vec4 MaterialInstance::getVec4(std::string_view inName) const
 	return material->getShaderParameters().getVec4(inName, materialBuffer);
 }
 
+void MaterialInstance::setFloat(std::string_view inName, float inValue)
+{
+	BufferHandle parameterHandle = getParameterBufferHandle(proxyHandle, materialHandle, inName);
+	float* parameterMem = (float*)render::getRenderBackend()->getDevice().getMaterialInstanceBuffer(parameterHandle);
+	*parameterMem = inValue;
+}
+
 void MaterialInstance::setVec3(std::string_view inName, const glm::vec3& inValue)
 {
 	BufferHandle parameterHandle = getParameterBufferHandle(proxyHandle, materialHandle, inName);

@@ -1,0 +1,8 @@
+{
+	"name": "Lit",
+	
+	"type": "lit",
+	"blendMode": "opaque",
+	"vertex": "default.vert.spv",
+	"frag": "lit.frag.spv"
+}

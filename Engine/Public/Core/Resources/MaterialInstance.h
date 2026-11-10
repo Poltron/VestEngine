@@ -32,6 +32,7 @@ public:
 	uint32_t getUint(std::string_view inName) const;
 	glm::vec4 getVec4(std::string_view inName) const;
 
+	void setFloat(std::string_view inName, float inValue);
 	void setVec3(std::string_view inName, const glm::vec3& inValue);
 	void setVec4(std::string_view inName, const glm::vec4& inValue);
 	void setMat4(std::string_view inName, const glm::mat4& inValue);

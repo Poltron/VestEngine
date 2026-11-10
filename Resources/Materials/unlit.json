@@ -1,0 +1,8 @@
+{
+	"name": "Unlit",
+	
+	"type": "unlit",
+	"blendMode": "opaque",
+	"vertex": "default.vert.spv",
+	"frag": "unlit.frag.spv"
+}

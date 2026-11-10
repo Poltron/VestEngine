@@ -425,6 +425,9 @@ namespace demoScene
 		const ResourceHandle unlitMaterialHandle = render::getRenderer()->getUnlitMaterial();
 		const Material* unlitMaterial = engine::getResources()->getMaterial(unlitMaterialHandle);
 
+		const ResourceHandle litMaterialHandle = render::getRenderer()->getLitMaterial();
+		const Material* litMaterial = engine::getResources()->getMaterial(litMaterialHandle);
+
 		// todo: texture loaded by hand, but loading a model should provide the ability to create a default mat instance
 		ResourceHandle textureHandle = engine::getResources()->loadTexture(File::getResourcesDir() + "Models/kenney-cube-pets/Textures/colormap.png", "diffuse");
 
@@ -438,13 +441,20 @@ namespace demoScene
 
 		for (size_t i = 0; i < animals->size(); ++i)
 		{
-			const ResourceHandle modelHandle = engine::getResources()->loadModel(File::getResourcesDir() + animals->at(i));
-			Model* model = engine::getResources()->getModel(modelHandle);
+			ResourceHandle matInstanceHandle = ResourceHandle::invalid;
+			if ((rand() % 2) == 0)
+			{
+				matInstanceHandle = engine::getResources()->createMaterialInstance(unlitMaterial, unlitMaterialHandle);
+			}
+			else
+			{
+				matInstanceHandle = engine::getResources()->createMaterialInstance(litMaterial, litMaterialHandle);
+			}
 
-			const ResourceHandle matInstanceHandle = engine::getResources()->createMaterialInstance(unlitMaterial, unlitMaterialHandle);
-			MaterialInstance* matInstance = engine::getResources()->getMaterialInstance(matInstanceHandle);
+			MaterialInstance* matInstance = matInstance = engine::getResources()->getMaterialInstance(matInstanceHandle);
 			matInstance->setTexture("diffuse", textureHandle);
 
+			const ResourceHandle modelHandle = engine::getResources()->loadModel(File::getResourcesDir() + animals->at(i));
 			loadedAnimals.push_back({ modelHandle, matInstanceHandle });
 		}
 
