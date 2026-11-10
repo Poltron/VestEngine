@@ -51,11 +51,11 @@ namespace
 
 
 VulkanCommandQueue& VulkanDevice::getGraphicsCommandQueue()
-{ return VulkanCommandQueues[(uint8_t)EQueueFamily::GRAPHICS]; }
+{ return commandQueues[(uint8_t)EQueueFamily::GRAPHICS]; }
 VulkanCommandQueue& VulkanDevice::getPresentVulkanCommandQueue()
-{ return VulkanCommandQueues[(uint8_t)EQueueFamily::PRESENT]; }
+{ return commandQueues[(uint8_t)EQueueFamily::PRESENT]; }
 VulkanCommandQueue& VulkanDevice::getTransferCommandQueue()
-{ return VulkanCommandQueues[(uint8_t)EQueueFamily::TRANSFER]; }
+{ return commandQueues[(uint8_t)EQueueFamily::TRANSFER]; }
 const VulkanPipeline& VulkanDevice::getPipeline(uint32_t inHandle) const
 { return pipelines[inHandle]; }
 
@@ -71,7 +71,7 @@ bool VulkanDevice::initialize(const VulkanInstance& inInstance, VkSurfaceKHR inS
 		return false;
 	}
 
-	createVulkanCommandQueues(queueFamilyIndices);
+	createCommandQueues(queueFamilyIndices);
 
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
@@ -133,9 +133,9 @@ void VulkanDevice::shutdown()
 
 	descriptorPool.releaseDescriptorSet((uint32_t)frameUniformBufferDescriptorSets.size(), frameUniformBufferDescriptorSets.data());
 
-	for (size_t i = 0; i < VulkanCommandQueues.size(); ++i)
+	for (size_t i = 0; i < commandQueues.size(); ++i)
 	{
-		VulkanCommandQueues[i].free();
+		commandQueues[i].free();
 	}
 
 	descriptorPool.shutdown();
