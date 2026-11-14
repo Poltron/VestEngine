@@ -47,7 +47,7 @@ public:
 	void clear();
 
 	uint32_t compileShader(std::string_view inPath, EShaderStageFlagBits inShaderStage);
-	bool createPipeline(uint32_t inVertShaderId, uint32_t inFragShaderId);
+	bool createPipeline(const std::vector<uint32_t>& inCompiledShaderIds);
 
 	bool executeCommands(VkCommandBuffer inCommandBuffer
 		, uint8_t* inCommands

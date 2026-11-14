@@ -4,4 +4,4 @@
 
 const std::string File::projectDir = WORKDIR;
 const std::string File::resourcesDir = File::projectDir + "Resources/";
-const std::string File::shadersDir = File::projectDir + "Shaders/" + RBACKEND_NAME + "/";
+const std::string File::shadersDir = File::resourcesDir + "Shaders/" + RBACKEND_NAME + "/";

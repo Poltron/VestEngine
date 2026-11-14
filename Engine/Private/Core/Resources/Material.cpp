@@ -6,6 +6,7 @@
 
 #include "Core/Engine.h"
 #include "Core/Ensure.h"
+#include "Core/FileSystem.h"
 #include "Core/ResourcesManager.h"
 #include "Render/Renderer.h"
 #include "Render/ShaderStructs.h"
@@ -54,7 +55,7 @@ namespace
 Material::Material(const std::string&& inPath)
 	: path(inPath), defaultMaterialInstance(ResourceHandle::invalid), shaderParameters(ShaderParameters())
 {
-	loadFromPath(path);
+	loadFromPath(File::getResourcesDir() + path);
 
 	render::getRenderer()->loadShaders(vertex, fragment);
 }
@@ -62,21 +63,28 @@ Material::Material(const std::string&& inPath)
 bool Material::loadFromPath(std::string_view inPath)
 {
 	using nlohmann::json;
-
-	std::ifstream f(path);
-	json data = json::parse(f);
-	if (!json::accept(f))
+	
+	std::vector<char> content;
+	if (!File::readFile(inPath.data(), content))
 	{
-		std::cerr << "error: Material load failed, invalid json." << path << std::endl;
 		return false;
 	}
 
+	if (!json::accept(content))
+	{
+		std::cerr << "error: Material contains invalid json " << inPath << std::endl;
+		return false;
+	}
+
+	json data = json::parse(content);
 	name = data["name"].get<std::string>();
 	type = getTypeFromStr(data["type"].get<std::string>());
 	blendMode = getBlendModeFromStr(data["blendMode"].get<std::string>());
 	pass = getPassFromStr(data["pass"].get<std::string>());
 	vertex = data["vertex"].get<std::string>();
 	fragment = data["fragment"].get<std::string>();
+
+	return true;
 }
 
 void Material::createDefaultMaterialInstance(ResourceHandle inMaterialHandle)

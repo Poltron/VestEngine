@@ -120,25 +120,6 @@ bool VulkanDevice::initialize(const VulkanInstance& inInstance, VkSurfaceKHR inS
 		return false;
 	}
 
-	// pipeline SPECIFIC
-	//
-	// frame data
-	std::vector<DescriptorSetLayoutElement> frameDataLayoutElements = VulkanDescriptorPool::getFrameDescriptorSetLayoutElements(frameDataBuffers, sizeof(LitMaterialData));
-	if (!descriptorPool.createDescriptorSets(*this, renderConfig::getFrameCount(), frameDataLayoutElements, frameDataBufferLayout, frameDataBufferDescriptorSets))
-	{
-		return false;
-	}
-
-	// todo: dynamic size
-	const uint8_t materialDataSize = sizeof(LitMaterialData);
-	std::vector<DescriptorSetLayoutElement> materialLayoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements(materialDataSize);
-
-	const uint8_t materialDescriptorSetCount = 1;
-	if (!descriptorPool.createDescriptorSets(*this, materialDescriptorSetCount, materialLayoutElements, materialDescriptorSetLayout, materialDescriptorSets))
-	{
-		return false;
-	}
-
 	return true;
 }
 

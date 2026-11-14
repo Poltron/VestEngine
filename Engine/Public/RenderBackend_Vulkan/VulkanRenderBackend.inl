@@ -46,6 +46,7 @@ struct CompiledShader
 	std::string_view path;
 	ShaderParameters parameters;
 	VkShaderModule vkModule;
+	EShaderStageFlagBits stage;
 };
 
 struct RenderBackend::Impl
@@ -546,45 +547,73 @@ uint32_t RenderBackend::compileShader(std::string_view inPath, EShaderStageFlagB
 	CompiledShader& compiledShader = impl->shaders.emplace_back();
 	compiledShader.path = inPath;
 
+	std::string shaderPath = File::getShadersDir() + inPath.data();
 	std::vector<char> fileContent;
-	File::readFile(File::getShadersDir() + inPath.data(), fileContent);
-
-	shader::getShaderParameters(fileContent, compiledShader.parameters);
-	shader::createVkShaderModule(impl->device.getDevice(), fileContent, compiledShader.vkModule);
-
-	return impl->shaders.size() - 1;
-}
-
-bool RenderBackend::createPipeline(const std::vector<uint32_t>& inShaderIds)
-{
-	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
-	for (uint32_t shaderId : inShaderIds)
+	if (!File::readFile(shaderPath, fileContent))
 	{
-		getShaders()
-		VkPipelineShaderStageCreateInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		info.stage = (VkShaderStageFlagBits)shader::getShaderStageFlags(descriptorSetLayoutBinding.stage);
-		info.module = shaderModule;
-		info.pName = "main";
-		pipelineShaderStageCreateInfos.push_back(info);
+		std::cerr << "Error: could not read shader " << shaderPath << std::endl;
+		return UINT32_MAX;
 	}
 
-	// note: all of this pipeline creation thing should be in consequence of a material being loaded, so material infos would already be obtainable
-	VkPushConstantRange pushConstantRange{};
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(InstanceData);
-	pushConstantRange.stageFlags = shader::getShaderStageFlags(EShaderStageFlagBits::VERTEX);
-	const std::vector<VkPushConstantRange> pushConstantRanges = { pushConstantRange };
+	shader::extractShaderParameters(fileContent, compiledShader.parameters);
+	shader::createVkShaderModule(impl->device.getDevice(), fileContent, compiledShader.vkModule);
 
+	return (uint32_t)(impl->shaders.size()) - 1;
+}
+
+bool RenderBackend::createPipeline(const std::vector<uint32_t>& inCompiledShaderIds)
+{
+	std::vector<ShaderStageInfo> shaderStageInfos;// = shader::getUnlitMaterialStageInfos();
+	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc;
+	uint32_t vertexSize;
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-	descriptorSetLayouts.push_back(device.getFrameBufferDescriptorSetLayout());
-	descriptorSetLayouts.push_back(device.getTextureDescriptorSetLayout());
-	descriptorSetLayouts.push_back(device.getMaterialDescriptorSetLayout());
+	std::vector<VkPushConstantRange> pushConstantRanges;
 
-	std::vector<ShaderStageInfo> shaderStageInfos = shader::getUnlitMaterialStageInfos();
-	uint32_t vertexSize = shader::getUnlitMaterialVertexSize();
-	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc = shader::getUnlitMaterialVertexInputs();
+	for (uint32_t shaderId : inCompiledShaderIds)
+	{
+		const CompiledShader& shader = impl->shaders[shaderId];
+		
+		ShaderStageInfo stageInfo{};
 
+		// todo: only for vertex
+		//vertexInputAttributeDesc;// = shader::getUnlitMaterialVertexInputs();
+		//uint32_t vertexSize;// = shader::getUnlitMaterialVertexSize();
+
+		VkPushConstantRange pushConstantRange{};
+		//pushConstantRange.offset = 0;
+		//pushConstantRange.size = sizeof(InstanceData);
+		//pushConstantRange.stageFlags = shader::getShaderStageFlags(EShaderStageFlagBits::VERTEX);
+	}
+
+	// todo:
+	// - in this code, first reproduce the "getXXDescriptorSetLayoutElements()" is what should be reproduced here
+	// - the createDescriptorSets part can come after the pipeline creation is successfull 
+	
+	//// frame data
+	//std::vector<DescriptorSetLayoutElement> frameDataLayoutElements = VulkanDescriptorPool::getFrameDescriptorSetLayoutElements(frameDataBuffers, sizeof(LitMaterialData));
+	//if (!descriptorPool.createDescriptorSets(*this, renderConfig::getFrameCount(), frameDataLayoutElements, frameDataBufferLayout, frameDataBufferDescriptorSets))
+	//{
+	//	return false;
+	//}
+
+	//// todo: dynamic size
+	//const uint8_t materialDataSize = sizeof(LitMaterialData);
+	//std::vector<DescriptorSetLayoutElement> materialLayoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements(materialDataSize);
+
+	//const uint8_t materialDescriptorSetCount = 1;
+	//if (!descriptorPool.createDescriptorSets(*this, materialDescriptorSetCount, materialLayoutElements, materialDescriptorSetLayout, materialDescriptorSets))
+	//{
+	//	return false;
+	//}
+
+	// todo: then add all layouts to this
+	//descriptorSetLayouts.push_back(impl->device.getFrameBufferDescriptorSetLayout());
+	//descriptorSetLayouts.push_back(impl->device.getTextureDescriptorSetLayout());
+	//descriptorSetLayouts.push_back(impl->device.getMaterialDescriptorSetLayout());
+
+	// todo: choose renderpass dynamically
+	// don't know yet how to do it, but for now i could just have a IRenderPass that I use in these cases
+	// and then go for dynamic rendering which is widely considered better
 	uint32_t pipelineHandle = render::getRenderBackend()->getDevice().createPipeline(impl->geometryRenderPass.getRenderPass()
 		, impl->swapchain.getExtent()
 		, shaderStageInfos

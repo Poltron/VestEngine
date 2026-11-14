@@ -236,7 +236,7 @@ void Renderer::loadShaders(std::string_view inVertex, std::string_view inFragmen
 	uint32_t vertShaderId = render::getRenderBackend()->compileShader(inVertex, EShaderStageFlagBits::VERTEX);
 	uint32_t fragShaderId = render::getRenderBackend()->compileShader(inFragment, EShaderStageFlagBits::FRAGMENT);
 
-	render::getRenderBackend()->createPipeline(vertShaderId, fragShaderId);
+	render::getRenderBackend()->createPipeline({ vertShaderId, fragShaderId });
 }
 
 void Renderer::updateDebugShapes(Scene& inScene, double inDeltaTime)

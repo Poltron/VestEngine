@@ -64,7 +64,7 @@ struct LightData
 	PointLight points[4];
 	uint32_t pointLightCount;
 	glm::vec3 viewPosition;
-} lightData;
+};
 
 struct LitMaterialData
 {
