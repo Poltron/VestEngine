@@ -80,6 +80,7 @@ private:
 //
 public:
 	void loadDefaultMaterials();
+	void loadShaders(std::string_view inVertex, std::string_view inFragment);
 	void updateLightParameters(Scene& inScene);
 };
 

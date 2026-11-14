@@ -3,6 +3,7 @@
 	
 	"type": "unlit",
 	"blendMode": "opaque",
+	"pass": "geometry",
 	"vertex": "default.vert.spv",
 	"frag": "unlit.frag.spv"
 }

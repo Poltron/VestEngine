@@ -53,44 +53,46 @@ struct DescriptorSetLayoutElement
 	ShaderStageFlags stage;
 	uint32_t descriptorCount;
 	uint32_t dstArrayElement;
+	uint64_t data1;
+	uint64_t data2;
 };
 
-struct DescriptorSetLayoutElementBufferValue
-{
-	GPUAllocHandle bufferHandle = GPUAllocHandle::invalid;
-	VkDeviceSize dataSize;
-};
-
-struct DescriptorSetLayoutElementTextureValue
-{
-	std::array<GPUAllocHandle, renderConfig::getTextureArraySize()> imageHandles;
-
-	DescriptorSetLayoutElementTextureValue()
-		: imageHandles({ GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
-			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
-			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
-			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid })
-	{}
-};
-
-struct DescriptorSetLayoutElementSamplerValue
-{
-	VkSampler sampler;
-};
-
-struct DescriptorSetLayoutElementValues
-{
-	std::vector<DescriptorSetLayoutElementBufferValue> buffers;
-	std::vector<DescriptorSetLayoutElementTextureValue> textures;
-	std::vector<DescriptorSetLayoutElementSamplerValue> samplers;
-
-	DescriptorSetLayoutElementValues(uint32_t inElementCount, uint32_t inDescriptorCount)
-	{
-		buffers.resize(inElementCount * inDescriptorCount);
-		textures.resize(inElementCount * inDescriptorCount);
-		samplers.resize(inElementCount * inDescriptorCount);
-	}
-};
+//struct DescriptorSetLayoutElementBufferValue
+//{
+//	GPUAllocHandle bufferHandle = GPUAllocHandle::invalid;
+//	VkDeviceSize dataSize;
+//};
+//
+//struct DescriptorSetLayoutElementTextureValue
+//{
+//	std::array<GPUAllocHandle, renderConfig::getTextureArraySize()> imageHandles;
+//
+//	DescriptorSetLayoutElementTextureValue()
+//		: imageHandles({ GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
+//			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
+//			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid
+//			, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid, GPUAllocHandle::invalid })
+//	{}
+//};
+//
+//struct DescriptorSetLayoutElementSamplerValue
+//{
+//	VkSampler sampler;
+//};
+//
+//struct DescriptorSetLayoutElementValues
+//{
+//	std::vector<DescriptorSetLayoutElementBufferValue> buffers;
+//	std::vector<DescriptorSetLayoutElementTextureValue> textures;
+//	std::vector<DescriptorSetLayoutElementSamplerValue> samplers;
+//
+//	DescriptorSetLayoutElementValues(uint32_t inElementCount, uint32_t inDescriptorCount)
+//	{
+//		buffers.resize(inElementCount * inDescriptorCount);
+//		textures.resize(inElementCount * inDescriptorCount);
+//		samplers.resize(inElementCount * inDescriptorCount);
+//	}
+//};
 
 class VulkanDescriptorPool
 {
@@ -104,18 +106,13 @@ public:
 	void shutdown();
 
 	bool createDescriptorSets(VulkanDevice& inDevice
-		, const std::vector<VkDescriptorSetLayout>& inLayouts
+		, uint8_t inCount
 		, const std::vector<DescriptorSetLayoutElement>& inLayoutElements
-		, const DescriptorSetLayoutElementValues& inLayoutValues
-		, uint32_t inDescriptorSetCount
+		, VkDescriptorSetLayout& outLayout
 		, std::vector<VkDescriptorSet>& outDescriptorSets);
 	void releaseDescriptorSet(uint32_t inCount, const VkDescriptorSet* inSets);
 
-	static bool createDescriptorSetLayout(VkDevice inDevice
-		, const std::vector<DescriptorSetLayoutElement>& inLayoutElements
-		, VkDescriptorSetLayout& outDescriptorSetLayout);
-
-	static std::vector<DescriptorSetLayoutElement> getFrameDescriptorSetLayoutElements();
-	static std::vector<DescriptorSetLayoutElement> getTexturesDescriptorSetLayoutElements();
-	static std::vector<DescriptorSetLayoutElement> getMaterialDescriptorSetLayoutElements();
+	static std::vector<DescriptorSetLayoutElement> getFrameDescriptorSetLayoutElements(const std::vector<GPUAllocHandle>& inBuffer, uint32_t inDataSize);
+	static std::vector<DescriptorSetLayoutElement> getTexturesDescriptorSetLayoutElements(uint32_t inTextureCount, VkSampler inSampler);
+	static std::vector<DescriptorSetLayoutElement> getMaterialDescriptorSetLayoutElements(uint32_t inDataSize);
 };

@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
+#include "Core/FileSystem.h"
 #include "RenderBackend_Vulkan/VulkanShaderHelper.h"
 
 class VulkanDevice;

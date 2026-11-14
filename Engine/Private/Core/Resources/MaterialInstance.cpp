@@ -28,13 +28,16 @@ MaterialInstance::MaterialInstance(const Material* inMaterial, ResourceHandle in
 	materialHandle = inMaterialHandle;
 
 	const ShaderParameters& shaderParameters = inMaterial->getShaderParameters();
-	
-	// todo: dynamic fields initialization
-	MaterialData defaultMaterialData;
-	defaultMaterialData.color = glm::vec4(color::white, 1);
-	defaultMaterialData.diffuseTexIndex = 0;
 
-	proxyHandle = render::getRenderer()->createMaterialProxy(&defaultMaterialData, sizeof(MaterialData));
+	void* defaultData = nullptr;
+	uint32_t size = 0;
+	//shaderParameters.getDummyData(defaultData, size);
+	// todo: dynamic fields initialization
+	//MaterialData defaultMaterialData;
+	//defaultMaterialData.color = glm::vec4(color::white, 1);
+	//defaultMaterialData.diffuseTexIndex = 0;
+
+	proxyHandle = render::getRenderer()->createMaterialProxy(&defaultData, size);
 }
 
 MaterialInstance::~MaterialInstance()

@@ -13,10 +13,12 @@ class File
 {
 	static const std::string projectDir;
 	static const std::string resourcesDir;
+	static const std::string shadersDir;
 
 public:
 	static const std::string& getProjectDir() { return projectDir; }
 	static const std::string& getResourcesDir() { return resourcesDir; }
+	static const std::string& getShadersDir() { return shadersDir; }
 
 	static bool readFile(const std::string& inPath, std::vector<char>& outContent)
 	{

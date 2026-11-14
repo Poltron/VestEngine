@@ -83,7 +83,7 @@ enum EShaderStageFlagBits : uint8_t
 
 struct ShaderStageInfo
 {
-	std::string relativePath;
+	std::string_view file;
 	EShaderStageFlagBits stage;
 };
 typedef uint8_t ShaderStageFlags;
@@ -127,15 +127,7 @@ struct ShaderParameters
 
 	uint32_t getParameterOffset(std::string_view inName) const
 	{
-		for (const ShaderParameter& parameter : vertexParameters)
-		{
-			if (parameter.name == inName)
-			{
-				return parameter.offset;
-			}
-		}
-		
-		for (const ShaderParameter& parameter : fragmentParameters)
+		for (const ShaderParameter& parameter : parameters)
 		{
 			if (parameter.name == inName)
 			{
@@ -179,7 +171,7 @@ namespace shader
 	{
 		ShaderParameters parameters;
 		parameters.size = sizeof(glm::vec4) + sizeof(uint32_t);
-		parameters.fragmentParameters = 
+		parameters.parameters = 
 		{ 
 			{ EShaderParameterType::VEC4, "color", 0 },
 			{ EShaderParameterType::UINT, "diffuse", sizeof(glm::vec4) }
@@ -219,7 +211,7 @@ namespace shader
 	{
 		ShaderParameters parameters;
 		parameters.size = sizeof(glm::vec4) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(float);
-		parameters.fragmentParameters =
+		parameters.parameters =
 		{
 			{ EShaderParameterType::VEC4, "color", 0 },
 			{ EShaderParameterType::UINT, "diffuse", sizeof(uint32_t) },

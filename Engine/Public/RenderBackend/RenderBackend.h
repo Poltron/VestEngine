@@ -7,6 +7,7 @@
 #include "Render/GPUHandle.h"
 #include "Render/Resources/MeshProxy.h"
 #include "Render/Resources/TextureProxy.h"
+#include "Render/ShaderStructs.h"
 #include "RenderBackend/RenderBackendDef.h"
 #include "RenderBackend/RHICommandRecorder.h"
 
@@ -44,6 +45,9 @@ public:
 	void render(Scene& inScene);
 	void resizeViewport(int inX, int inY, int inWidth, int inHeight);
 	void clear();
+
+	uint32_t compileShader(std::string_view inPath, EShaderStageFlagBits inShaderStage);
+	bool createPipeline(uint32_t inVertShaderId, uint32_t inFragShaderId);
 
 	bool executeCommands(VkCommandBuffer inCommandBuffer
 		, uint8_t* inCommands

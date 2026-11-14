@@ -61,18 +61,20 @@ class VulkanDevice
 	uint32_t minUniformBufferOffsetAlignment;
 	uint32_t maxUniformBufferRange;
 
-	std::vector<GPUAllocHandle> frameUniformBuffers;
-	std::vector<VkDescriptorSet> frameUniformBufferDescriptorSets;
-	VkDescriptorSetLayout frameUniformBufferLayout;
+	std::vector<GPUAllocHandle> frameDataBuffers;
+	std::vector<GPUAllocHandle> materialDataBuffers;
+
+	uint8_t nextTextureAvailableSlot;
+
+	// pipeline data
+	std::vector<VkDescriptorSet> frameDataBufferDescriptorSets;
+	VkDescriptorSetLayout frameDataBufferLayout;
 
 	std::vector<VkDescriptorSet> textureDescriptorSets;
 	VkDescriptorSetLayout textureDescriptorSetLayout;
 
-	std::vector<GPUAllocHandle> materialBuffers;
 	std::vector<VkDescriptorSet> materialDescriptorSets;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
-
-	uint8_t nextTextureAvailableSlot;
 
 	std::vector<VulkanPipeline> pipelines;
 
@@ -86,14 +88,14 @@ public:
 	VulkanCommandQueue& getPresentVulkanCommandQueue();
 	VulkanCommandQueue& getTransferCommandQueue();
 
-	GPUAllocHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameUniformBuffers[inFrameIndex]; }
-	VkDescriptorSet getFrameBufferDescriptorSet(uint32_t inFrameIndex) const { return frameUniformBufferDescriptorSets[inFrameIndex]; }
-	VkDescriptorSetLayout getFrameBufferDescriptorSetLayout() const { return frameUniformBufferLayout; }
+	GPUAllocHandle getFrameBufferHandle(uint32_t inFrameIndex) const { return frameDataBuffers[inFrameIndex]; }
+	VkDescriptorSet getFrameBufferDescriptorSet(uint32_t inFrameIndex) const { return frameDataBufferDescriptorSets[inFrameIndex]; }
+	VkDescriptorSetLayout getFrameBufferDescriptorSetLayout() const { return frameDataBufferLayout; }
 
 	VkDescriptorSet getTextureDescriptorSet(uint32_t inHandle) const { return textureDescriptorSets[inHandle]; }
 	VkDescriptorSetLayout getTextureDescriptorSetLayout() const { return textureDescriptorSetLayout; }
 
-	GPUAllocHandle getMaterialBufferHandle(uint32_t inHandle) const { return materialBuffers[inHandle]; }
+	GPUAllocHandle getMaterialBufferHandle(uint32_t inHandle) const { return materialDataBuffers[inHandle]; }
 	VkDescriptorSet getMaterialBufferDescriptorSet(uint32_t inHandle) const { return materialDescriptorSets[inHandle]; }
 	VkDescriptorSetLayout getMaterialDescriptorSetLayout() const { return materialDescriptorSetLayout; }
 
@@ -141,10 +143,6 @@ public:
 		, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 		, const std::vector<VkPushConstantRange>& inPushConstantRanges);
 
-	// should be in renderbackend
-	void getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos);
-	uint32_t getCompatiblePipeline(const MaterialProxy& inMaterialProxy) const;
-
 private:
 	static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice inDevice, VkSurfaceKHR inSurface);
 	static bool findMemoryType(VkPhysicalDevice inPhysicalDevice, uint32_t inTypeFilter, VkMemoryPropertyFlags inProperties, uint32_t& outMemoryType);
@@ -154,16 +152,9 @@ private:
 	bool pickPhysicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface, VkPhysicalDevice& outPhysicalDevice);
 	bool createLogicalDevice(VkInstance inInstance, VkSurfaceKHR inSurface);
 	void createCommandQueues(const QueueFamilyIndices& inQueueFamilyIndices);
-
-	bool createFrameData(uint8_t inFrameCount
+	bool createUniformBuffers(uint8_t inCount
 		, VkDeviceSize inBufferSize
-		, std::vector<GPUAllocHandle>& outBufferHandles
-		, std::vector<VkDescriptorSet>& outBufferDescriptorSets);
-
+		, std::vector<GPUAllocHandle>& outBufferHandles);
 	bool createTextureSampler();
-	bool createTextureData(VkDescriptorSet& outDescriptorSet);
-
-	bool createMaterialData(VkDeviceSize inBufferSize
-		, GPUAllocHandle& outBufferHandle
-		, VkDescriptorSet& outBufferDescriptorSet);
+	bool createTextureData(VkDescriptorSetLayout& outLayout, VkDescriptorSet& outDescriptorSet);
 };

@@ -22,7 +22,7 @@ public:
 	const std::vector<VkFramebuffer>& getFramebuffers() const { return framebuffers; }
 
 	bool initialize(VulkanDevice& inDevice, const VulkanSwapchain& inSwapchain)
-	{ 
+	{
 		device = inDevice.getDevice();
 
 		VkAttachmentDescription colorAttachment{};

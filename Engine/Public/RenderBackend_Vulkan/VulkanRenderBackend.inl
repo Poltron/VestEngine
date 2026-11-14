@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -36,8 +37,16 @@
 #include "RenderBackend_Vulkan/VulkanImage.h"
 #include "RenderBackend_Vulkan/VulkanInstance.h"
 #include "RenderBackend_Vulkan/VulkanPipeline.h"
+#include "RenderBackend_Vulkan/VulkanShaderHelper.h"
 #include "RenderBackend_Vulkan/VulkanSurface.h"
 #include "RenderBackend_Vulkan/VulkanSwapchain.h"
+
+struct CompiledShader
+{
+	std::string_view path;
+	ShaderParameters parameters;
+	VkShaderModule vkModule;
+};
 
 struct RenderBackend::Impl
 {
@@ -48,6 +57,9 @@ struct RenderBackend::Impl
 	VulkanSwapchain swapchain;
 
 	VulkanGeometryRenderPass geometryRenderPass;
+
+	std::vector<CompiledShader> shaders;
+	std::vector<VkPipeline> pipelines;
 
 	// sync primitives
 	std::vector<VkCommandBuffer> graphicsCommandBuffers;
@@ -134,14 +146,14 @@ namespace
 		vkCmdSetScissor(inCommandBuffer, 0, 1, &scissor);
 	}
 
-	BufferHandle pushFrameData(VulkanDevice& inDevice, VulkanBuffer& inBuffer)
+	BufferHandle pushCameraData(VulkanDevice& inDevice, VulkanBuffer& inBuffer)
 	{
-		FrameData frameData{};
-		frameData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
-		frameData.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
-		frameData.proj[1][1] *= -1;
+		CameraData cameraData{};
+		cameraData.view = render::getRenderer()->getActiveCamera().getViewMatrix();
+		cameraData.proj = render::getRenderer()->getActiveCamera().getProjectionMatrix();
+		cameraData.proj[1][1] *= -1;
 
-		return inDevice.pushFrameData((void*)&frameData, sizeof(FrameData), inBuffer);
+		return inDevice.pushFrameData((void*)&cameraData, sizeof(CameraData), inBuffer);
 	}
 
 	void bindDescriptorSets(VulkanDevice& inDevice, VkCommandBuffer inCommandBuffer, VkPipelineLayout inPipelineLayout, BufferHandle inFrameData, VkDescriptorSet inFrameBuffer, const MaterialProxy& inMaterialProxy, PipelineState& outPipelineState)
@@ -338,6 +350,11 @@ namespace
 		inSwapchain.initialize(inDevice, inSurface);
 		inRenderPass.initialize(inDevice, inSwapchain);
 	}
+
+	CompiledShader& getCompiledShader(uint32_t inShader)
+	{
+		
+	}
 }
 
 RenderBackend::RenderBackend()
@@ -389,31 +406,6 @@ bool RenderBackend::initialize()
 	{
 		return false;
 	}
-
-	// note: all of this pipeline creation thing should be in consequence of a material being loaded, so material infos would already be obtainable
-
-	VkPushConstantRange pushConstantRange{};
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(InstanceData);
-	pushConstantRange.stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
-	const std::vector<VkPushConstantRange> pushConstantRanges = { pushConstantRange };
-
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-	descriptorSetLayouts.push_back(impl->device.getFrameBufferDescriptorSetLayout());
-	descriptorSetLayouts.push_back(impl->device.getTextureDescriptorSetLayout());
-	descriptorSetLayouts.push_back(impl->device.getMaterialDescriptorSetLayout());
-
-	std::vector<ShaderStageInfo> shaderStageInfos = shader::getUnlitMaterialStageInfos();
-	uint32_t vertexSize = shader::getUnlitMaterialVertexSize();
-	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc = shader::getUnlitMaterialVertexInputs();
-
-	uint32_t pipelineHandle = impl->device.createPipeline(impl->geometryRenderPass.getRenderPass()
-		, impl->swapchain.getExtent()
-		, shaderStageInfos
-		, vertexInputAttributeDesc
-		, vertexSize
-		, descriptorSetLayouts
-		, pushConstantRanges);
 
 	// Commands
 	if (!createSyncObjects(impl->device.getDevice(), impl->imageAvailableSemaphores, impl->renderFinishedSemaphores, impl->inFlightFences))
@@ -549,6 +541,61 @@ void RenderBackend::resizeViewport(int inX, int inY, int inWidth, int inHeight)
 }
 
 //
+uint32_t RenderBackend::compileShader(std::string_view inPath, EShaderStageFlagBits inShaderStage)
+{
+	CompiledShader& compiledShader = impl->shaders.emplace_back();
+	compiledShader.path = inPath;
+
+	std::vector<char> fileContent;
+	File::readFile(File::getShadersDir() + inPath.data(), fileContent);
+
+	shader::getShaderParameters(fileContent, compiledShader.parameters);
+	shader::createVkShaderModule(impl->device.getDevice(), fileContent, compiledShader.vkModule);
+
+	return impl->shaders.size() - 1;
+}
+
+bool RenderBackend::createPipeline(const std::vector<uint32_t>& inShaderIds)
+{
+	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
+	for (uint32_t shaderId : inShaderIds)
+	{
+		getShaders()
+		VkPipelineShaderStageCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		info.stage = (VkShaderStageFlagBits)shader::getShaderStageFlags(descriptorSetLayoutBinding.stage);
+		info.module = shaderModule;
+		info.pName = "main";
+		pipelineShaderStageCreateInfos.push_back(info);
+	}
+
+	// note: all of this pipeline creation thing should be in consequence of a material being loaded, so material infos would already be obtainable
+	VkPushConstantRange pushConstantRange{};
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(InstanceData);
+	pushConstantRange.stageFlags = shader::getShaderStageFlags(EShaderStageFlagBits::VERTEX);
+	const std::vector<VkPushConstantRange> pushConstantRanges = { pushConstantRange };
+
+	std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.push_back(device.getFrameBufferDescriptorSetLayout());
+	descriptorSetLayouts.push_back(device.getTextureDescriptorSetLayout());
+	descriptorSetLayouts.push_back(device.getMaterialDescriptorSetLayout());
+
+	std::vector<ShaderStageInfo> shaderStageInfos = shader::getUnlitMaterialStageInfos();
+	uint32_t vertexSize = shader::getUnlitMaterialVertexSize();
+	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc = shader::getUnlitMaterialVertexInputs();
+
+	uint32_t pipelineHandle = render::getRenderBackend()->getDevice().createPipeline(impl->geometryRenderPass.getRenderPass()
+		, impl->swapchain.getExtent()
+		, shaderStageInfos
+		, vertexInputAttributeDesc
+		, vertexSize
+		, descriptorSetLayouts
+		, pushConstantRanges);
+
+	return true;
+}
+
 bool RenderBackend::executeCommands(VkCommandBuffer inCommandBuffer
 	, uint8_t* inCommands
 	, uint32_t inCommandsSize
@@ -562,7 +609,7 @@ bool RenderBackend::executeCommands(VkCommandBuffer inCommandBuffer
 
 	VkDescriptorSet frameBufferDescriptorSet = impl->device.getFrameBufferDescriptorSet(inFrameId);
 	VulkanBuffer& frameBuffer = impl->device.getBuffer(impl->device.getFrameBufferHandle(inFrameId));
-	const BufferHandle frameDataHandle = pushFrameData(impl->device, frameBuffer);
+	const BufferHandle frameDataHandle = pushCameraData(impl->device, frameBuffer);
 	
 	size_t offset = 0;
 	while (offset < inCommandsSize)
@@ -639,7 +686,7 @@ void RenderBackend::executeBindMaterial(VkCommandBuffer inCommandBuffer, BindMat
 	MaterialProxy& materialProxy = render::getRenderer()->getMaterialProxy(inBindMaterialCommand->material);
 	
 	// todo: get compatible pipeline
-	uint32_t pipelineHandle = impl->device.getCompatiblePipeline(materialProxy);
+	uint32_t pipelineHandle = 0;// impl->device.getCompatiblePipeline(materialProxy);
 	const VulkanPipeline* newPipeline = nullptr;
 	if (state->pipelineHandle != pipelineHandle)
 	{
@@ -675,7 +722,7 @@ void RenderBackend::executeDrawIndexed(VkCommandBuffer inCommandBuffer, DrawInde
 	const VulkanBuffer& indexBuffer = impl->device.getBuffer(meshProxy.getIndexBuffer());
 	vkCmdBindIndexBuffer(inCommandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-	VkShaderStageFlags stageFlags = getShaderStageFlags(EShaderStageFlagBits::VERTEX);
+	VkShaderStageFlags stageFlags = shader::getShaderStageFlags(EShaderStageFlagBits::VERTEX);
 
 	BufferHandle instanceDataHandle = pushInstanceData(impl->device, inFrameBuffer, inDrawIndexCommand->model);
 	uint8_t* dataPtr = (uint8_t*)inFrameBuffer.getMappedMemory() + instanceDataHandle.offset;

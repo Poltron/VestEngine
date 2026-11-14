@@ -38,22 +38,25 @@ namespace
 		assert(false);
 		return EMaterialBlendMode::OPAQUE;
 	}
+
+	ERenderPass getPassFromStr(std::string_view inString)
+	{
+		if (inString == "geometry")
+		{
+			return ERenderPass::GEOMETRY;
+		}
+
+		assert(false);
+		return ERenderPass::GEOMETRY;
+	}
 }
 
 Material::Material(const std::string&& inPath)
-	: path(inPath), blendMode(EMaterialBlendMode::OPAQUE), type(EMaterialType::UNLIT), vertex(), fragment(), defaultMaterialInstance(ResourceHandle::invalid), shaderParameters(ShaderParameters())
+	: path(inPath), defaultMaterialInstance(ResourceHandle::invalid), shaderParameters(ShaderParameters())
 {
 	loadFromPath(path);
 
-}
-
-Material::Material(EMaterialBlendMode inBlendMode, EMaterialType inType, const ShaderParameters& inShaderParameters)
-	: blendMode(inBlendMode), type(inType), defaultMaterialInstance(ResourceHandle::invalid), shaderParameters(inShaderParameters)
-{
-	// todo: this should be when recording a command using a specific material, check if the appropriate pipeline is up
-	//std::vector<ShaderStageInfo> shaderStageInfos;
-	//render::getRenderBackend()->getDevice().getShaderForMaterial(blendMode, type, shaderStageInfos);
-	//render::getRenderBackend()->getDevice().get(shaderStageInfos);	
+	render::getRenderer()->loadShaders(vertex, fragment);
 }
 
 bool Material::loadFromPath(std::string_view inPath)
@@ -71,10 +74,12 @@ bool Material::loadFromPath(std::string_view inPath)
 	name = data["name"].get<std::string>();
 	type = getTypeFromStr(data["type"].get<std::string>());
 	blendMode = getBlendModeFromStr(data["blendMode"].get<std::string>());
+	pass = getPassFromStr(data["pass"].get<std::string>());
 	vertex = data["vertex"].get<std::string>();
 	fragment = data["fragment"].get<std::string>();
 }
 
+void Material::createDefaultMaterialInstance(ResourceHandle inMaterialHandle)
 {
 	ensure(!defaultMaterialInstance.isValid());
 

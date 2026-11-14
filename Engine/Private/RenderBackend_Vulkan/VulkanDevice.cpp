@@ -49,7 +49,6 @@ namespace
 	}
 }
 
-
 VulkanCommandQueue& VulkanDevice::getGraphicsCommandQueue()
 { return commandQueues[(uint8_t)EQueueFamily::GRAPHICS]; }
 VulkanCommandQueue& VulkanDevice::getPresentVulkanCommandQueue()
@@ -95,21 +94,47 @@ bool VulkanDevice::initialize(const VulkanInstance& inInstance, VkSurfaceKHR inS
 	{
 		return false;
 	}
-	
-	if (!createFrameData(renderConfig::getFrameCount(), renderConfig::getFrameBufferSize(), frameUniformBuffers, frameUniformBufferDescriptorSets))
+
+	// persistent buffers, sampler, texture descriptor set
+	const uint8_t frameDataBufferCount = renderConfig::getFrameCount();
+	if (!createUniformBuffers(frameDataBufferCount, renderConfig::getFrameBufferSize(), frameDataBuffers))
 	{
 		return false;
 	}
 
-	textureDescriptorSets.resize(1);
-	if (!createTextureData(textureDescriptorSets[0]))
+	if (!createTextureSampler())
 	{
 		return false;
 	}
 
-	materialBuffers.resize(1);
-	materialDescriptorSets.resize(1);
-	if (!createMaterialData(renderConfig::getMaterialBufferSize(), materialBuffers[0], materialDescriptorSets[0]))
+	const uint32_t textureDescriptorSetCount = 1;
+	std::vector<DescriptorSetLayoutElement> textureLayoutElements = VulkanDescriptorPool::getTexturesDescriptorSetLayoutElements(renderConfig::getTextureArraySize(), sampler);
+	if (!descriptorPool.createDescriptorSets(*this, textureDescriptorSetCount, textureLayoutElements, textureDescriptorSetLayout, textureDescriptorSets))
+	{
+		return false;
+	}
+
+	const uint8_t materialBufferCount = 1;
+	if (!createUniformBuffers(materialBufferCount, renderConfig::getMaterialBufferSize(), materialDataBuffers))
+	{
+		return false;
+	}
+
+	// pipeline SPECIFIC
+	//
+	// frame data
+	std::vector<DescriptorSetLayoutElement> frameDataLayoutElements = VulkanDescriptorPool::getFrameDescriptorSetLayoutElements(frameDataBuffers, sizeof(LitMaterialData));
+	if (!descriptorPool.createDescriptorSets(*this, renderConfig::getFrameCount(), frameDataLayoutElements, frameDataBufferLayout, frameDataBufferDescriptorSets))
+	{
+		return false;
+	}
+
+	// todo: dynamic size
+	const uint8_t materialDataSize = sizeof(LitMaterialData);
+	std::vector<DescriptorSetLayoutElement> materialLayoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements(materialDataSize);
+
+	const uint8_t materialDescriptorSetCount = 1;
+	if (!descriptorPool.createDescriptorSets(*this, materialDescriptorSetCount, materialLayoutElements, materialDescriptorSetLayout, materialDescriptorSets))
 	{
 		return false;
 	}
@@ -121,9 +146,9 @@ void VulkanDevice::shutdown()
 {
 	vkDestroySampler(device, sampler, nullptr);
 
-	for (size_t i = 0; i < frameUniformBuffers.size(); ++i)
+	for (size_t i = 0; i < frameDataBuffers.size(); ++i)
 	{
-		destroyBuffer(frameUniformBuffers[i]);
+		destroyBuffer(frameDataBuffers[i]);
 	}
 
 	for (size_t i = 0; i < pipelines.size(); ++i)
@@ -131,7 +156,7 @@ void VulkanDevice::shutdown()
 		pipelines[i].destroy();
 	}
 
-	descriptorPool.releaseDescriptorSet((uint32_t)frameUniformBufferDescriptorSets.size(), frameUniformBufferDescriptorSets.data());
+	descriptorPool.releaseDescriptorSet((uint32_t)frameDataBufferDescriptorSets.size(), frameDataBufferDescriptorSets.data());
 
 	for (size_t i = 0; i < commandQueues.size(); ++i)
 	{
@@ -276,7 +301,7 @@ void VulkanDevice::destroyBuffer(GPUAllocHandle handle)
 
 void VulkanDevice::resetFrameData(uint32_t inFrameId)
 {
-	VulkanBuffer& buffer = getBuffer(frameUniformBuffers[inFrameId]);
+	VulkanBuffer& buffer = getBuffer(frameDataBuffers[inFrameId]);
 	buffer.reset();
 }
 
@@ -289,7 +314,7 @@ BufferHandle VulkanDevice::pushMaterialData(void* inData, uint32_t inSize)
 {
 	// todo: should be determined dynamically, but right now there's only one
 	const uint32_t bufferHandle = 0; // is there space left in this buffer ?
-	VulkanBuffer& buffer = getBuffer(materialBuffers[bufferHandle]);
+	VulkanBuffer& buffer = getBuffer(materialDataBuffers[bufferHandle]);
 	BufferHandle handle = buffer.push_back(inData, inSize, minUniformBufferOffsetAlignment);
 	handle.handle = bufferHandle;
 	return handle;
@@ -297,7 +322,9 @@ BufferHandle VulkanDevice::pushMaterialData(void* inData, uint32_t inSize)
 
 const uint8_t* VulkanDevice::getMaterialInstanceBuffer(BufferHandle inHandle) const
 {
-	const uint8_t* memory = (uint8_t*)getBuffer(materialBuffers[inHandle.handle]).getMappedMemory();
+	// todo: should be determined dynamically, but right now there's only one
+	const uint32_t bufferHandle = 0; // is there space left in this buffer ?
+	const uint8_t* memory = (uint8_t*)getBuffer(materialDataBuffers[bufferHandle]).getMappedMemory();
 	return memory + inHandle.offset;
 }
 
@@ -330,56 +357,6 @@ uint32_t VulkanDevice::createPipeline(VkRenderPass inRenderPass
 		, inPushConstantRanges);
 
 	return handle;
-}
-
-void VulkanDevice::getShaderForMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, std::vector<ShaderStageInfo>& outShaderStageInfos)
-{
-	if (inBlendMode == EMaterialBlendMode::OPAQUE && inType == EMaterialType::UNLIT)
-	{
-		outShaderStageInfos = shader::getUnlitMaterialStageInfos();
-	}
-	else if (inBlendMode == EMaterialBlendMode::OPAQUE && inType == EMaterialType::LIT)
-	{
-		outShaderStageInfos = shader::getLitMaterialStageInfos();
-	}
-}
-
-uint32_t VulkanDevice::getCompatiblePipeline(const MaterialProxy& inMaterialProxy) const
-{
-	// should be in the renderbackend, can't check pipeline from inside the device
-	return 0;
-}
-
-bool VulkanDevice::createMaterialData(VkDeviceSize inBufferSize
-	, GPUAllocHandle& outBufferHandle
-	, VkDescriptorSet& outBufferDescriptorSet)
-{
-	constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	const QueueFamilyIndices& indices = getQueueFamilyIndices();
-	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value(), indices.graphicsFamily.value() };
-	constexpr VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-	outBufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
-	getBuffer(outBufferHandle).map(inBufferSize);
-
-	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getMaterialDescriptorSetLayoutElements();
-	if (!VulkanDescriptorPool::createDescriptorSetLayout(device, layoutElements, materialDescriptorSetLayout))
-	{
-		return false;
-	}
-
-	const uint8_t descriptorSetCount = 1;
-	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), descriptorSetCount);
-	layoutValues.buffers[0] = { outBufferHandle, sizeof(MaterialData) };
-
-	std::vector<VkDescriptorSet> descriptorSets;
-	if (!descriptorPool.createDescriptorSets(*this, { materialDescriptorSetLayout }, layoutElements, layoutValues, descriptorSetCount, descriptorSets))
-	{
-		return false;
-	}
-
-	outBufferDescriptorSet = descriptorSets[0];
-	return true;
 }
 
 GPUAllocHandle VulkanDevice::createTexture(const uint8_t* inData, size_t inWidth, size_t inHeight, size_t inNrChannels)
@@ -552,40 +529,22 @@ uint8_t VulkanDevice::getAvailableTextureSlot()
 	return slot;
 }
 
-bool VulkanDevice::createFrameData(uint8_t inFrameCount
+bool VulkanDevice::createUniformBuffers(uint8_t inCount
 	, VkDeviceSize inBufferSize
-	, std::vector<GPUAllocHandle>& outBufferHandles
-	, std::vector<VkDescriptorSet>& outBufferDescriptorSets)
+	, std::vector<GPUAllocHandle>& outBufferHandles)
 {
 	constexpr VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	const QueueFamilyIndices& indices = getQueueFamilyIndices();
 	std::vector<uint32_t> queueFamilyIndices = { indices.transferFamily.value(), indices.graphicsFamily.value() };
 	constexpr VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	for (size_t i = 0; i < inFrameCount; ++i)
+	for (size_t i = 0; i < inCount; ++i)
 	{
 		GPUAllocHandle bufferHandle = createBuffer(inBufferSize, usageFlags, queueFamilyIndices, memoryFlags);
 		outBufferHandles.push_back(bufferHandle);
 
 		VulkanBuffer& buffer = getBuffer(outBufferHandles[i]);
 		buffer.map(inBufferSize);
-	}
-	
-	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getFrameDescriptorSetLayoutElements();
-
-	if (!VulkanDescriptorPool::createDescriptorSetLayout(device, layoutElements, frameUniformBufferLayout))
-	{
-		return false;
-	}
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(renderConfig::getFrameCount(), frameUniformBufferLayout);
-
-	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), inFrameCount);
-	layoutValues.buffers[0] = { outBufferHandles[0], sizeof(FrameData) };
-	layoutValues.buffers[1] = { outBufferHandles[1], sizeof(FrameData) };
-
-	if (!descriptorPool.createDescriptorSets(*this, descriptorSetLayouts, layoutElements, layoutValues, inFrameCount, frameUniformBufferDescriptorSets))
-	{
-		return false;
 	}
 
 	return true;
@@ -622,34 +581,6 @@ bool VulkanDevice::createTextureSampler()
 		return false;
 	}
 
-	return true;
-}
-
-bool VulkanDevice::createTextureData(VkDescriptorSet& outDescriptorSet)
-{
-	if (!createTextureSampler())
-	{
-		return false;
-	}
-
-	const uint32_t descriptorSetCount = 1;
-	std::vector<DescriptorSetLayoutElement> layoutElements = VulkanDescriptorPool::getTexturesDescriptorSetLayoutElements();
-	if (!VulkanDescriptorPool::createDescriptorSetLayout(device, layoutElements, textureDescriptorSetLayout))
-	{
-		return false;
-	}
-
-	DescriptorSetLayoutElementValues layoutValues((uint32_t)layoutElements.size(), descriptorSetCount);
-	layoutValues.textures[0] = {};
-	layoutValues.samplers[1].sampler = sampler;
-
-	std::vector<VkDescriptorSet> descriptorSets;
-	if (!descriptorPool.createDescriptorSets(*this, { textureDescriptorSetLayout }, layoutElements, layoutValues, descriptorSetCount, descriptorSets))
-	{
-		return false;
-	}
-
-	outDescriptorSet = descriptorSets[0];
 	return true;
 }
 

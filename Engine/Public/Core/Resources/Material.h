@@ -16,6 +16,11 @@ enum class EMaterialType : uint8_t
 	UNLIT
 };
 
+enum class ERenderPass : uint8_t
+{
+	GEOMETRY
+};
+
 class Material
 {
 	std::string path;
@@ -23,6 +28,7 @@ class Material
 	std::string name;
 	EMaterialType type;
 	EMaterialBlendMode blendMode;
+	ERenderPass pass;
 	std::string vertex;
 	std::string fragment;
 
@@ -38,9 +44,9 @@ public:
 
 	Material() = delete;
 	Material(const std::string&& inPath);
-	Material(EMaterialBlendMode inBlendMode, EMaterialType inType, const ShaderParameters& inShaderParameters);
 
 	void createDefaultMaterialInstance(ResourceHandle inMaterialHandle);
+
 private:
 	bool loadFromPath(std::string_view inPath);
 };

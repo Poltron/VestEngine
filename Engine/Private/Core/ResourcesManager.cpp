@@ -48,28 +48,6 @@ ResourceHandle ResourcesManager::loadModel(std::string inPath)
 	return handle;
 }
 
-ResourceHandle ResourcesManager::createMaterial(EMaterialBlendMode inBlendMode, EMaterialType inType, const ShaderParameters& inShaderParameters)
-{
-	if (materialHandleCounter > MAX_RESOURCES)
-	{
-		std::cout << "ERROR : Max material resources reached" << std::endl;
-		return ResourceHandle::invalid;
-	}
-
-	Material& material = materials.emplace_back(inBlendMode, inType, inShaderParameters);
-
-	ResourceHandle handle(materialHandleCounter);
-	materialsLookup.insert({ handle, &material });
-	materialHandleCounter++;
-	
-	GPUAllocHandle pipelineAlloc = material.createPipeline(handle);
-	material.createDefaultMaterialInstance(handle, pipelineAlloc);
-
-	std::cout << "INFO : Created material " << handle.handle << std::endl;
-
-	return handle;
-}
-
 ResourceHandle ResourcesManager::createMaterialInstance(const Material* inMaterial, ResourceHandle inMaterialHandle)
 {
 	if (materialInstanceHandleCounter > MAX_MATINSTANCES)
@@ -160,6 +138,8 @@ ResourceHandle ResourcesManager::loadMaterial(std::string inPath)
 	ResourceHandle handle(materialHandleCounter);
 	materialsLookup.insert({ handle, &material });
 	materialHandleCounter++;
+
+	material.createDefaultMaterialInstance(handle);
 
 	std::cout << "INFO : Loaded material " << handle.handle << " ( " << material.getName() << " )" << std::endl;
 

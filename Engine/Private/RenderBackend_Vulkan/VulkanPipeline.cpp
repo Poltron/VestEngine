@@ -31,7 +31,7 @@ namespace
 		return true;
 	}
 
-	VkVertexInputBindingDescription createBindingDescription(uint32_t inBinding, uint32_t inStride)
+	VkVertexInputBindingDescription createVkVertexInputBindingDescription(uint32_t inBinding, uint32_t inStride)
 	{
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = inBinding;
@@ -84,7 +84,7 @@ namespace
 		return 0;
 	}
 
-	void createAttributeDescriptions(const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, uint32_t inBinding, std::vector<VkVertexInputAttributeDescription>& outVkVertexInputAttributeDescription)
+	void createVkInputAttributeDescriptions(const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, uint32_t inBinding, std::vector<VkVertexInputAttributeDescription>& outVkVertexInputAttributeDescription)
 	{
 		outVkVertexInputAttributeDescription.clear();
 		for (uint32_t i = 0; i < inVertexInputAttributeDescs.size(); ++i)
@@ -105,14 +105,14 @@ namespace
 		for (const auto& descriptorSetLayoutBinding : inDescriptorSetLayoutBindings)
 		{
 			std::vector<char> fileContent;
-			File::readFile(File::getProjectDir() + descriptorSetLayoutBinding.relativePath, fileContent);
+			File::readFile(File::getShadersDir() + descriptorSetLayoutBinding.file.data(), fileContent);
 			VkShaderModule shaderModule;
 			createShaderModule(inDevice, fileContent, shaderModule);
 			outShaderModules.push_back(shaderModule);
 
 			VkPipelineShaderStageCreateInfo info{};
 			info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			info.stage = (VkShaderStageFlagBits)getShaderStageFlags(descriptorSetLayoutBinding.stage);
+			info.stage = (VkShaderStageFlagBits)shader::getShaderStageFlags(descriptorSetLayoutBinding.stage);
 			info.module = shaderModule;
 			info.pName = "main";
 			outVkPipelineShaderStageCreateInfos.push_back(info);
@@ -187,12 +187,12 @@ bool VulkanPipeline::createPipeline(VkRenderPass inRenderPass
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-	VkVertexInputBindingDescription bindingDescription = createBindingDescription(binding, inVertexSize);
+	VkVertexInputBindingDescription bindingDescription = createVkVertexInputBindingDescription(binding, inVertexSize);
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 
 	std::vector<VkVertexInputAttributeDescription> vkInputAttributeDescriptions;
-	createAttributeDescriptions(inVertexInputAttributeDescs, binding, vkInputAttributeDescriptions);
+	createVkInputAttributeDescriptions(inVertexInputAttributeDescs, binding, vkInputAttributeDescriptions);
 	vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)vkInputAttributeDescriptions.size();
 	vertexInputInfo.pVertexAttributeDescriptions = vkInputAttributeDescriptions.data();
 
