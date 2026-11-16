@@ -84,36 +84,31 @@ namespace
 		return 0;
 	}
 
-	void createVkInputAttributeDescriptions(const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs, uint32_t inBinding, std::vector<VkVertexInputAttributeDescription>& outVkVertexInputAttributeDescription)
+	void createVkInputAttributeDescriptions(const std::vector<VertexInputAttribute>& inVertexInputAttributes, uint32_t inBinding, std::vector<VkVertexInputAttributeDescription>& outVkVertexInputAttributeription)
 	{
-		outVkVertexInputAttributeDescription.clear();
-		for (uint32_t i = 0; i < inVertexInputAttributeDescs.size(); ++i)
+		outVkVertexInputAttributeription.clear();
+		for (uint32_t i = 0; i < inVertexInputAttributes.size(); ++i)
 		{
 			VkVertexInputAttributeDescription vkElement{};
 			vkElement.binding = inBinding;
 			vkElement.location = i;
-			vkElement.format = getFormat(inVertexInputAttributeDescs[i].format);
-			vkElement.offset = inVertexInputAttributeDescs[i].offset;
-			outVkVertexInputAttributeDescription.push_back(vkElement);
+			vkElement.format = getFormat(inVertexInputAttributes[i].format);
+			vkElement.offset = inVertexInputAttributes[i].offset;
+			outVkVertexInputAttributeription.push_back(vkElement);
 		}
 	}
 
-	void createVkPipelineShaderStageCreateInfos(VkDevice inDevice, const std::vector<ShaderStageInfo>& inDescriptorSetLayoutBindings, std::vector<VkPipelineShaderStageCreateInfo>& outVkPipelineShaderStageCreateInfos, std::vector<VkShaderModule>& outShaderModules)
+	void createVkPipelineShaderStageCreateInfos(VkDevice inDevice, const std::vector<ShaderStageInfo>& inShaderStageInfos, std::vector<VkPipelineShaderStageCreateInfo>& outVkPipelineShaderStageCreateInfos)
 	{
 		outVkPipelineShaderStageCreateInfos.clear();
+		outVkPipelineShaderStageCreateInfos.reserve(inShaderStageInfos.size());
 
-		for (const auto& descriptorSetLayoutBinding : inDescriptorSetLayoutBindings)
+		for (const auto& shaderStageInfos : inShaderStageInfos)
 		{
-			std::vector<char> fileContent;
-			File::readFile(File::getShadersDir() + descriptorSetLayoutBinding.file.data(), fileContent);
-			VkShaderModule shaderModule;
-			createShaderModule(inDevice, fileContent, shaderModule);
-			outShaderModules.push_back(shaderModule);
-
 			VkPipelineShaderStageCreateInfo info{};
 			info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			info.stage = (VkShaderStageFlagBits)shader::getShaderStageFlags(descriptorSetLayoutBinding.stage);
-			info.module = shaderModule;
+			info.stage = (VkShaderStageFlagBits)shader::getShaderStageFlags(shaderStageInfos.stage);
+			info.module = shaderStageInfos.module;
 			info.pName = "main";
 			outVkPipelineShaderStageCreateInfos.push_back(info);
 		}
@@ -124,7 +119,7 @@ bool VulkanPipeline::initialize(VkDevice inDevice
 	, VkRenderPass inRenderPass
 	, VkExtent2D inSwapchainExtent
 	, const std::vector<ShaderStageInfo>& inShaderStageInfos
-	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+	, const std::vector<VertexInputAttribute>& inVertexInputAttributes
 	, uint32_t inVertexSize
 	, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 	, const std::vector<VkPushConstantRange>& inPushConstantRanges)
@@ -136,7 +131,7 @@ bool VulkanPipeline::initialize(VkDevice inDevice
 		return false;
 	}
 
-	if (!createPipeline(inRenderPass, inSwapchainExtent, inShaderStageInfos, inVertexInputAttributeDescs, inVertexSize, pipeline))
+	if (!createPipeline(inRenderPass, inSwapchainExtent, inShaderStageInfos, inVertexInputAttributes, inVertexSize, pipeline))
 	{
 		return false;
 	}
@@ -174,15 +169,14 @@ bool VulkanPipeline::createPipelineLayout(const std::vector<VkDescriptorSetLayou
 bool VulkanPipeline::createPipeline(VkRenderPass inRenderPass
 	, VkExtent2D inSwapchainExtent
 	, const std::vector<ShaderStageInfo>& inShaderStageInfos
-	, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+	, const std::vector<VertexInputAttribute>& inVertexInputAttributes
 	, uint32_t inVertexSize
 	, VkPipeline& outPipeline)
 {
 	uint32_t binding = 0;
 
-	std::vector<VkShaderModule> shaderModules;
 	std::vector<VkPipelineShaderStageCreateInfo> vkShaderStages;
-	createVkPipelineShaderStageCreateInfos(device, inShaderStageInfos, vkShaderStages, shaderModules);
+	createVkPipelineShaderStageCreateInfos(device, inShaderStageInfos, vkShaderStages);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -192,7 +186,7 @@ bool VulkanPipeline::createPipeline(VkRenderPass inRenderPass
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 
 	std::vector<VkVertexInputAttributeDescription> vkInputAttributeDescriptions;
-	createVkInputAttributeDescriptions(inVertexInputAttributeDescs, binding, vkInputAttributeDescriptions);
+	createVkInputAttributeDescriptions(inVertexInputAttributes, binding, vkInputAttributeDescriptions);
 	vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)vkInputAttributeDescriptions.size();
 	vertexInputInfo.pVertexAttributeDescriptions = vkInputAttributeDescriptions.data();
 
@@ -307,12 +301,6 @@ bool VulkanPipeline::createPipeline(VkRenderPass inRenderPass
 	{
 		std::cerr << "Error: vkCreateGraphicsPipeline failed" << std::endl;
 		return false;
-	}
-
-	//
-	for (size_t i = 0; i < shaderModules.size(); ++i)
-	{
-		vkDestroyShaderModule(device, shaderModules[i], nullptr);
 	}
 
 	return true;

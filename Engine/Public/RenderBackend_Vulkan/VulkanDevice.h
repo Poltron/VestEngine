@@ -138,7 +138,7 @@ public:
 	uint32_t createPipeline(VkRenderPass inRenderPass
 		, VkExtent2D inSwapchainExtent
 		, const std::vector<ShaderStageInfo>& inShaderStageInfos
-		, const std::vector<VertexInputAttributeDesc>& inVertexInputAttributeDescs
+		, const std::vector<VertexInputAttribute>& inVertexInputAttributes
 		, uint32_t inVertexSize
 		, const std::vector<VkDescriptorSetLayout>& inDescriptorSetLayouts
 		, const std::vector<VkPushConstantRange>& inPushConstantRanges);

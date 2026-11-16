@@ -83,8 +83,8 @@ enum EShaderStageFlagBits : uint8_t
 
 struct ShaderStageInfo
 {
-	std::string_view file;
 	EShaderStageFlagBits stage;
+	VkShaderModule module;
 };
 typedef uint8_t ShaderStageFlags;
 
@@ -107,7 +107,6 @@ struct ShaderParameter
 // todo: compute size/offsets automatically depending on datatype
 struct ShaderParameters
 {
-	// note: same order as in shader
 	uint32_t size;
 	std::vector<ShaderParameter> parameters;
 
@@ -149,24 +148,42 @@ enum class EDataFormat : uint8_t
 	R32,
 };
 
-struct VertexInputAttributeDesc
+struct VertexInputAttribute
 {
 	EDataFormat format;
 	uint32_t offset;
+
+	VertexInputAttribute(EDataFormat inFormat, uint32_t inOffset)
+		: format(inFormat), offset(inOffset)
+	{ }
+};
+
+#ifdef RENDER_VULKAN
+typedef VkShaderModule CompiledShaderHandle;
+#elif defined(RENDER_OPENGL)
+typedef GLuint CompiledShaderHandle;
+#endif
+
+struct Shader
+{
+	std::string_view path;
+	CompiledShaderHandle handle;
+
+	std::vector<VertexInputAttribute> vertexInputs;
+	std::vector<ShaderParameter> parameters;
+	std::vector<ShaderParameter> pushConstants;
+	uint32_t vertexSize;
+	uint32_t parametersSize;
+	uint32_t pushConstantsSize;
+
+	EShaderStageFlagBits stage;
+	bool bCameraBlock;
+	bool bLightBlock;
+	bool bTextures;
 };
 
 namespace shader
 {
-	inline std::vector<ShaderStageInfo> getUnlitMaterialStageInfos()
-	{
-		const std::vector<ShaderStageInfo> shaderStageInfos =
-		{
-			{ "Resources/Shaders/Vulkan/default.vert.spv", EShaderStageFlagBits::VERTEX },
-			{ "Resources/Shaders/Vulkan/unlit.frag.spv", EShaderStageFlagBits::FRAGMENT }
-		};
-		return shaderStageInfos;
-	}
-
 	inline ShaderParameters getUnlitMaterialShaderParameters()
 	{
 		ShaderParameters parameters;
@@ -174,21 +191,21 @@ namespace shader
 		parameters.parameters = 
 		{ 
 			{ EShaderParameterType::VEC4, "color", 0 },
-			{ EShaderParameterType::UINT, "diffuse", sizeof(glm::vec4) }
+			{ EShaderParameterType::UINT, "diffuse", sizeof(uint32_t) }
 		};
 
 		return parameters;
 	}
 
-	inline std::vector<VertexInputAttributeDesc> getUnlitMaterialVertexInputs()
+	inline std::vector<VertexInputAttribute> getUnlitMaterialVertexInputs()
 	{
-		const std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc =
+		const std::vector<VertexInputAttribute> vertexInputAttributes =
 		{
 			{ EDataFormat::R32G32B32, offsetof(Vertex, position) },
 			{ EDataFormat::R32G32B32, offsetof(Vertex, normal) },
 			{ EDataFormat::R32G32, offsetof(Vertex, texCoords) }
 		};
-		return vertexInputAttributeDesc;
+		return vertexInputAttributes;
 	}
 
 	inline uint32_t getUnlitMaterialVertexSize()
@@ -197,16 +214,6 @@ namespace shader
 	}
 
 	//
-	inline std::vector<ShaderStageInfo> getLitMaterialStageInfos()
-	{
-		const std::vector<ShaderStageInfo> shaderStageInfos =
-		{
-			{ "Resources/Shaders/Vulkan/default.vert.spv", EShaderStageFlagBits::VERTEX },
-			{ "Resources/Shaders/Vulkan/lit.frag.spv", EShaderStageFlagBits::FRAGMENT }
-		};
-		return shaderStageInfos;
-	}
-
 	inline ShaderParameters getLitMaterialShaderParameters()
 	{
 		ShaderParameters parameters;
@@ -222,15 +229,15 @@ namespace shader
 		return parameters;
 	}
 
-	inline std::vector<VertexInputAttributeDesc> getLitMaterialVertexInputs()
+	inline std::vector<VertexInputAttribute> getLitMaterialVertexInputs()
 	{
-		const std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc =
+		const std::vector<VertexInputAttribute> vertexInputAttributes =
 		{
 			{ EDataFormat::R32G32B32, offsetof(Vertex, position) },
 			{ EDataFormat::R32G32B32, offsetof(Vertex, normal) },
 			{ EDataFormat::R32G32, offsetof(Vertex, texCoords) }
 		};
-		return vertexInputAttributeDesc;
+		return vertexInputAttributes;
 	}
 
 	inline uint32_t getLitMaterialVertexSize()

@@ -54,12 +54,6 @@ layout(location = 2) in vec2 inFragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-//void main() 
-//{
-//	vec4 texColor = texture(sampler2D(textures[materialData.diffuseTexIndex], textureSampler), inFragTexCoord);
-//	outColor = materialData.color * vec4(texColor.rgb, 1.0);
-//}
-
 vec3 computeDirectionalLight(DirectionalLight directional, vec3 normal, vec3 viewDirection, vec3 diffuseTexValue, vec3 specularTexValue)
 {
 	vec3 directionalValue = directional.color * directional.intensity;

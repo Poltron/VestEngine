@@ -8,9 +8,6 @@
 #include "Core/ResourceHandle.h"
 #include "Core/Resources/Mesh.h"
 
-class ResourcesManager;
-class Shader;
-
 class Model
 {
 	std::vector<Mesh> meshes;

@@ -41,14 +41,6 @@
 #include "RenderBackend_Vulkan/VulkanSurface.h"
 #include "RenderBackend_Vulkan/VulkanSwapchain.h"
 
-struct CompiledShader
-{
-	std::string_view path;
-	ShaderParameters parameters;
-	VkShaderModule vkModule;
-	EShaderStageFlagBits stage;
-};
-
 struct RenderBackend::Impl
 {
 	VulkanInstance instance;
@@ -59,7 +51,7 @@ struct RenderBackend::Impl
 
 	VulkanGeometryRenderPass geometryRenderPass;
 
-	std::vector<CompiledShader> shaders;
+	std::vector<Shader> shaders;
 	std::vector<VkPipeline> pipelines;
 
 	// sync primitives
@@ -352,7 +344,7 @@ namespace
 		inRenderPass.initialize(inDevice, inSwapchain);
 	}
 
-	CompiledShader& getCompiledShader(uint32_t inShader)
+	Shader& getCompiledShader(uint32_t inShader)
 	{
 		
 	}
@@ -544,8 +536,8 @@ void RenderBackend::resizeViewport(int inX, int inY, int inWidth, int inHeight)
 //
 uint32_t RenderBackend::compileShader(std::string_view inPath, EShaderStageFlagBits inShaderStage)
 {
-	CompiledShader& compiledShader = impl->shaders.emplace_back();
-	compiledShader.path = inPath;
+	Shader& shader = impl->shaders.emplace_back();
+	shader.path = inPath;
 
 	std::string shaderPath = File::getShadersDir() + inPath.data();
 	std::vector<char> fileContent;
@@ -555,29 +547,31 @@ uint32_t RenderBackend::compileShader(std::string_view inPath, EShaderStageFlagB
 		return UINT32_MAX;
 	}
 
-	shader::extractShaderParameters(fileContent, compiledShader.parameters);
-	shader::createVkShaderModule(impl->device.getDevice(), fileContent, compiledShader.vkModule);
+	shader::extractShaderParameters(fileContent, shader);
+	shader::createVkShaderModule(impl->device.getDevice(), fileContent, shader.handle);
 
 	return (uint32_t)(impl->shaders.size()) - 1;
 }
 
 bool RenderBackend::createPipeline(const std::vector<uint32_t>& inCompiledShaderIds)
 {
-	std::vector<ShaderStageInfo> shaderStageInfos;// = shader::getUnlitMaterialStageInfos();
-	std::vector<VertexInputAttributeDesc> vertexInputAttributeDesc;
+	std::vector<ShaderStageInfo> shaderStageInfos;
+	std::vector<VertexInputAttribute> VertexInputAttribute;
 	uint32_t vertexSize;
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 	std::vector<VkPushConstantRange> pushConstantRanges;
 
 	for (uint32_t shaderId : inCompiledShaderIds)
 	{
-		const CompiledShader& shader = impl->shaders[shaderId];
+		const Shader& shader = impl->shaders[shaderId];
 		
 		ShaderStageInfo stageInfo{};
+		stageInfo.module = shader.handle;
+		stageInfo.stage = shader.stage;
+		shaderStageInfos.push_back(stageInfo);
 
-		// todo: only for vertex
-		//vertexInputAttributeDesc;// = shader::getUnlitMaterialVertexInputs();
-		//uint32_t vertexSize;// = shader::getUnlitMaterialVertexSize();
+		VertexInputAttribute = shader.vertexInputs;
+		vertexSize = shader.vertexSize;
 
 		VkPushConstantRange pushConstantRange{};
 		//pushConstantRange.offset = 0;
@@ -617,7 +611,7 @@ bool RenderBackend::createPipeline(const std::vector<uint32_t>& inCompiledShader
 	uint32_t pipelineHandle = render::getRenderBackend()->getDevice().createPipeline(impl->geometryRenderPass.getRenderPass()
 		, impl->swapchain.getExtent()
 		, shaderStageInfos
-		, vertexInputAttributeDesc
+		, VertexInputAttribute
 		, vertexSize
 		, descriptorSetLayouts
 		, pushConstantRanges);
